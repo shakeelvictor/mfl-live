@@ -200,6 +200,17 @@ while (Date.now() < deadline && !stopping) {
       errors++;
       row = { at, poll: polls, status: r.status, ms: r.ms, event: 'http-error' };
       console.log(`${at}  HTTP ${r.status}`);
+    } else if (JSON.parse(r.body)?.error) {
+      // MFL reports application errors as HTTP 200 with an error body, so the
+      // status code alone is not enough. Observed in preseason:
+      //   {"error":{"$t":"Live scoring not available until the season starts"}}
+      // Without this branch that response records as a normal 200 with zero
+      // players — indistinguishable from "no games live yet", which would burn
+      // the Sunday window chasing the wrong explanation.
+      const msg = JSON.parse(r.body).error.$t || JSON.stringify(JSON.parse(r.body).error);
+      errors++;
+      row = { at, poll: polls, status: 200, ms: r.ms, event: 'mfl-error', error: msg };
+      console.log(`${at}  MFL ERROR  ${msg}`);
     } else {
       const parsed = JSON.parse(r.body);
       const c = canonical(parsed?.liveScoring);

@@ -24,9 +24,16 @@ if (rows.length === 0) {
   process.exit(1);
 }
 
-const ok = rows.filter((r) => r.status === 200);
+// status 200 alone is not success — MFL returns errors with a 200 (see below).
+const ok = rows.filter((r) => r.status === 200 && r.event !== 'mfl-error');
 const throttled = rows.filter((r) => r.status === 429);
-const errored = rows.filter((r) => r.event === 'exception' || r.event === 'http-error');
+const errored = rows.filter(
+  (r) => r.event === 'exception' || r.event === 'http-error' || r.event === 'mfl-error',
+);
+// MFL reports application errors as HTTP 200 with an error body. These are the
+// most informative failures in the log — surface the message rather than
+// letting them disappear into an error count.
+const mflErrors = rows.filter((r) => r.event === 'mfl-error');
 
 // "Live" = MFL says players are on the field. Cadence measured outside this
 // window is meaningless: a feed that does not change between games is correct,
@@ -56,6 +63,7 @@ const fmt = (n, d = 1) => (n == null ? 'n/a' : Number(n).toFixed(d));
 // Seconds get their unit inside the formatter so a missing value reads "n/a"
 // rather than "n/as".
 const secs = (n) => (n == null ? 'n/a' : `${Number(n).toFixed(1)}s`);
+const msec = (n) => (n == null ? 'n/a' : `${Math.round(Number(n))}ms`);
 
 console.log(`
 MFL liveScoring cadence — ${file}
@@ -65,8 +73,12 @@ RUN
   polls                ${rows.length}   over ${fmt(span(rows))} min
   successful (200)     ${ok.length}
   throttled (429)      ${throttled.length}
-  errors               ${errored.length}
-  response time        p50 ${fmt(pct(latencies, 50), 0)}ms   p95 ${fmt(pct(latencies, 95), 0)}ms
+  errors               ${errored.length}${mflErrors.length ? `   (${mflErrors.length} refused by MFL with HTTP 200)` : ''}
+  response time        p50 ${msec(pct(latencies, 50))}   p95 ${msec(pct(latencies, 95))}${
+    mflErrors.length
+      ? `\n\n  MFL said:\n${[...new Set(mflErrors.map((r) => r.error))].map((m) => `    "${m}"`).join('\n')}`
+      : ''
+  }
 
 LIVE WINDOW  (polls where MFL reports players on the field)
   live polls           ${live.length}   over ${fmt(span(live))} min
@@ -100,7 +112,12 @@ console.log(`  3. late lineup swap detected             ${bar3 ? 'PASS' : 'not o
 console.log(`
 VERDICT`);
 
-if (live.length === 0) {
+if (mflErrors.length === rows.length && rows.length > 0) {
+  const msgs = [...new Set(mflErrors.map((r) => r.error))];
+  console.log(`  NO DATA — MFL refused every request:
+${msgs.map((m) => `    "${m}"`).join('\n')}
+  Nothing was measured. Fix the cause and re-run; this is not a cadence result.`);
+} else if (live.length === 0) {
   console.log(`  INCONCLUSIVE — no poll saw players on the field.
   Either no games were live, or this ran against a completed week.
   A dry run proves the harness works; it cannot measure cadence.`);
