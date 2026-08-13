@@ -1,0 +1,8 @@
+.DS_Store
+.claude/
+.netlify/
+node_modules/
+*.log
+
+# Spike output — measurements, not source. Each run writes a timestamped log.
+spike/data/
