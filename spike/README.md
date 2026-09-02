@@ -124,3 +124,32 @@ That is a real decision, not automatically a no.
 - `canonical()` is separate and tested because MFL's JSON key order is **not
   stable between calls**. Hashing the raw body would report a change on every
   poll — a false pass that would look exactly like success.
+
+## Does it feel as live as Sleeper / Yahoo / ESPN?
+
+That is the real bar, and the run answers it directly. Two things are being
+measured, and they are not the same:
+
+**Data freshness** is capped by MFL. You poll the same MFL that renders MFL's
+own page, so you can never be fresher than it -- adding a hop can only lose
+time, never gain it. The rival apps own their stat pipelines end to end.
+
+**Perceived liveness** is a UI property and is entirely yours: the number
+changing without a refresh, a tick or flash when it does, a rank actually
+swapping places. None of that depends on the upstream interval.
+
+So the question is only whether MFL is in the same *class* as the apps it is
+competing with -- not whether it is faster. Sleeper is the benchmark because
+it is both fetchable and one of the apps being compared against, and the run
+samples both at the same rate for exactly that reason (`--sleeper-every 1`,
+the default). Sampling Sleeper less often floors its measured cadence at the
+sampling interval and flatters MFL; `analyze.mjs` refuses to render the
+comparison if the rates were unequal, or if neither feed actually moved.
+
+Rough reading of the ratio, once there is real movement:
+
+| MFL vs Sleeper interval | What it means |
+|---|---|
+| ~1x | Same class. Feel is a UI problem, and a solvable one. |
+| up to ~1.5x | Fine. A board updating every 45s reads as live with good transitions. |
+| > 2x | MFL is the bottleneck. The app would feel slower than what it replaces. |

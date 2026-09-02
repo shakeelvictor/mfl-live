@@ -172,6 +172,12 @@ if (withSleeper.length > 1) {
     if (withSleeper[i].sleeper.hash !== withSleeper[i - 1].sleeper.hash) sChanges++;
   }
   const sSpan = span(withSleeper);
+
+  // An unequal sampling rate makes this comparison meaningless in one
+  // direction: whichever feed is sampled less often cannot appear to change
+  // faster than its own sampling interval.
+  const unequal = withSleeper.length < ok.length;
+
   console.log(`
 PROVIDER COMPARISON  (Sleeper sampled ${withSleeper.length}x over ${fmt(sSpan)} min)
   Sleeper content changes  ${sChanges}   (~1 per ${fmt(sSpan / (sChanges || 1))} min)
@@ -179,6 +185,33 @@ PROVIDER COMPARISON  (Sleeper sampled ${withSleeper.length}x over ${fmt(sSpan)} 
 
   If Sleeper changes materially more often than MFL, MFL is the bottleneck
   and no amount of client-side polling makes the app fresher.`);
+
+  if (unequal) {
+    console.log(`
+  !! Sleeper was sampled ${withSleeper.length}x against MFL's ${ok.length}. Its
+     cadence cannot read faster than that sampling interval, so this
+     comparison understates Sleeper and flatters MFL. Re-run with
+     --sleeper-every 1 before trusting it.`);
+  } else if (changeTimes.length === 0 || sChanges === 0) {
+    // Guard: with no observed changes the ratio collapses to 0, which would
+    // sail past the threshold below and print a confident verdict from no
+    // data at all. Same failure shape as the other traps in this repo.
+    console.log(`
+  Not enough movement to compare (MFL ${changeTimes.length} changes,
+  Sleeper ${sChanges}). Needs a live window with real scoring.`);
+  } else {
+    const mflPer = span(live) / changeTimes.length;
+    const slpPer = sSpan / sChanges;
+    const ratio = slpPer > 0 ? mflPer / slpPer : Infinity;
+    console.log(`
+  Sampled at equal rates. MFL changes once per ${fmt(mflPer)} min,
+  Sleeper once per ${fmt(slpPer)} min -- MFL is ${fmt(ratio)}x Sleeper's interval.`);
+    console.log(ratio <= 1.5
+      ? `  -> MFL is in the same freshness class as Sleeper. Matching the feel of
+     a Sleeper/Yahoo/ESPN board is then a UI problem, not a data one.`
+      : `  -> MFL lags Sleeper materially. You cannot be fresher than your
+     upstream, so the app would feel slower than the apps it competes with.`);
+  }
 }
 
 console.log('');

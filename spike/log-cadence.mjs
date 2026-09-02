@@ -46,7 +46,13 @@ const SEASON = arg('season', String(new Date().getFullYear()));
 const WEEK = arg('week', null);          // omit -> MFL serves the current week
 const INTERVAL = Number(arg('interval', 30)) * 1000;
 const MINUTES = Number(arg('minutes', 120));
-const SLEEPER_EVERY = Number(arg('sleeper-every', 3)); // poll Sleeper 1-in-N
+// Sample Sleeper at the SAME rate as MFL by default. Sampling it less often
+// floors its measured cadence at the sampling interval and makes MFL look
+// competitive when it may not be -- and "is MFL as fresh as Sleeper" is the
+// question that decides whether this app is worth building at all. Sleeper's
+// payload is ~500KB, so an equal-rate 2h run downloads ~120MB. That is the
+// cost of an honest comparison; raise this only if bandwidth is a problem.
+const SLEEPER_EVERY = Number(arg('sleeper-every', 1)); // poll Sleeper 1-in-N
 const NO_SLEEPER = has('no-sleeper');
 
 // The registered User-Agent must be sent byte-identical on every request or the
