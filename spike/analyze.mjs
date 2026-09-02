@@ -104,6 +104,25 @@ const bar3 = lineupChanges.length > 0;
 
 const mark = (b) => (b ? 'PASS' : 'FAIL');
 
+// Whether MFL populates `updatedStats` during live games decides where stat
+// lines can come from at all -- the same response as the points, or a second
+// provider with a timing skew against them. See log-cadence.mjs.
+const withStats = ok.filter((r) => (r.updatedStatsPlayers || 0) > 0);
+if (live.length > 0) {
+  console.log(`UPDATEDSTATS  (can official stat lines come from this feed?)`);
+  if (withStats.length) {
+    const peak = Math.max(...withStats.map((r) => r.updatedStatsPlayers));
+    const sample = withStats.find((r) => r.updatedStatsSamples)?.updatedStatsSamples;
+    console.log(`  POPULATED on ${withStats.length}/${live.length} live polls, peak ${peak} players`);
+    if (sample) console.log(`  sample: ${JSON.stringify(sample)}`);
+    console.log(`  -> official stat lines may come from liveScoring itself.\n`);
+  } else {
+    console.log(`  empty on all ${live.length} live polls`);
+    console.log(`  -> stat lines would have to come from Sleeper, with a timing`);
+    console.log(`     skew against MFL's points after every scoring play.\n`);
+  }
+}
+
 console.log(`BARS
   1. no throttling at this interval        ${mark(bar1)}   ${throttled.length} x 429`);
 console.log(`  2. content changes <= ~2 min (live)      ${mark(bar2)}   median ${secs(median)}`);

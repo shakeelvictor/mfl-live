@@ -76,6 +76,25 @@ Then:
 node spike/analyze.mjs spike/data/<newest>.jsonl
 ```
 
+## The side question it also answers
+
+Every player in `liveScoring` carries an `updatedStats` field. It is an empty
+string on every completed week, and whether it holds anything **during** games
+is untestable out of season.
+
+It decides where live stat lines can come from:
+
+- **Populated** -> official stat lines ride the same response as the points.
+  No second provider on the live path, and no skew between two feeds.
+- **Empty** -> the only source is Sleeper, whose stat line will disagree with
+  MFL's points for a minute or two after every scoring play, because two feeds
+  update independently. That is visible to the user on exactly the plays they
+  are watching.
+
+The logger records `updatedStatsPlayers` on every poll and shouts the first
+time it is ever non-zero; `analyze.mjs` reports which way it went. Capturing it
+is free -- same poll, same bytes -- so the rehearsal settles it either way.
+
 ## Reading the result
 
 | Bar | Passes when | Why it matters |

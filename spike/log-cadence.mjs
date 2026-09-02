@@ -28,7 +28,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { canonical } from './canonical.mjs';
+import { canonical, toArray } from './canonical.mjs';
 
 const LEAGUE = '19716';
 
@@ -76,6 +76,35 @@ const OUT = path.join(OUT_DIR, `cadence-${SEASON}${WEEK ? `w${WEEK}` : ''}-${sta
 // canonical() lives in ./canonical.mjs so verify-canonical.mjs can test it
 // offline against checked-in fixtures. It is the one piece of logic here whose
 // failure would silently invalidate the whole measurement.
+
+// Every player in liveScoring carries an `updatedStats` field. It is an empty
+// string on every completed week, and whether it holds anything DURING games
+// is unknown -- MFL refuses liveScoring out of season, so it cannot be tested
+// until kickoff.
+//
+// This matters well beyond curiosity. If it carries stat deltas, then official
+// stat lines come from the SAME response as the points: no second provider on
+// the live path, and no timing skew between two feeds. If it stays empty, the
+// only source is Sleeper, and a stat line will disagree with the points beside
+// it for a minute or two after every scoring play.
+//
+// Capturing it is free -- same poll, same bytes -- so the rehearsal answers it.
+function probeUpdatedStats(ls) {
+  let total = 0;
+  let populated = 0;
+  const samples = [];
+  for (const f of toArray(ls?.franchise)) {
+    for (const pl of toArray(f?.players?.player)) {
+      total++;
+      const v = pl.updatedStats;
+      if (v !== undefined && v !== null && v !== '') {
+        populated++;
+        if (samples.length < 3) samples.push({ id: pl.id, updatedStats: v });
+      }
+    }
+  }
+  return { total, populated, samples };
+}
 
 // ---------------------------------------------------------------------------
 // Fetching
@@ -152,6 +181,7 @@ let throttled = 0;
 let errors = 0;
 let prev = null;
 let prevStarter = null;
+let sawUpdatedStats = false;
 let stopping = false;
 
 function record(row) {
@@ -214,6 +244,7 @@ while (Date.now() < deadline && !stopping) {
     } else {
       const parsed = JSON.parse(r.body);
       const c = canonical(parsed?.liveScoring);
+      const us = probeUpdatedStats(parsed?.liveScoring);
       const changed = prev !== null && c.scoreHash !== prev;
       const startersChanged = prevStarter !== null && c.starterHash !== prevStarter;
       if (changed) changes++;
@@ -232,6 +263,8 @@ while (Date.now() < deadline && !stopping) {
         yetToPlay: c.yetToPlay,
         franchises: c.franchiseCount,
         scores: c.byFranchise,
+        updatedStatsPlayers: us.populated,
+        ...(us.populated ? { updatedStatsSamples: us.samples } : {}),
       };
 
       const flag = changed ? 'CHANGED' : '       ';
@@ -240,6 +273,13 @@ while (Date.now() < deadline && !stopping) {
         `${at}  200  ${String(r.ms).padStart(4)}ms  ${flag}  ` +
           `playing=${c.currentlyPlaying} yetToPlay=${c.yetToPlay}${sw}`,
       );
+
+      if (us.populated && !sawUpdatedStats) {
+        sawUpdatedStats = true;
+        console.log(`\n  *** updatedStats IS POPULATED (${us.populated}/${us.total} players) ***`);
+        console.log(`  ${JSON.stringify(us.samples)}`);
+        console.log('  Official stat lines may be available from this same response.\n');
+      }
 
       prev = c.scoreHash;
       prevStarter = c.starterHash;
