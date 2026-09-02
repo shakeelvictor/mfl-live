@@ -86,6 +86,26 @@ and a headshot cannot contradict a score. Live stat lines would need Sleeper
 polled *during games* and carry the drift problem above. That asymmetry is why
 headshots are in and stat lines are still out.
 
+## What we are actually competing with
+
+MFL publishes its own refresh intervals on its GameDay page: **GameDay every
+30-35 seconds, standard live scoring every 90 seconds**. The standard page is
+what this league uses and what this project exists to replace.
+
+Two consequences:
+
+- The underlying feed sustains ~30s, so a 30s poll of `liveScoring` can be up
+  to **3x fresher than MFL's own page**. "You can never be fresher than MFL" is
+  wrong as stated -- you cannot beat its *data*, but you can beat its *page*.
+- The bar is a 90-second page the league already tolerates, not Sleeper. Even
+  a 90s result matches the incumbent exactly and wins on UI.
+
+**MFL does not own its stat feed.** Its marketing says it "partners with" data
+companies, and `stats_global_id` is the only identifier present for 100% of
+players (2,779/2,779) while `cbs_id`/`rotowire_id`/`espn_id` sit at 83-87% --
+universal coverage is the signature of a primary key from the source system.
+Nobody in this market owns the pipeline; they all license it.
+
 ## Traps
 
 **Three separate bugs here failed by looking like success.** That is the

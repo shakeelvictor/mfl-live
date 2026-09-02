@@ -131,16 +131,32 @@ That is a real decision, not automatically a no.
 That is the real bar, and the run answers it directly. Two things are being
 measured, and they are not the same:
 
-**Data freshness** is capped by MFL. You poll the same MFL that renders MFL's
-own page, so you can never be fresher than it -- adding a hop can only lose
-time, never gain it. The rival apps own their stat pipelines end to end.
+**Data freshness** is capped by MFL's *data*, which is not the same thing as
+MFL's *page*. MFL publishes both numbers on its GameDay page:
+
+> "MyFantasyLeague.com Game Day updates every 30-35 seconds, whereas standard
+> MyFantasyLeague.com live scoring refreshes every 90 seconds."
+
+So the underlying feed sustains ~30s; the standard live-scoring page -- the
+one this project exists to replace -- throttles itself to 90s. Polling the API
+at 30s can therefore be up to **3x fresher than the page the league uses
+today**. What it cannot beat is the feed underneath.
+
+MFL also does not own that feed. Its own marketing says it "partners with" data
+companies, and the give-away is in the players export: `stats_global_id` is the
+only identifier present for all 2,779 players (100%), while `cbs_id`,
+`rotowire_id` and `espn_id` sit at 83-87%. Universal coverage is the signature
+of a primary key from the source system; the partial ones are mappings layered
+on top. MFL licenses, like everyone else in this market.
 
 **Perceived liveness** is a UI property and is entirely yours: the number
 changing without a refresh, a tick or flash when it does, a rank actually
 swapping places. None of that depends on the upstream interval.
 
-So the question is only whether MFL is in the same *class* as the apps it is
-competing with -- not whether it is faster. Sleeper is the benchmark because
+The incumbent is therefore MFL's own 90-second page, not Sleeper. The league
+already uses it and already tolerates its freshness, so matching it is a floor
+the app clears by construction. Sleeper is still worth measuring as the outside
+benchmark, but it is not the bar to clear. Sleeper is the benchmark because
 it is both fetchable and one of the apps being compared against, and the run
 samples both at the same rate for exactly that reason (`--sleeper-every 1`,
 the default). Sampling Sleeper less often floors its measured cadence at the
