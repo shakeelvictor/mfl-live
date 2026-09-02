@@ -92,13 +92,25 @@ MFL publishes its own refresh intervals on its GameDay page: **GameDay every
 30-35 seconds, standard live scoring every 90 seconds**. The standard page is
 what this league uses and what this project exists to replace.
 
-Two consequences:
+**GameDay is a Windows desktop program** -- "an optional (and free!) program
+that runs on Microsoft Windows computers", downloaded as an executable. So the
+30-35s tier does not exist on a phone for anyone, on any platform, and does not
+exist on macOS at all. On mobile, MFL's own offering is the 90-second page.
+
+Three consequences:
 
 - The underlying feed sustains ~30s, so a 30s poll of `liveScoring` can be up
   to **3x fresher than MFL's own page**. "You can never be fresher than MFL" is
   wrong as stated -- you cannot beat its *data*, but you can beat its *page*.
 - The bar is a 90-second page the league already tolerates, not Sleeper. Even
   a 90s result matches the incumbent exactly and wins on UI.
+- **Live-scoring mobile apps already ship on this data** (MFL Live at
+  mfl-fantasy.com, MFL Platinum on Play) -- separate domains and package names
+  from MFL, so third-party clients on the same public API. Their existence is
+  evidence the API sustains live scoring; nobody ships a live-scoring app on a
+  feed that cannot do it. They are also built for head-to-head leagues, so none
+  of them shows an all-play record live. That is the gap, and it is why "we
+  have no choice" is the accurate description of this league's options.
 
 **MFL does not own its stat feed.** Its marketing says it "partners with" data
 companies, and `stats_global_id` is the only identifier present for 100% of
