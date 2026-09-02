@@ -99,7 +99,17 @@ LIVE WINDOW  (polls where MFL reports players on the field)
 
 const bar1 = throttled.length === 0 && ok.length > 0;
 const median = pct(gaps, 50);
-const bar2 = median != null && median <= 120;
+
+// Thresholds are MFL's own published intervals, not round numbers. GameDay
+// (Windows desktop only) refreshes every 30-35s; the standard live-scoring
+// page -- the thing this replaces, and the only option on a phone -- every 90s.
+//
+// So 90s is the incumbent, and anything slower than that is WORSE than what
+// the league already has. The old bar of 120s would have printed GO on a
+// result that loses to the status quo.
+const GAMEDAY = 35;
+const INCUMBENT = 90;
+const bar2 = median != null && median <= INCUMBENT;
 const bar3 = lineupChanges.length > 0;
 
 const mark = (b) => (b ? 'PASS' : 'FAIL');
@@ -125,7 +135,7 @@ if (live.length > 0) {
 
 console.log(`BARS
   1. no throttling at this interval        ${mark(bar1)}   ${throttled.length} x 429`);
-console.log(`  2. content changes <= ~2 min (live)      ${mark(bar2)}   median ${secs(median)}`);
+console.log(`  2. at least as fresh as MFL's own page   ${mark(bar2)}   median ${secs(median)} vs ${INCUMBENT}s`);
 console.log(`  3. late lineup swap detected             ${bar3 ? 'PASS' : 'not observed'}   ${lineupChanges.length} seen`);
 
 console.log(`
@@ -145,13 +155,18 @@ ${msgs.map((m) => `    "${m}"`).join('\n')}
   Re-run at a longer interval to find the real ceiling before designing
   around 30s. Confirm the registered User-Agent was sent exactly.`);
 } else if (!bar2) {
-  console.log(`  PREMISE AT RISK — median ${secs(median)} between changes.
-  MFL is your upstream, so this is the floor on how fresh the app can be.
-  Above ~2 min, "better than MFL's page" shrinks toward a styling exercise.
-  Worth deciding whether the all-play leaderboard alone still justifies it.`);
+  console.log(`  STOP — median ${secs(median)} is SLOWER than MFL's own 90s page.
+  The app would be less fresh than the thing it replaces, on the only
+  question the league would judge it on. This is the kill condition.`);
+} else if (median <= GAMEDAY) {
+  console.log(`  GO, BEST CASE — median ${secs(median)} matches GameDay class
+  (${GAMEDAY}s), roughly ${fmt(INCUMBENT / median)}x fresher than the 90s page the league uses.
+  GameDay is Windows desktop only, so this would be the fastest MFL
+  experience available on a phone. Build it.`);
 } else {
-  console.log(`  GO — sustained ${fmt(span(rows))} min with no throttling, median ${fmt(median)}s
-  between score changes. The cadence premise holds; build the leaderboard.`);
+  console.log(`  GO — median ${secs(median)}, at least as fresh as MFL's own 90s page
+  and sustained ${fmt(span(rows))} min with no throttling. Ties the incumbent on
+  data and wins on UI and on showing all-play records live. Build it.`);
 }
 
 if (!bar3 && live.length > 0) {

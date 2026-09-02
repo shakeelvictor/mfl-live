@@ -100,8 +100,20 @@ is free -- same poll, same bytes -- so the rehearsal settles it either way.
 | Bar | Passes when | Why it matters |
 |---|---|---|
 | 1. No throttling | zero 429s across the run | 30s polling is the design assumption |
-| 2. Change ≤ ~2 min | median gap between content changes ≤ 120s | MFL is upstream, so this is the floor on app freshness |
+| 2. At least as fresh as MFL's page | median gap ≤ **90s** | slower than the incumbent means the app loses to what it replaces |
 | 3. Lineup swap seen | a starter set changes mid-run | proves late swaps are caught for free |
+
+Bar 2's threshold is MFL's own published number, not a round one. Three
+outcomes, and only the last is fatal:
+
+| median gap | Verdict |
+|---|---|
+| ≤ 35s | **GO, best case.** GameDay class, ~3x the 90s page, and the fastest MFL experience available on a phone (GameDay is Windows desktop only). |
+| 36-90s | **GO.** Ties the incumbent on freshness, wins on UI and on showing all-play records live. |
+| > 90s | **STOP.** Slower than the page it replaces. |
+
+An earlier version of this bar sat at 120s, set before MFL's 90s page interval
+was known -- it would have printed GO on a result that loses to the status quo.
 
 Bar 3 is *not observed* rather than *failed* if nobody swapped a starter — it
 needs someone to actually make a change.
