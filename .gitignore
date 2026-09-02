@@ -6,3 +6,6 @@ node_modules/
 
 # Spike output — measurements, not source. Each run writes a timestamped log.
 spike/data/
+
+# Fetched MFL reference data for the mockup generator; refetchable.
+mockup/.cache/
