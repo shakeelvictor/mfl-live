@@ -119,8 +119,9 @@ That is a real decision, not automatically a no.
   was collected stays valid.
 - On a 429 the logger backs off one interval rather than leaning harder on MFL,
   and records that it did so.
-- Sleeper is sampled at 1-in-3 polls purely to compare provider lag. It is not a
-  scoring source. Disable with `--no-sleeper`.
+- Sleeper is sampled at MFL's own rate (`--sleeper-every 1`) so the freshness
+  comparison is honest; see below. It is not a scoring source. Disable with
+  `--no-sleeper`.
 - `canonical()` is separate and tested because MFL's JSON key order is **not
   stable between calls**. Hashing the raw body would report a change on every
   poll — a false pass that would look exactly like success.
