@@ -86,6 +86,33 @@ and a headshot cannot contradict a score. Live stat lines would need Sleeper
 polled *during games* and carry the drift problem above. That asymmetry is why
 headshots are in and stat lines are still out.
 
+## Licensing a faster stat feed does not help
+
+Asked and answered (Sep 2026). Cheap live NFL stat feeds do exist -- Tank01
+(~$10/mo, 1000 req/day), Big Balls Sports Data (free tier), Rolling Insights
+(live from $400/mo), Sportradar (enterprise). Sleeper is already free, live,
+and verified here.
+
+None of them solves the problem, because the bottleneck was never stat
+availability. Turning stats into *this league's* points needs INDOMEXPAK's
+rules applied, and that fails two ways no vendor fixes:
+
+- **Provider disagreement.** MFL's stats come from STATS Perform. Any other
+  provider attributes tackles differently, and the tackle escalator pays
+  volume, so one tackle is worth points. This is the measured 4-of-11 failure.
+- **Rule replication.** Even with perfect stats the scoring engine would be
+  reverse-engineered. We never settled whether MFL runs the escalator on solo
+  or solo+special-teams; two of three cases matched the latter. That is
+  inference, not certainty.
+
+What MFL sells here is not stats -- it is the authoritative application of the
+league's custom rules, which is not purchasable at any tier. A faster feed
+trades a 90s lag for a number that is wrong in a way that costs someone a
+weekly payout.
+
+A fast feed *is* legitimate for context that is not a score ("your RB just
+broke a 40-yarder"), since it never has to reconcile against MFL's total.
+
 ## What we are actually competing with
 
 MFL publishes its own refresh intervals on its GameDay page: **GameDay every
