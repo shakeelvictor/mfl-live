@@ -138,7 +138,18 @@ element and scores are second.
   apart). The class and indexes are removed when the run ends so the
   animations never fight FLIP transforms later. Skipped under reduced
   motion.
-- The header is the wordmark only: **MFL LIVE**, with LIVE in the live red
+- **The mark** is the league's logo (hands reaching for a football in a
+  navy ring). `design/mfllive-logo.jpeg` is the source, drawn with a mint
+  ball; `design/cutout.py` (needs Pillow + numpy) recolours the ball to
+  leather (`LEATHER`, scored by how green a pixel leans so strokes and
+  laces are untouched) and writes everything `app/` serves, in two cuts: **transparent** (every white area cleared except the
+  laces, told apart by the ball around them) for the 40px header mark,
+  `logo.png` at 256px; and **disc** (only the outside cleared, the ring's
+  interior white) for `favicon-32.png`, `favicon-192.png` and
+  `apple-touch-icon.png`, since a badge reads the same on a dark tab bar.
+  The 686px masters are `design/mfllive-logo-transparent.png` and
+  `design/mfllive-logo.png`. The loader still spins the line-art football.
+- The header is the mark and the wordmark: **MFL LIVE**, with LIVE in the live red
   and a pulsing dot after it; once the week is official the dot goes and
   LIVE rejoins the name. There is no separate status line.
 - In dark the hero has **no border and no inset highlight** (`--hero-border`,
