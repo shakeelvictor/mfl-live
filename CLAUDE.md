@@ -51,6 +51,12 @@ element and scores are second.
   `prefers-color-scheme`; the DARK/LIGHT segmented control stamps the root.
 - **Archivo** for display (900 italic uppercase headers, 700 roman for names
   in lists), **Nunito** for body and every number, `tabular-nums` on the root.
+- The header is the wordmark only: **MFL LIVE**, with LIVE in the live red
+  and a pulsing dot after it; once the week is official the dot goes and
+  LIVE rejoins the name. There is no separate status line.
+- In dark the hero has **no border and no inset highlight** (`--hero-border`,
+  `--hero-shadow`): its gradient fades to near-canvas, so either reads as a
+  stray outline. Light keeps both.
 - **Accent is mint** and carries "live / on now", the selected segment and the
   leader's badge -- never urgency. Urgency is a separate warm scale:
   `--gap-critical` (< 0.25, coin flip) -> `--gap-live` (< 2.5) ->
@@ -58,6 +64,14 @@ element and scores are second.
   radius, shadow dropped); the rank circle takes the hotter of its two gaps.
 - **Position chips** use `--pos-qb/rb/wr/te/k/lb`; every defensive position
   maps to `--pos-lb`, matching the league's "3 IDP, any combination" rule.
+- **Roster rows** carry three small signals: the NFL logo badged on the
+  headshot (as on the spotlight and touchdown cards), a mint **TD** chip on
+  the headshot's top corner for anyone who has scored (counted from the
+  stat line, so a simulated touchdown adds it live), a **gold sweep** on
+  the team's top-scoring starter (the spotlight's wave in gold, plus a gold
+  ring; wins over the live treatment), and
+  a live treatment for players still on the field (mint headshot ring,
+  soft mint wash fading across the row).
 - The team page is a full-screen route over the board (`position: fixed`),
   so the board keeps its scroll position. **From 1024px up** the shell is a
   two-column grid instead: board left, and the same team page becomes an
@@ -70,7 +84,9 @@ element and scores are second.
   panel**: the pane is a top-to-bottom green gradient (`--tab-a` to
   `--tab-b`), and the script tells the active element how far down the
   pane it sits (`--tab-t`) so CSS `color-mix` derives `--join`, the pane's
-  colour at that height; the tab's own left-to-right gradient and its
+  colour at that height (mixed **in sRGB**, because that is the space
+  `linear-gradient` interpolates in -- an oklch mix lands a visibly
+  different green at the seam); the tab's own left-to-right gradient and its
   bridge land exactly on `--join`. Hero text and an accent rank badge; right
   corners squared, inset-shadow borders (so selection never shifts the
   list; on laptop the row's radius does not tween, so no flicker before the

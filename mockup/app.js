@@ -283,9 +283,7 @@ function render(changed = new Set()) {
   renderSpotlight();
   if (open !== null) renderTeam(changed);
   rollNumbers(shown);
-  const mark = document.querySelector(".livemark");
-  mark.classList.toggle("final", weekIsFinal());
-  mark.lastChild.nodeValue = weekIsFinal() ? "Final" : "Live";
+  document.getElementById("brand-live").classList.toggle("final", weekIsFinal());
 }
 
 /* ---------------- stat lines ----------------
@@ -438,9 +436,17 @@ const avatar = (p) => {
   return `<span class="avatar-fb" aria-hidden="true">${esc(initials(p.n))}</span>`;
 };
 
-const playerRow = (p, bench) =>
-  `<div class="prow${bench ? " bench" : ""}${p.pts === 0 ? " zero" : ""}">` +
-    avatar(p) +
+const logoBadge = (tm) => LOGOS[tm] ? `<span class="plogo"><img src="${LOGOS[tm]}" alt=""></span>` : "";
+
+// Touchdowns from the stat line (all kinds), so a simulated score adds the
+// chip live. IDP scores use the mockup's own idp_td key.
+const tdCount = (st) => (st ? (st.pass_td || 0) + (st.rush_td || 0) + (st.rec_td || 0) + (st.idp_td || 0) : 0);
+const tdBadge = (st) => { const n = tdCount(st); return n ? `<span class="ptd">${n > 1 ? n + " " : ""}TD</span>` : ""; };
+
+// top: the team's highest-scoring starter gets a gold ring (MVP echo).
+const playerRow = (p, bench, top = false) =>
+  `<div class="prow${bench ? " bench" : ""}${p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${top ? " top" : ""}">` +
+    `<span class="pface">${avatar(p)}${logoBadge(p.tm)}${tdBadge(p.st)}</span>` +
     `<span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span>` +
     `<span class="pname"><b>${esc(p.n)}</b>` +
       `<span class="pmeta">${esc(p.tm)}<span aria-hidden="true">·</span>` +
@@ -490,9 +496,11 @@ function renderTeam(changed = new Set()) {
   document.getElementById("tab-bench-n").textContent = `${fmt(sum(bench))} behind`;
 
   const list = tab === "bench" ? bench : starters;
+  const topPts = Math.max(0, ...starters.map((p) => p.pts));
+  const isTop = (p) => !bench.includes(p) && topPts > 0 && p.pts === topPts;
   tabs.forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
   rosterEl.innerHTML = list.length
-    ? [...list].sort(byLineup).map((p) => playerRow(p, tab === "bench")).join("")
+    ? [...list].sort(byLineup).map((p) => playerRow(p, tab === "bench", tab !== "bench" && isTop(p))).join("")
     : `<p class="empty">No ${tab} on this roster.</p>`;
 }
 

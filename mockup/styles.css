@@ -34,6 +34,10 @@
   --hero-muted: rgba(246, 250, 248, 0.66);
   --hero-strip: rgba(255, 255, 255, 0.10);
   --hero-pill: rgba(255, 255, 255, 0.14);
+  /* In dark the hero's gradient fades to near-canvas, so a border and the
+     card shadow's inset highlight read as a stray outline: neither here. */
+  --hero-border: transparent;
+  --hero-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
   /* The hero gradient stays dark in both themes, so anything mint on it
      needs the bright mint, not the theme accent (deep teal in light). */
   --hero-accent: #4fe3c1;
@@ -96,6 +100,8 @@
   --hero-bg: linear-gradient(160deg, #0c5a4b 0%, #0e7a66 100%);
   --hero-text: #ffffff;
   --hero-muted: rgba(255, 255, 255, 0.7);
+  --hero-border: var(--border);
+  --hero-shadow: var(--shadow-card);
   --gap-critical: #e0342f;
   --gap-critical-soft: rgba(224, 52, 47, 0.09);
   --gap-critical-ink: #ffffff;
@@ -190,19 +196,18 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 }
 .brand-mark svg { width: 24px; height: 24px; display: block; }
 
-.brandstack { display: flex; flex-direction: column; gap: 2px; }
 .brand {
-  font: italic 900 16px/1 var(--font-display);
+  font: italic 900 18px/1 var(--font-display);
   letter-spacing: .02em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
-.livemark {
-  display: flex; align-items: center; gap: 5px;
-  font: 800 10px/1 var(--font-data);
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--gap-critical);
-}
+/* The LIVE in the wordmark is the live signal: live red with a pulsing dot;
+   once the week is official the dot goes and the word rejoins the name. */
+.brand-live { display: inline-flex; align-items: center; gap: 7px; color: var(--gap-critical); transition: color .3s; }
+.brand-live .dot { width: 7px; height: 7px; }
+.brand-live.final { color: inherit; }
+.brand-live.final .dot { display: none; }
 
 .controls { display: flex; align-items: center; gap: 8px; }
 .demo-toggle {
@@ -274,8 +279,8 @@ h1 {
   border-radius: var(--radius-card);
   background: var(--hero-bg);
   color: var(--hero-text);
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--border);
+  box-shadow: var(--hero-shadow);
+  border: 1px solid var(--hero-border);
   padding: 18px;
   display: flex; flex-direction: column; gap: 14px;
   overflow: hidden;
@@ -443,9 +448,6 @@ button.hero { cursor: pointer; }
 .spot.mvp .spot-when { background: var(--gold-soft); color: var(--gold); }
 .spot.mvp .spot-pts { color: var(--gold); }
 .spot.mvp .spot-face .avatar, .spot.mvp .spot-face .avatar-fb { border-color: var(--gold); }
-
-.livemark.final { color: var(--text-muted); }
-.livemark.final .dot { display: none; }
 
 /* ---------- colour waves ----------
    A soft band of colour drifting back and forth across a card. Subtle by
@@ -655,6 +657,7 @@ button.hero { cursor: pointer; }
 .roster .empty { margin: 0; padding: 24px 8px; font-size: 13px; line-height: 1.5; color: var(--text-muted); text-align: center; text-wrap: pretty; }
 
 .prow {
+  position: relative;
   display: grid;
   grid-template-columns: 40px 40px 1fr auto;
   gap: 10px; align-items: center;
@@ -663,6 +666,43 @@ button.hero { cursor: pointer; }
   transition: background .2s, opacity .3s;
 }
 .prow:hover { background: var(--surface-raised); }
+
+/* Still on the field: mint ring on the headshot and a soft mint wash that
+   fades out across the row, the same signal as "on now" on the board. */
+.prow.live { background: linear-gradient(90deg, var(--accent-soft) 0%, transparent 70%); }
+.prow.live:hover { background: linear-gradient(90deg, var(--accent-soft) 0%, transparent 70%), var(--surface-raised); }
+.prow.live .avatar, .prow.live .avatar-fb { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+
+/* Headshot with the NFL team logo badged on it, as on the spotlight and
+   touchdown cards. */
+.pface { position: relative; width: 40px; height: 40px; }
+.plogo {
+  position: absolute; right: -5px; bottom: -3px;
+  width: 18px; height: 18px; border-radius: 50%; padding: 2px;
+  background: var(--surface); border: 1px solid var(--border-strong);
+  display: grid; place-items: center;
+}
+.plogo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+/* Scored: a mint TD chip on the headshot's top corner. */
+.ptd {
+  position: absolute; left: -6px; top: -4px;
+  padding: 3px 5px; border-radius: var(--radius-pill);
+  background: var(--accent); color: var(--accent-ink);
+  font: 800 8.5px/1 var(--font-data); letter-spacing: .06em;
+  white-space: nowrap;
+}
+/* The team's top-scoring starter: a soft golden band sweeping slowly back
+   and forth across the row (the spotlight card's wave, in gold), plus a
+   gold ring. Gold tokens are already deepened for light. Declared after
+   .live so gold wins when a player is both. */
+.prow.top {
+  background-image: linear-gradient(115deg, transparent 18%, var(--gold-soft) 38%, var(--gold-line) 50%, var(--gold-soft) 62%, transparent 82%);
+  background-size: 250% 100%;
+  animation: fflr-wave 7s ease-in-out infinite alternate;
+}
+.prow.top:hover { background-color: var(--surface-raised); }
+.prow.top .avatar, .prow.top .avatar-fb { border: 2px solid var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
 .prow.bench { opacity: .75; }
 .prow.bench.zero { opacity: .42; }
 
@@ -970,6 +1010,8 @@ button.hero { cursor: pointer; }
   .team-page .roster { padding: 10px; }
   .team-page .prow { grid-template-columns: 36px 36px 1fr auto; gap: 10px; padding: 10px 8px; }
   .team-page .prow .avatar, .team-page .prow .avatar-fb { width: 36px; height: 36px; }
+  .team-page .pface { width: 36px; height: 36px; }
+  .team-page .plogo { width: 16px; height: 16px; right: -4px; bottom: -2px; }
   .team-page .pos { height: 22px; font-size: 10px; }
   .team-page .pname {
     display: grid; grid-template-columns: auto minmax(0, 1fr);
@@ -993,7 +1035,10 @@ button.hero { cursor: pointer; }
      --join is the pane's colour at that height. The tab fades from a touch
      lighter on its left to exactly --join at the bridge. */
   .row { transition: background .25s, color .25s; }   /* no radius tween: the bridge appears at once */
-  .row.active, .hero-wrap.active { --join: color-mix(in oklch, var(--tab-a), var(--tab-b) var(--tab-t, 50%)); }
+  /* Mixed in sRGB on purpose: that is the space linear-gradient interpolates
+     in, so this is the pane's actual colour at --tab-t. Mixing in oklch
+     lands a visibly different green. */
+  .row.active, .hero-wrap.active { --join: color-mix(in srgb, var(--tab-a), var(--tab-b) var(--tab-t, 50%)); }
   .row.active {
     position: relative; z-index: 2;
     background: linear-gradient(90deg, color-mix(in oklch, var(--join), white 7%) 0%, var(--join) 100%);
@@ -1008,7 +1053,7 @@ button.hero { cursor: pointer; }
   .row.active .chev { opacity: 0; }
   .row.active::after {
     content: ""; position: absolute; top: 0; bottom: 0; left: 100%;
-    width: calc(var(--gutter, 28px) + 1px);   /* +1 covers the panel's border */
+    width: calc(var(--gutter, 28px) + 2px);   /* +2: covers the pane's border even at fractional x */
     background: var(--join);
     box-shadow: inset 0 1px 0 var(--tab-line), inset 0 -1px 0 var(--tab-line);
     animation: fflr-fade-in .2s ease-out;
@@ -1031,7 +1076,7 @@ button.hero { cursor: pointer; }
   }
   .hero-wrap.active::after {
     content: ""; position: absolute; top: 0; bottom: 0; left: 100%;
-    width: calc(var(--gutter, 28px) + 1px);
+    width: calc(var(--gutter, 28px) + 2px);
     background: var(--join);
     box-shadow: inset 0 1px 0 var(--tab-line), inset 0 -1px 0 var(--tab-line);
     animation: fflr-fade-in .2s ease-out;
@@ -1043,7 +1088,7 @@ button.hero { cursor: pointer; }
   .td-scrim, .td-card, .td-card * { animation: none !important; }
   .flash { animation: none; }
   .hero.takeover, .hero.takeover * { animation: none !important; }
-  .spot::before, .hero-wave, .hero-money { animation: none; }
+  .spot::before, .hero-wave, .hero-money, .prow.top { animation: none; }
   .row.enter { animation: none; }
   .delta { display: none; }
   .team-page, .team-page .shell { animation: none; }
