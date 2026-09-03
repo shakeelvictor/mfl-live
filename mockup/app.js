@@ -513,7 +513,7 @@ function renderTeam(changed = new Set()) {
   tabs.forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
   rosterEl.innerHTML = list.length
     ? rosterHtml(list, tab === "bench", isTop)
-    : `<p class="empty">No ${view} on this roster.</p>`;
+    : `<p class="empty">No ${tab} on this roster.</p>`;
 }
 
 // Laptop and up: the team panel is always in view, so "opening" a team is
