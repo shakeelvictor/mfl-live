@@ -20,6 +20,10 @@ NFL Week 1 (September 2026). Until it returns GO, there is no application code.
 
 What exists today:
 
+> The mockup is preserved on the [`poc`](https://github.com/shakeelvictor/mfl-live/tree/poc)
+> branch as the proof of concept, so it can always be run and referred to.
+> `main` is where the real app goes once the cadence measurement returns GO.
+
 - **`mockup/`** — a working, fully interactive mockup of the finished app,
   built on real 2025 Week 12 data (franchises, scores, lineups, per-player
   points and stat lines). Nothing in it is invented except the mid-slate

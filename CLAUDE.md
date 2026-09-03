@@ -291,6 +291,13 @@ three above.
 deliberately; before that, `git rev-parse --show-toplevel` returned
 `/Users/shakeelvictor`, and a `git add -A` would have swept the home folder.
 
+## Branches
+
+**`poc`** is the mockup frozen as the proof of concept (branched from
+`main` at c81a074, 2026-09-02). Keep it runnable; do not rebase or force-push
+it. `main` is for the real app once the Week 1 cadence run returns GO; until
+then it still carries the mockup too.
+
 ## What is deliberately absent
 
 - **No application code.** Not until the Week 1 cadence run returns GO. A
