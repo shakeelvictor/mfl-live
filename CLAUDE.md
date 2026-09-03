@@ -48,9 +48,24 @@ element and scores are second.
 
 - **Dark-first**: bare `:root` is the dark palette and
   `:root[data-theme="light"]` is the override. Do not "fix" it to follow
-  `prefers-color-scheme`; the DARK/LIGHT segmented control stamps the root.
+  `prefers-color-scheme`; the DARK/LIGHT segmented control stamps the root
+  and remembers the choice in localStorage (`mfl-live-theme`), which an
+  inline script in `index.html` re-stamps before the stylesheet loads so
+  there is no flash. Nothing stored means dark.
 - **Archivo** for display (900 italic uppercase headers, 700 roman for names
   in lists), **Nunito** for body and every number, `tabular-nums` on the root.
+- **Loading interstitial** (`#loader`, shown by default in the markup so
+  nothing paints before it): the football mark thrown as a spiral, the
+  wordmark, a yard-marked field track with a mint marker driving back and
+  forth, and a status line. `showLoading(msg)` / `hideLoading()`. The
+  mockup holds it ~1.1s (fonts ready) and hands off; the real app holds it
+  until the first liveScoring poll lands.
+- **First-load cascade**: once the loader lifts, `cascadeIn()` gives every
+  board block, then each standings row and divider, then the laptop pane an
+  index (`--i`) and the `.intro` class reveals them top to bottom (55ms
+  apart). The class and indexes are removed when the run ends so the
+  animations never fight FLIP transforms later. Skipped under reduced
+  motion.
 - The header is the wordmark only: **MFL LIVE**, with LIVE in the live red
   and a pulsing dot after it; once the week is official the dot goes and
   LIVE rejoins the name. There is no separate status line.

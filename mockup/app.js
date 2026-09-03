@@ -801,7 +801,10 @@ try { if (localStorage.getItem(DEMO_KEY) === "1") showDemo(true); } catch {}
 
 /* ---------------- theme ----------------
    Dark-first: no stamp means dark, and the light palette is an explicit
-   opt-in via data-theme on the root. */
+   opt-in via data-theme on the root. The choice is remembered per browser
+   (index.html stamps it before first paint); nothing stored means dark. */
+
+const THEME_KEY = "mfl-live-theme";
 
 const root = document.documentElement;
 const segBtns = [...document.querySelectorAll(".seg-btn")];
@@ -813,6 +816,7 @@ function syncTheme() {
 }
 segBtns.forEach((b) => b.addEventListener("click", () => {
   root.dataset.theme = b.dataset.theme;
+  try { localStorage.setItem(THEME_KEY, b.dataset.theme); } catch {}
   syncTheme();
 }));
 syncTheme();
@@ -820,6 +824,49 @@ syncTheme();
 derive();
 render();
 if (desktop.matches) openTeam(teams[0].id);
+
+/* ---------------- loading + first-load cascade ----------------
+   The mockup has nothing to fetch: the interstitial holds for a beat (fonts,
+   image decode) and then hands off to the cascade. With the feed wired,
+   showLoading() would stay up until the first liveScoring poll lands. */
+
+const loader = document.getElementById("loader");
+const loaderMsg = document.getElementById("loader-msg");
+const MIN_LOAD_MS = 1100;
+
+function showLoading(msg) {
+  if (msg) loaderMsg.textContent = msg;
+  loader.hidden = false;
+  loader.classList.remove("out");
+}
+function hideLoading() {
+  loader.classList.add("out");
+  setTimeout(() => { loader.hidden = true; }, 450);
+}
+
+// Top to bottom: every block on the board, then each standings row and
+// divider in order, then the laptop pane.
+function cascadeIn() {
+  if (reducedMotion.matches) return;
+  const app = document.getElementById("app");
+  const targets = [
+    ...[...document.querySelectorAll(".col-board > *")].flatMap((el) =>
+      el.classList.contains("standings") ? [el.querySelector(".standings-head"), ...rowsEl.children] : [el]),
+    page,
+  ].filter((el) => el && !el.hidden);
+  targets.forEach((el, i) => { el.classList.add("cascade"); el.style.setProperty("--i", i); });
+  app.classList.add("intro");
+  setTimeout(() => {
+    app.classList.remove("intro");
+    targets.forEach((el) => { el.classList.remove("cascade"); el.style.removeProperty("--i"); });
+  }, targets.length * 55 + 700);
+}
+
+const loadStart = performance.now();
+document.fonts.ready.then(() => {
+  const wait = Math.max(0, MIN_LOAD_MS - (performance.now() - loadStart));
+  setTimeout(() => { cascadeIn(); hideLoading(); }, wait);
+});
 
 // Crossing the breakpoint: the panel needs a team when it appears, and
 // the overlay must not be left open when it goes back to being one.

@@ -1083,12 +1083,64 @@ button.hero { cursor: pointer; }
   }
 }
 
+/* ---------- loading interstitial ----------
+   Full-screen on the canvas, above everything. The football is thrown as a
+   spiral, a yard-marked field track has a mint marker driving back and
+   forth (indeterminate), and a status line says what is being waited on. */
+
+.loader {
+  position: fixed; inset: 0; z-index: 70;
+  background: var(--canvas); color: var(--text-primary);
+  display: grid; place-items: center;
+  transition: opacity .4s ease;
+}
+.loader[hidden] { display: none; }
+.loader.out { opacity: 0; pointer-events: none; }
+.loader-inner { position: relative; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.loader-ball {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-ink);
+  display: grid; place-items: center;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .35), 0 0 0 10px var(--accent-soft);
+  animation: fflr-spiral 1.1s linear infinite;
+}
+.loader-ball svg { width: 34px; height: 34px; display: block; }
+.loader-brand { font: italic 900 22px/1 var(--font-display); letter-spacing: .02em; text-transform: uppercase; }
+.loader-brand span { color: var(--gap-critical); }
+/* The field: hash marks every 10 "yards", a marker that drives end to end. */
+.loader-field {
+  position: relative; width: 220px; height: 8px; border-radius: 4px; overflow: hidden;
+  background:
+    repeating-linear-gradient(90deg, var(--border-strong) 0 1px, transparent 1px 22px),
+    var(--surface-raised);
+}
+.loader-marker {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 44px; border-radius: 4px;
+  background: linear-gradient(90deg, transparent, var(--accent) 60%, var(--accent));
+  animation: fflr-drive 1.3s cubic-bezier(.45, 0, .55, 1) infinite alternate;
+}
+.loader-msg { font: 700 12px/1 var(--font-data); letter-spacing: .04em; color: var(--text-muted); }
+@keyframes fflr-spiral { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes fflr-drive { from { transform: translateX(0); } to { transform: translateX(176px); } }
+
+/* ---------- first-load cascade ----------
+   Once the loader lifts, the page reveals top to bottom: the script gives
+   each block an index (--i) and the .intro class; the class is removed
+   when the run is over so animations never fight live transforms later. */
+.intro .cascade {
+  opacity: 0;
+  animation: fflr-cascade .55s cubic-bezier(.2, .8, .2, 1) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+@keyframes fflr-cascade { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
 @media (prefers-reduced-motion: reduce) {
   .dot { animation: none; }
   .td-scrim, .td-card, .td-card * { animation: none !important; }
   .flash { animation: none; }
   .hero.takeover, .hero.takeover * { animation: none !important; }
   .spot::before, .hero-wave, .hero-money, .prow.top { animation: none; }
+  .loader-ball, .loader-marker { animation: none; }
   .row.enter { animation: none; }
   .delta { display: none; }
   .team-page, .team-page .shell { animation: none; }
