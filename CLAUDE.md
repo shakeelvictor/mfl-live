@@ -79,7 +79,9 @@ element and scores are second.
   radius, shadow dropped); the rank circle takes the hotter of its two gaps.
 - **Position chips** use `--pos-qb/rb/wr/te/k/lb`; every defensive position
   maps to `--pos-lb`, matching the league's "3 IDP, any combination" rule.
-- **Roster rows** carry three small signals: the NFL logo badged on the
+- **Roster rows** are grouped by position in lineup order (QB, RB, WR,
+  TE, K, IDP), each group opened by a shallow separator: a micro label in
+  the position's colour and a hairline to the right. Rows carry three small signals: the NFL logo badged on the
   headshot (as on the spotlight and touchdown cards), a mint **TD** chip on
   the headshot's top corner for anyone who has scored (counted from the
   stat line, so a simulated touchdown adds it live), a **gold sweep** on

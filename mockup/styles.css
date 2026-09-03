@@ -706,6 +706,25 @@ button.hero { cursor: pointer; }
 .prow.bench { opacity: .75; }
 .prow.bench.zero { opacity: .42; }
 
+/* Position group separator: a micro label in the position's colour and a
+   hairline running out to the right. Kept shallow so twelve starters
+   still fit the laptop pane. */
+.pgroup {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 8px 3px;
+  font: 800 9.5px/1 var(--font-data);
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.pgroup:first-child { padding-top: 2px; }
+.pgroup::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.pgroup[data-g="QB"]  { color: var(--pos-qb); }
+.pgroup[data-g="RB"]  { color: var(--pos-rb); }
+.pgroup[data-g="WR"]  { color: var(--pos-wr); }
+.pgroup[data-g="TE"]  { color: var(--pos-te); }
+.pgroup[data-g="K"]   { color: var(--pos-k); }
+.pgroup[data-g="IDP"] { color: var(--pos-lb); }
+
 /* Sleeper headshot, cropped square at build time (see build-data.mjs) so
    the face fills the circle. */
 .avatar {
@@ -1009,6 +1028,8 @@ button.hero { cursor: pointer; }
   .team-page .tab { height: 36px; }
   .team-page .roster { padding: 10px; }
   .team-page .prow { grid-template-columns: 36px 36px 1fr auto; gap: 10px; padding: 10px 8px; }
+  .team-page .pgroup { padding: 5px 8px 1px; font-size: 9px; }
+  .team-page .pgroup:first-child { padding-top: 0; }
   .team-page .prow .avatar, .team-page .prow .avatar-fb { width: 36px; height: 36px; }
   .team-page .pface { width: 36px; height: 36px; }
   .team-page .plogo { width: 16px; height: 16px; right: -4px; bottom: -2px; }
