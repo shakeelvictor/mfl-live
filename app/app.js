@@ -513,6 +513,18 @@ const posClass = (pos) => "pos-" + (POS_CLASS[pos] || "IDP");
 const POS_ORDER = { QB: 0, RB: 1, WR: 2, TE: 3, K: 4, DE: 5, DT: 5, LB: 6, CB: 7, S: 7 };
 const byLineup = (a, b) =>
   (POS_ORDER[a.pos] ?? 9) - (POS_ORDER[b.pos] ?? 9) || b.pts - a.pts;
+// Position groups in the Team view, in lineup order: one labelled hairline
+// opens each. Every defender is IDP, the league's one defensive slot type.
+const posGroup = (pos) => (POS_CLASS[pos] ? pos : "IDP");
+const rosterHtml = (list, bench, isTop) => {
+  let last = null;
+  return [...list].sort(byLineup).map((p) => {
+    const g = posGroup(p.pos);
+    const sep = g === last ? "" : `<div class="pgroup" data-g="${g}" role="presentation"><span>${g}</span></div>`;
+    last = g;
+    return sep + playerRow(p, bench, !bench && isTop(p));
+  }).join("");
+};
 
 const initials = (name) => name.split(/[\s-]+/).filter(Boolean)
   .map((w) => w[0]).slice(0, 2).join("").toUpperCase();
@@ -605,8 +617,8 @@ function renderTeam(changed = new Set()) {
   const isTop = (p) => !bench.includes(p) && topPts > 0 && p.pts === topPts;
   tabs.forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === view)));
   rosterEl.innerHTML = list.length
-    ? [...list].sort(byLineup).map((p) => playerRow(p, tab === "bench", tab !== "bench" && isTop(p))).join("")
-    : `<p class="empty">No ${tab} on this roster.</p>`;
+    ? rosterHtml(list, view === "bench", isTop)
+    : `<p class="empty">No ${view} on this roster.</p>`;
 }
 
 // Laptop and up: the team panel is always in view, so "opening" a team is
