@@ -45,11 +45,14 @@ What exists today:
 - **Spotlight.** After a day's games are final, the day's top-scoring starter
   gets a card; once the week is official it becomes the MVP of the week, and
   the leader's hero becomes the Week winner.
-- **Dark and light themes**, and a phone-first layout that holds to 700px.
+- **Dark and light themes.** Phone-first; from 1024px up the board sits on
+  the left and the selected team in a panel on the right, with the selected
+  row drawn as a tab into it.
 
-A **Demo** bar under the header drives all of this: simulate live scoring,
-flip the lead, score a touchdown (or a Bears one), end the day, end the week,
-start the next week. It is mockup-only and will be removed.
+A **Demo** toggle in the header reveals a bar that drives all of this:
+simulate live scoring, flip the lead, score a touchdown (or a Bears one), end
+the day, end the week, start the next week. It is mockup-only and will be
+removed.
 
 ## Running the mockup
 

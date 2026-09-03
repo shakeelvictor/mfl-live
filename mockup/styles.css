@@ -45,6 +45,14 @@
   --hero-gold: #f2c94c;
   --hero-gold-soft: rgba(242, 201, 76, 0.22);
   --hero-gold-line: rgba(242, 201, 76, 0.5);
+  /* Laptop layout: the selected row and the team panel share this green.
+     Solid on purpose, so the tab matches the panel at any height. */
+  --tab-a: oklch(0.39 0.09 178);   /* pane top */
+  --tab-b: oklch(0.29 0.07 178);   /* pane bottom */
+  --tab-line: rgba(255, 255, 255, 0.12);
+  --hero-tab-start: oklch(0.42 0.1 178);
+  --shadow-row: 0 4px 10px rgba(0, 0, 0, 0.42);
+  --shadow-pane: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 20px 50px rgba(0, 0, 0, 0.5);
   --gap-critical: #ff5d5d;
   --gap-critical-soft: rgba(255, 93, 93, 0.14);
   --gap-critical-ink: #2a0606;
@@ -104,6 +112,12 @@
   --gold: #9a6b00;
   --gold-soft: rgba(154, 107, 0, 0.12);
   --gold-line: rgba(154, 107, 0, 0.35);
+  --tab-a: #13907b;
+  --tab-b: #0a5a4b;
+  --tab-line: rgba(255, 255, 255, 0.18);
+  --hero-tab-start: #0c5a4b;
+  --shadow-row: 0 3px 8px rgba(15, 25, 22, 0.12);
+  --shadow-pane: 0 1px 2px rgba(15, 25, 22, 0.06), 0 20px 50px rgba(15, 25, 22, 0.16);
 }
 
 @keyframes fflr-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
@@ -132,7 +146,10 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------- shell ---------- */
 
-.app { position: relative; min-height: 100vh; overflow-x: hidden; }
+/* clip, not hidden: hidden would make .app the scroll container that the
+   laptop layout's sticky team panel positions against, and .app never
+   scrolls (the body does). clip clips without creating a scroll container. */
+.app { position: relative; min-height: 100vh; overflow-x: clip; }
 
 .wash {
   position: absolute; inset: 0 0 auto 0; height: 560px;
@@ -187,6 +204,20 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   color: var(--gap-critical);
 }
 
+.controls { display: flex; align-items: center; gap: 8px; }
+.demo-toggle {
+  height: 40px; padding: 0 14px; cursor: pointer;
+  border-radius: var(--radius-pill);
+  background: var(--surface-glass); border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  font: 800 11px/1 var(--font-data); letter-spacing: .08em; text-transform: uppercase;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  transition: background .25s, color .25s;
+}
+.demo-toggle:hover { color: var(--text-primary); }
+.demo-toggle[aria-pressed="true"] { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.devbar[hidden] { display: none; }
+
 .seg {
   display: flex; height: 40px; padding: 4px; gap: 2px;
   border-radius: var(--radius-pill);
@@ -201,9 +232,10 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   font: 800 11px/1 var(--font-data);
   letter-spacing: .08em;
   text-transform: uppercase;
-  background: transparent; color: var(--text-muted);
+  background: transparent; color: var(--text-secondary);
   transition: background .25s, color .25s;
 }
+.seg-btn:hover { color: var(--text-primary); }
 .seg-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
 
 /* ---------- week title ---------- */
@@ -462,7 +494,10 @@ button.hero { cursor: pointer; }
 .standings-head h2 { margin: 0; font: 700 20px/1 var(--font-display); letter-spacing: -.01em; }
 .standings-head span { font: 700 12px/1 var(--font-data); color: var(--text-muted); }
 
-.board { display: flex; flex-direction: column; }
+/* One drop shadow for the whole standings shape, so a fused cluster casts
+   a single shadow instead of none. z-index keeps the laptop tab's bridge
+   above the pane, since filter makes .board a stacking context. */
+.board { display: flex; flex-direction: column; position: relative; z-index: 2; filter: drop-shadow(var(--shadow-row)); }
 
 .row {
   display: grid;
@@ -474,7 +509,6 @@ button.hero { cursor: pointer; }
   background: var(--surface);
   color: var(--text-primary);
   border-radius: var(--radius-row);
-  box-shadow: var(--shadow-card);
   transition: background .25s, border-radius .3s;
 }
 .row:hover { filter: brightness(1.06); }
@@ -592,7 +626,6 @@ button.hero { cursor: pointer; }
   letter-spacing: .04em;
 }
 .back .chev-l { font-size: 18px; line-height: 1; }
-.live-pill { gap: 5px; font: 800 10px/1 var(--font-data); letter-spacing: .14em; text-transform: uppercase; color: var(--gap-critical); }
 
 .tabs {
   display: flex; gap: 4px; padding: 4px;
@@ -884,6 +917,126 @@ button.hero { cursor: pointer; }
 @keyframes fflr-slam { from { transform: translateX(-40px) skewX(-14deg) scale(1.18); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes fflr-rays { to { transform: rotate(360deg); } }
 @keyframes fflr-td-bar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+
+/* ---------- laptop and up: board left, selected team right ----------
+   The phone layout is untouched below 1024px. Above it the shell becomes
+   two columns: the board on the left and a sticky team panel on the right
+   that always shows a team (the leader by default). The selected row is a
+   tab into that panel: its right corners square off and a bridge carries
+   its surface across the gutter, over the panel's border, so the row and
+   the panel read as one shape. */
+
+.col-board { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+@media (min-width: 1024px) {
+  .shell.layout {
+    max-width: 1280px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 520px);
+    gap: 0 var(--gutter);
+    align-items: start;
+    padding: 16px 24px 48px;
+    --gutter: 28px;
+  }
+
+  /* The team page becomes an in-flow pane instead of an overlay. It spans
+     the full height of the board (stretched grid item) so a tab at any
+     height always meets green; only its content sticks to the viewport. */
+  .team-page, .team-page[data-open="true"], .team-page[data-open="closing"] {
+    position: relative; inset: auto;
+    display: block;
+    align-self: stretch;
+    height: auto;
+    overflow: visible;
+    z-index: 1;
+    background: linear-gradient(180deg, var(--tab-a) 0%, var(--tab-b) 100%);
+    color: var(--hero-text);
+    border: 1px solid var(--tab-line);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-pane);
+    animation: none;
+    pointer-events: auto;
+    transition: background .3s, border-color .3s;
+  }
+  .team-page .wash { display: none; }
+  .team-page > .shell { position: sticky; top: 16px; max-width: none; padding: 16px 16px 24px; animation: none; }
+  .team-page .team-head { display: none; }   /* only held the back button */
+  /* Compact roster so twelve starters fit the panel without scrolling:
+     team, status and stat line share one row under the name. */
+  .team-page > .shell { gap: 12px; }
+  .team-page .tabs { padding: 3px; }
+  .team-page .tab { height: 36px; }
+  .team-page .roster { padding: 10px; }
+  .team-page .prow { grid-template-columns: 36px 36px 1fr auto; gap: 10px; padding: 10px 8px; }
+  .team-page .prow .avatar, .team-page .prow .avatar-fb { width: 36px; height: 36px; }
+  .team-page .pos { height: 22px; font-size: 10px; }
+  .team-page .pname {
+    display: grid; grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "name name" "meta stat";
+    column-gap: 8px; row-gap: 4px; align-items: baseline;
+  }
+  .team-page .pname b { grid-area: name; font-size: 14px; }
+  .team-page .pmeta { grid-area: meta; font-size: 10.5px; }
+  .team-page .pstat { grid-area: stat; font-size: 11px; }
+  .team-page .ppts { font-size: 16px; }
+  /* The selected row already carries name, record, status and points. */
+  .team-page .hero { display: none; }
+  /* The panel's text is hero-white for its own chrome; the roster card is
+     a surface, so it keeps surface text (white on white in light otherwise). */
+  .team-page .roster { color: var(--text-primary); }
+  body.team-open { overflow: auto; }
+
+  /* The selected row, as a tab into the panel. Borders are inset shadows
+     so selecting a row never changes its size and shifts the list. */
+  /* --tab-t (set by the script) is how far down the pane the tab sits, so
+     --join is the pane's colour at that height. The tab fades from a touch
+     lighter on its left to exactly --join at the bridge. */
+  .row { transition: background .25s, color .25s; }   /* no radius tween: the bridge appears at once */
+  .row.active, .hero-wrap.active { --join: color-mix(in oklch, var(--tab-a), var(--tab-b) var(--tab-t, 50%)); }
+  .row.active {
+    position: relative; z-index: 2;
+    background: linear-gradient(90deg, color-mix(in oklch, var(--join), white 7%) 0%, var(--join) 100%);
+    color: var(--hero-text);
+    border-top-right-radius: 0; border-bottom-right-radius: 0;
+    box-shadow:
+      inset 1px 0 0 var(--tab-line),
+      inset 0 1px 0 var(--tab-line),
+      inset 0 -1px 0 var(--tab-line);
+  }
+  .row.active:hover { filter: none; }
+  .row.active .chev { opacity: 0; }
+  .row.active::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: 100%;
+    width: calc(var(--gutter, 28px) + 1px);   /* +1 covers the panel's border */
+    background: var(--join);
+    box-shadow: inset 0 1px 0 var(--tab-line), inset 0 -1px 0 var(--tab-line);
+    animation: fflr-fade-in .2s ease-out;
+  }
+  /* Hero treatment for the row's parts: accent badge, glass record chip. */
+  .row.active .rank { background: var(--accent); color: var(--accent-ink); }
+  .row.active .rank.critical { background: var(--gap-critical); color: var(--gap-critical-ink); }
+  .row.active .rank.live { background: var(--gap-live); color: var(--gap-live-ink); }
+  .row.active .rec { background: var(--hero-pill); color: var(--hero-text); }
+  .row.active .sub, .row.active .status { color: var(--hero-muted); }
+  .row.active .status.on { color: var(--hero-accent); }
+  .row.active .delta { color: var(--hero-accent); }
+  /* The leader hero as the tab: right corners squared, gradient landing on
+     the panel green, and the same bridge across the gutter. */
+  .hero-wrap.active { z-index: 2; }
+  .hero-wrap.active .hero {
+    border-top-right-radius: 0; border-bottom-right-radius: 0;
+    background: linear-gradient(160deg, var(--hero-tab-start) 0%, var(--join) 70%);
+    border-right-color: transparent;
+  }
+  .hero-wrap.active::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: 100%;
+    width: calc(var(--gutter, 28px) + 1px);
+    background: var(--join);
+    box-shadow: inset 0 1px 0 var(--tab-line), inset 0 -1px 0 var(--tab-line);
+    animation: fflr-fade-in .2s ease-out;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .dot { animation: none; }

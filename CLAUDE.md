@@ -59,7 +59,30 @@ element and scores are second.
 - **Position chips** use `--pos-qb/rb/wr/te/k/lb`; every defensive position
   maps to `--pos-lb`, matching the league's "3 IDP, any combination" rule.
 - The team page is a full-screen route over the board (`position: fixed`),
-  so the board keeps its scroll position. Starters/Bench is a segmented
+  so the board keeps its scroll position. **From 1024px up** the shell is a
+  two-column grid instead: board left, and the same team page becomes an
+  in-flow pane on the right that always shows a team (the leader by
+  default; `openTeam` just selects). The pane is a stretched grid item, so
+  it spans the board's full height and a tab at any height meets green;
+  only its inner shell is sticky. (A viewport-tall sticky pane was the
+  bug: on short windows the hero and rows 2-3 sat below its bottom edge
+  before any scroll, and their tabs bridged into nothing.) The selected row is a **tab into the
+  panel**: the pane is a top-to-bottom green gradient (`--tab-a` to
+  `--tab-b`), and the script tells the active element how far down the
+  pane it sits (`--tab-t`) so CSS `color-mix` derives `--join`, the pane's
+  colour at that height; the tab's own left-to-right gradient and its
+  bridge land exactly on `--join`. Hero text and an accent rank badge; right
+  corners squared, inset-shadow borders (so selection never shifts the
+  list; on laptop the row's radius does not tween, so no flicker before the
+  bridge) and a `::after` bridge one gutter wide plus 1px, so it covers the
+  panel's border. The standings cast one `filter: drop-shadow` as a whole,
+  so fused clusters get a shadow too (`.board` is z-indexed above the pane
+  for the bridge). The panel hides its own team hero and header, since the tab
+  already carries name, record, status and points, and packs the roster
+  (team, status and stat line on one row under the name) so twelve
+  starters fit without scrolling. The leader hero gets the same tab
+  treatment when selected, its gradient landing on the panel green. The
+  phone layout below 1024px is untouched. Starters/Bench is a segmented
   control; bench rows render at 75% opacity, 42% when scoreless.
 - The handoff's headshot placeholder (initials circle) is **replaced by real
   Sleeper headshots**; the initials circle is the fallback only.
@@ -108,8 +131,9 @@ element and scores are second.
   rollover to a new week is not mocked).
 - The **Demo bar** (Simulate live scoring / Flip the lead / Score a TD /
   Bears TD / End the day / End the week / Start next week)
-  sits under the masthead on purpose, so it is easy to reach while the
-  transitions are being tuned. It is mockup-only and will be removed.
+  sits under the masthead, hidden by default behind the **Demo** toggle
+  next to the theme control (remembered in localStorage), so a shared page
+  opens clean. It is mockup-only and will be removed.
 
 Thresholds (`CRITICAL`, `LIVE`, `WITHIN`) live in one place in the script and
 the legend and capsules read them. The headline stats and the hero are derived

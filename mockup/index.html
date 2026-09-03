@@ -10,7 +10,8 @@
 <div class="app" id="app">
   <div class="wash"></div>
 
-  <div class="shell">
+  <div class="shell layout">
+  <div class="col-board">
 
     <header class="masthead">
       <div class="brandwrap">
@@ -20,15 +21,18 @@
           <span class="livemark"><span class="dot"></span>Live</span>
         </div>
       </div>
+      <div class="controls">
+      <button class="demo-toggle" id="demo-toggle" type="button" aria-pressed="false" aria-controls="devbar">Demo</button>
       <div class="seg" role="group" aria-label="Theme">
         <button class="seg-btn" type="button" data-theme="dark" aria-pressed="true">Dark</button>
         <button class="seg-btn" type="button" data-theme="light" aria-pressed="false">Light</button>
+      </div>
       </div>
     </header>
 
     <!-- Mockup-only controls. Parked up top for now so they are easy to
          reach while the live transitions are being tuned; remove later. -->
-    <div class="devbar" aria-label="Mockup controls">
+    <div class="devbar" id="devbar" aria-label="Mockup controls" hidden>
       <span class="devlabel">Demo</span>
       <button class="sim" id="sim" type="button" aria-pressed="false"><span class="dot"></span>Simulate live scoring</button>
       <button class="sim" id="flip" type="button">Flip the lead</button>
@@ -87,8 +91,7 @@
       illustrative, to show the board mid-slate. Nothing is wired to a live feed yet.
     </p>
 
-  </div>
-</div>
+  </div><!-- /col-board -->
 
 <div class="team-page" id="team" data-open="false" role="dialog" aria-modal="true" aria-labelledby="team-name">
   <div class="wash"></div>
@@ -96,7 +99,6 @@
 
     <header class="team-head">
       <button class="glass back" id="back" type="button"><span class="chev-l" aria-hidden="true">&lsaquo;</span>Standings</button>
-      <span class="glass live-pill"><span class="dot"></span>Live</span>
     </header>
 
     <section class="hero">
@@ -122,6 +124,9 @@
 
   </div>
 </div>
+
+  </div><!-- /layout -->
+</div><!-- /app -->
 
 <!-- Touchdown announcement: one at a time, 4s each, queued. -->
 <div class="td" id="td-modal" data-open="false" role="status" aria-live="polite">

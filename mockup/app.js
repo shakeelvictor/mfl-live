@@ -191,6 +191,8 @@ function renderRows(changed) {
       `</div>`;
   }).join("");
 
+  markActive();
+
   // Last + Invert + Play: rows that moved start at their old offset and
   // slide to rest. Moving rows float above the dividers while in flight.
   if (!before.size || reducedMotion.matches) return;
@@ -494,9 +496,32 @@ function renderTeam(changed = new Set()) {
     : `<p class="empty">No ${tab} on this roster.</p>`;
 }
 
+// Laptop and up: the team panel is always in view, so "opening" a team is
+// selecting it. The selected row becomes a tab into the panel.
+const desktop = matchMedia("(min-width: 1024px)");
+
+// The pane's background is a top-to-bottom gradient; the tab needs the
+// pane's colour at its own height, so each active element is told how far
+// down the pane it sits (--tab-t) and the CSS mixes the matching colour.
+function markActive() {
+  const pane = page.getBoundingClientRect();
+  const place = (el, on) => {
+    el.classList.toggle("active", on);
+    if (!on || !pane.height) return;
+    const r = el.getBoundingClientRect();
+    const t = Math.min(1, Math.max(0, (r.top + r.height / 2 - pane.top) / pane.height));
+    el.style.setProperty("--tab-t", `${(t * 100).toFixed(2)}%`);
+  };
+  for (const el of rowsEl.querySelectorAll(".row")) place(el, desktop.matches && el.dataset.id === open);
+  place(document.getElementById("hero-wrap"), desktop.matches && teams[0]?.id === open);
+}
+addEventListener("resize", () => { if (desktop.matches) markActive(); });
+
 function openTeam(id) {
   open = id; tab = "starters";
   renderTeam();
+  markActive();
+  if (desktop.matches) return;   // the panel is already showing it
 
   lastFocus = document.activeElement;
   page.dataset.open = "true";
@@ -506,6 +531,7 @@ function openTeam(id) {
 }
 
 function closeTeam() {
+  if (desktop.matches) return;   // nothing to close; the panel stays
   if (page.dataset.open !== "true") return;
   page.dataset.open = "closing";   // fades out, then unmounts below
   document.body.classList.remove("team-open");
@@ -749,6 +775,22 @@ simBtn.addEventListener("click", () => {
   simBtn.setAttribute("aria-pressed", String(!!simTimer));
 });
 
+/* ---------------- demo bar toggle ----------------
+   Hidden by default so a shared page opens clean; the choice is remembered
+   per browser. */
+
+const demoBar = document.getElementById("devbar");
+const demoBtn = document.getElementById("demo-toggle");
+const DEMO_KEY = "mfl-live-demo";
+
+function showDemo(on) {
+  demoBar.hidden = !on;
+  demoBtn.setAttribute("aria-pressed", String(on));
+  try { localStorage.setItem(DEMO_KEY, on ? "1" : "0"); } catch {}
+}
+demoBtn.addEventListener("click", () => showDemo(demoBar.hidden));
+try { if (localStorage.getItem(DEMO_KEY) === "1") showDemo(true); } catch {}
+
 /* ---------------- theme ----------------
    Dark-first: no stamp means dark, and the light palette is an explicit
    opt-in via data-theme on the root. */
@@ -769,3 +811,14 @@ syncTheme();
 
 derive();
 render();
+if (desktop.matches) openTeam(teams[0].id);
+
+// Crossing the breakpoint: the panel needs a team when it appears, and
+// the overlay must not be left open when it goes back to being one.
+desktop.addEventListener("change", (e) => {
+  page.dataset.open = "false";
+  document.body.classList.remove("team-open");
+  if (e.matches) { if (open === null) open = teams[0].id; renderTeam(); }
+  else open = null;
+  markActive();
+});
