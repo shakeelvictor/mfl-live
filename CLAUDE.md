@@ -55,7 +55,12 @@ from the POC.
   which MFL fills before liveScoring exists, so team pages show Starters and
   Bench (points as a dash) as soon as a lineup is set. The page flips to
   the live board on the first poll after MFL turns liveScoring on for the
-  season, not when lineups are set.
+  season, not when lineups are set. That flip was rehearsed on 2026-09-03
+  by handing the page the 2025 W12 fixture as its next poll: hero, capsules,
+  records and gaps appear, the countdown pill goes, the pane lands on
+  Starters (the pre-season Roster tab is not remembered as a Bench choice),
+  and no "New leader" takeover fires, since an alphabetical board has no
+  leader (`leaderId` stays null before the season).
 - **Franchise icons**: MFL's league export carries `icon`/`logo` URLs for
   franchises that set one (3 of 11 today). They show by the name in the hero
   and team page and badged on the rank circle in the list (in its place
@@ -83,6 +88,15 @@ Each of these was verified against real 2025 data, not inferred:
   rostered) — but see the drift finding above before reaching for it.
 - **The scoring engine in `fantasy-draft-assistant` is keyed to Sleeper's stat
   vocabulary, not MFL's.** It has never met MFL's. Its header says so.
+- **Every touchdown in the league's rules is worth 6** (verified 2026-09-03
+  from `TYPE=rules`: passing, rushing, receiving, kick and punt return,
+  defensive and fumble return, and the team-defense TD all pay `*6`), so the
+  page's "starter jumps >= 6 between polls" touchdown gate matches the QB
+  passing value too. The gate cannot tell a touchdown from any other 6-point
+  jump: a 45-yard run (0.13333/yd), a 60-yard catch (6 + 0.5) or a 60-yard
+  field goal also clear it, and two plays landing in the same 30s poll add
+  up. MFL gives points only, so that is the ceiling; accept the rare false
+  card rather than recompute from stats.
 - **MFL counts special-teams tackles toward IDP totals**; Sleeper breaks them
   out as `st_tkl_solo`. Adding that field lifts escalator agreement from 93.0%
   to 96.1% across four weeks. The residue is provider disagreement on tackle

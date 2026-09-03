@@ -341,8 +341,10 @@ function rollNumbers(shown) {
 function render(changed = new Set()) {
   renderChrome();
   const shown = snapshotShown();
+  // Pre-season rows are alphabetical, so nobody "leads": the first live
+  // board is a debut, not a lead change, and fires no takeover.
   const takeover = leaderId !== null && teams[0].id !== leaderId;
-  leaderId = teams[0].id;
+  leaderId = phase === "live" ? teams[0].id : null;
   renderCapsules();
   renderHero(changed, takeover);
   renderRows(changed);
@@ -594,12 +596,14 @@ function renderTeam(changed = new Set()) {
   const benchTab = document.querySelector('.tab[data-tab="bench"]');
   benchTab.firstChild.nodeValue = noLineup ? "Roster " : "Bench ";
   document.getElementById("tab-bench-n").textContent = noLineup ? `${bench.length} players` : pre ? String(bench.length) : `${fmt(sum(bench))} behind`;
-  if (noLineup) tab = "bench";
+  // Shown, not stored: the chosen tab survives until a lineup exists, so
+  // the pane lands on Starters when the board goes live (or a lineup is set).
+  const view = noLineup ? "bench" : tab;
 
-  const list = tab === "bench" ? bench : starters;
+  const list = view === "bench" ? bench : starters;
   const topPts = Math.max(0, ...starters.map((p) => p.pts));
   const isTop = (p) => !bench.includes(p) && topPts > 0 && p.pts === topPts;
-  tabs.forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
+  tabs.forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === view)));
   rosterEl.innerHTML = list.length
     ? [...list].sort(byLineup).map((p) => playerRow(p, tab === "bench", tab !== "bench" && isTop(p))).join("")
     : `<p class="empty">No ${tab} on this roster.</p>`;
@@ -666,7 +670,9 @@ rowsEl.addEventListener("click", (e) => {
 });
 hero.addEventListener("click", () => openTeam(teams[0].id));
 document.getElementById("back").addEventListener("click", closeTeam);
-tabs.forEach((b) => b.addEventListener("click", () => { tab = b.dataset.tab; renderTeam(); }));
+// The lone Roster tab (no lineup yet) is not a choice: remember only a
+// real Starters/Bench pick, so the flip to live still lands on Starters.
+tabs.forEach((b) => b.addEventListener("click", () => { if (!b.hidden && !tabs.some((o) => o.hidden)) tab = b.dataset.tab; renderTeam(); }));
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
   if (tdModal.dataset.open === "true") dismissTouchdown();
@@ -1039,7 +1045,8 @@ async function boot() {
 desktop.addEventListener("change", (e) => {
   page.dataset.open = "false";
   document.body.classList.remove("team-open");
-  if (e.matches) { if (open === null) open = teams[0].id; renderTeam(); }
+  // Before the first render there is no team to show; boot() opens one.
+  if (e.matches) { if (open === null && teams.length) open = teams[0].id; if (open !== null) renderTeam(); }
   else open = null;
   markActive();
 });
