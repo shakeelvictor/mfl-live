@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;1,900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── FFLR Live token layer (dark-first; light overrides) ───────── */
+:root{
+  --canvas:#070b0a;
+  --wash:oklch(0.62 0.13 178 / 0.62);
+  --surface:#0f1917;
+  --surface-raised:#172522;
+  --surface-sunken:#0b1311;
+  --surface-glass:rgba(255,255,255,0.05);
+  --border:rgba(255,255,255,0.06);
+  --border-strong:rgba(255,255,255,0.14);
+  --shadow-card:0 1px 0 rgba(255,255,255,0.04) inset, 0 16px 40px rgba(0,0,0,0.4);
+  --shadow-sheet:0 -24px 80px rgba(0,0,0,0.65);
+  --scrim:rgba(3,6,6,0.72);
+  --text-primary:#f6faf8;
+  --text-secondary:#a7b5b0;
+  --text-muted:#6b7a75;
+  --text-faint:#3f4b47;
+  --accent:#4fe3c1;
+  --accent-ink:#052a24;
+  --accent-soft:rgba(79,227,193,0.14);
+  --hero-bg:linear-gradient(160deg, oklch(0.42 0.1 178) 0%, #0f1917 70%);
+  --hero-text:#f6faf8;
+  --hero-muted:rgba(246,250,248,0.66);
+  --gap-critical:#ff5d5d;
+  --gap-critical-soft:rgba(255,93,93,0.14);
+  --gap-critical-ink:#2a0606;
+  --gap-live:#ff9a57;
+  --gap-live-soft:rgba(255,154,87,0.13);
+  --gap-live-ink:#2a1204;
+  --gap-settled:rgba(255,255,255,0.10);
+  --pos-qb:#f472b6; --pos-qb-soft:rgba(244,114,182,0.16);
+  --pos-rb:#34d399; --pos-rb-soft:rgba(52,211,153,0.16);
+  --pos-wr:#60a5fa; --pos-wr-soft:rgba(96,165,250,0.16);
+  --pos-te:#fbbf24; --pos-te-soft:rgba(251,191,36,0.16);
+  --pos-k:#a78bfa;  --pos-k-soft:rgba(167,139,250,0.16);
+  --pos-lb:#a3e635; --pos-lb-soft:rgba(163,230,53,0.16);
+  --radius-card:24px; --radius-row:18px; --radius-pill:999px;
+}
+[data-theme="light"]{
+  --canvas:#f1f3f2;
+  --wash:oklch(0.86 0.07 178 / 0.55);
+  --surface:#ffffff;
+  --surface-raised:#f3f6f5;
+  --surface-sunken:#e9edeb;
+  --surface-glass:rgba(255,255,255,0.7);
+  --border:rgba(10,20,18,0.04);
+  --border-strong:rgba(10,20,18,0.10);
+  --shadow-card:0 1px 2px rgba(15,25,22,0.04), 0 16px 40px rgba(15,25,22,0.09);
+  --shadow-sheet:0 -24px 80px rgba(15,25,22,0.25);
+  --scrim:rgba(20,30,28,0.38);
+  --text-primary:#101514;
+  --text-secondary:#475350;
+  --text-muted:#86908c;
+  --text-faint:#c3cac7;
+  --accent:#0e9c83;
+  --accent-ink:#ffffff;
+  --accent-soft:rgba(14,156,131,0.12);
+  --hero-bg:linear-gradient(160deg, #0c5a4b 0%, #0e7a66 100%);
+  --hero-text:#ffffff;
+  --hero-muted:rgba(255,255,255,0.7);
+  --gap-critical:#e0342f;
+  --gap-critical-soft:rgba(224,52,47,0.09);
+  --gap-critical-ink:#ffffff;
+  --gap-live:#e2621a;
+  --gap-live-soft:rgba(226,98,26,0.10);
+  --gap-live-ink:#ffffff;
+  --gap-settled:rgba(10,20,18,0.10);
+  --pos-qb:#c8347f; --pos-qb-soft:rgba(200,52,127,0.12);
+  --pos-rb:#0f8f63; --pos-rb-soft:rgba(15,143,99,0.12);
+  --pos-wr:#2a6fd6; --pos-wr-soft:rgba(42,111,214,0.12);
+  --pos-te:#b7791f; --pos-te-soft:rgba(183,121,31,0.14);
+  --pos-k:#7c4fd8;  --pos-k-soft:rgba(124,79,216,0.12);
+  --pos-lb:#5a8a0c; --pos-lb-soft:rgba(90,138,12,0.12);
+}
+body{margin:0;background:#070b0a}
+a{color:var(--accent)} a:hover{color:var(--text-primary)}
+@keyframes fflr-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
+@keyframes fflr-flash{0%{color:var(--accent)}100%{color:inherit}}
+@keyframes fflr-sheet-in{from{transform:translateY(32px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes fflr-fade-in{from{opacity:0}to{opacity:1}}
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" data-screen-label="Leaderboard" style="position:relative;min-height:100vh;background:var(--canvas);color:var(--text-primary);font-family:Nunito,system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s,color .3s">
+  <div style="position:absolute;inset:0 0 auto 0;height:560px;background:linear-gradient(180deg,var(--wash) 0%,transparent 100%);pointer-events:none"></div>
+
+  <div style="position:relative;max-width:700px;margin:0 auto;padding:16px 16px 48px;display:flex;flex-direction:column;gap:20px">
+
+    <!-- Header -->
+    <header style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:italic 900 15px/1 Archivo,sans-serif;letter-spacing:-0.02em">FL</div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <span style="font:italic 900 16px/1 Archivo,sans-serif;letter-spacing:0.02em;text-transform:uppercase">FFLR Live</span>
+          <span style="display:flex;align-items:center;gap:5px;font:800 10px/1 Nunito,sans-serif;letter-spacing:0.14em;color:var(--gap-critical)"><span style="width:6px;height:6px;border-radius:50%;background:var(--gap-critical);animation:fflr-pulse 1.6s ease-in-out infinite"></span>LIVE · 4:12 PM</span>
+        </div>
+      </div>
+      <div role="group" aria-label="Theme" style="display:flex;height:40px;padding:4px;border-radius:var(--radius-pill);background:var(--surface-glass);border:1px solid var(--border-strong);gap:2px;backdrop-filter:blur(10px)">
+        <button onClick="{{ setDark }}" style="border:0;cursor:pointer;height:100%;padding:0 13px;border-radius:var(--radius-pill);font:800 11px/1 Nunito,sans-serif;letter-spacing:0.08em;background:{{ darkBtnBg }};color:{{ darkBtnColor }};transition:background .25s,color .25s">DARK</button>
+        <button onClick="{{ setLight }}" style="border:0;cursor:pointer;height:100%;padding:0 13px;border-radius:var(--radius-pill);font:800 11px/1 Nunito,sans-serif;letter-spacing:0.08em;background:{{ lightBtnBg }};color:{{ lightBtnColor }};transition:background .25s,color .25s">LIGHT</button>
+      </div>
+    </header>
+
+    <!-- Week title -->
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h1 style="margin:0;font:italic 900 56px/0.9 Archivo,sans-serif;letter-spacing:-0.03em;text-transform:uppercase">Week 12</h1>
+      <p style="margin:0;font-size:14px;line-height:1.4;color:var(--text-secondary);text-wrap:pretty">All-play · every team plays every other team · updated 4:12 PM</p>
+    </div>
+
+    <!-- WeekSummary: capsule stats -->
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <span style="display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px 0 12px;border-radius:var(--radius-pill);background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-card);font:700 12px/1 Nunito,sans-serif;color:var(--text-secondary)"><span style="font:800 16px/1 Nunito,sans-serif;color:var(--gap-critical)">{{ stats.within }}</span>within 3.0</span>
+      <span style="display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px 0 12px;border-radius:var(--radius-pill);background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-card);font:700 12px/1 Nunito,sans-serif;color:var(--text-secondary)"><span style="font:800 16px/1 Nunito,sans-serif;color:var(--gap-critical)">{{ stats.atStake }}</span>wins at stake</span>
+      <span style="display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px 0 12px;border-radius:var(--radius-pill);background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-card);font:700 12px/1 Nunito,sans-serif;color:var(--text-secondary)"><span style="font:800 16px/1 Nunito,sans-serif;color:var(--accent)">{{ stats.startersLeft }}</span>starters left</span>
+    </div>
+
+    <!-- Hero: current #1 -->
+    <section onClick="{{ hero.open }}" style="position:relative;border-radius:var(--radius-card);background:var(--hero-bg);color:var(--hero-text);box-shadow:var(--shadow-card);border:1px solid var(--border);padding:18px 18px 18px;display:flex;flex-direction:column;gap:14px;overflow:hidden;cursor:pointer">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="display:inline-flex;align-items:center;gap:8px;font:800 10px/1 Nunito,sans-serif;letter-spacing:0.18em;text-transform:uppercase;color:var(--hero-muted)"><span style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:italic 900 12px/1 Archivo,sans-serif">1</span>Leading Week 12</span>
+        <span style="padding:6px 11px;border-radius:var(--radius-pill);background:rgba(255,255,255,0.14);font:700 11px/1 Nunito,sans-serif">{{ hero.status }}</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+          <span style="font:italic 900 28px/1 Archivo,sans-serif;letter-spacing:-0.02em;text-transform:uppercase;text-wrap:balance">{{ hero.name }}</span>
+          <span style="font:700 12px/1 Nunito,sans-serif;color:var(--hero-muted)">{{ hero.record }} all-play</span>
+        </div>
+        <span style="flex:none;font:800 40px/1 Nunito,sans-serif;letter-spacing:-0.03em;transition:color .4s;animation:{{ hero.anim }}">{{ hero.pts }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,0.10)">
+        <span style="padding:5px 10px;border-radius:var(--radius-pill);background:{{ hero.pillBg }};color:{{ hero.pillInk }};font:800 10px/1 Nunito,sans-serif;letter-spacing:0.14em;text-transform:uppercase">{{ hero.label }}</span>
+        <span style="font:700 12px/1.3 Nunito,sans-serif;color:var(--hero-muted);min-width:0">Leads <span style="color:var(--hero-text)">{{ hero.chaserName }}</span> by</span>
+        <span style="margin-left:auto;font:800 18px/1 Nunito,sans-serif;letter-spacing:-0.01em;transition:color .4s">{{ hero.gap }}</span>
+      </div>
+    </section>
+
+    <!-- Standings -->
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:0 6px">
+        <span style="font:700 20px/1 Archivo,sans-serif;letter-spacing:-0.01em">Standings</span>
+        <span style="font:700 12px/1 Nunito,sans-serif;color:var(--text-muted)">11 franchises</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column">
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="11">
+          <!-- LeaderboardRow: cards fuse into a cluster across hot gaps -->
+          <button onClick="{{ r.open }}" style="display:grid;grid-template-columns:36px 1fr 82px 14px;gap:12px;align-items:center;width:100%;text-align:left;border:0;cursor:pointer;padding:12px 14px 12px 12px;background:{{ r.rowBg }};border-radius:{{ r.radius }};box-shadow:{{ r.shadow }};color:var(--text-primary);font-family:inherit;transition:background .25s,border-radius .3s" style-hover="filter:brightness(1.06)">
+            <span style="width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:{{ r.rankBg }};color:{{ r.rankColor }};font:800 13px/1 Nunito,sans-serif;transition:background .3s">{{ r.rank }}</span>
+            <span style="display:flex;flex-direction:column;gap:4px;min-width:0">
+              <span style="font:700 15px/1.15 Archivo,sans-serif;letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+              <span style="display:flex;align-items:center;gap:6px;font:600 11.5px/1 Nunito,sans-serif;color:var(--text-muted)">
+                <span style="padding:3px 7px;border-radius:var(--radius-pill);background:var(--surface-raised);font:800 10.5px/1 Nunito,sans-serif;color:var(--text-secondary)">{{ r.record }}</span>
+                <span style="display:flex;align-items:center;gap:5px;color:{{ r.statusColor }};transition:color .4s">
+                  <sc-if value="{{ r.onNow }}" hint-placeholder-val="{{ false }}"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent);animation:fflr-pulse 1.6s ease-in-out infinite"></span></sc-if>
+                  {{ r.status }}
+                </span>
+              </span>
+            </span>
+            <span style="font:800 20px/1 Nunito,sans-serif;text-align:right;letter-spacing:-0.02em;transition:color .4s;animation:{{ r.anim }}">{{ r.pts }}</span>
+            <span style="font:400 20px/1 Nunito,sans-serif;color:var(--text-faint)">›</span>
+          </button>
+
+          <!-- GapDivider -->
+          <sc-if value="{{ r.hasGap }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:{{ r.gapPad }};background:{{ r.gapBg }};transition:background .3s">
+              <span style="height:1px;background:{{ r.gapLine }};transition:background .3s"></span>
+              <span style="display:inline-flex;align-items:center;gap:8px;padding:{{ r.gapPillPad }};border-radius:var(--radius-pill);background:{{ r.gapPillBg }};color:{{ r.gapColor }};border:1px solid {{ r.gapPillBorder }};font:800 12px/1 Nunito,sans-serif;letter-spacing:0.02em;transition:background .3s,color .3s;animation:{{ r.gapAnim }}">
+                {{ r.gap }}
+                <sc-if value="{{ r.coinFlip }}" hint-placeholder-val="{{ false }}"><span style="font:800 10px/1 Nunito,sans-serif;letter-spacing:0.16em">COIN FLIP</span></sc-if>
+              </span>
+              <span style="height:1px;background:{{ r.gapLine }};transition:background .3s"></span>
+            </div>
+          </sc-if>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <span style="display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:var(--radius-pill);background:var(--gap-critical-soft);color:var(--gap-critical);font:800 11px/1 Nunito,sans-serif">under {{ criticalLabel }} — coin flip</span>
+      <span style="display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:var(--radius-pill);background:var(--gap-live-soft);color:var(--gap-live);font:800 11px/1 Nunito,sans-serif">under {{ liveLabel }} — live</span>
+      <span style="display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:var(--radius-pill);background:var(--surface);border:1px solid var(--border-strong);color:var(--text-muted);font:800 11px/1 Nunito,sans-serif">settled</span>
+    </div>
+
+    <p style="margin:0;padding:0 6px;font-size:13px;line-height:1.55;color:var(--text-muted);text-wrap:pretty">Tap any team for its lineup. Every rank boundary you cross is a full win or loss, which is why the gaps are the loudest thing here — not the scores.</p>
+  </div>
+
+  <!-- TeamPage: full-screen over the board -->
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Team detail" style="position:fixed;inset:0;z-index:50;overflow-y:auto;background:var(--canvas);color:var(--text-primary);animation:fflr-fade-in .2s ease-out">
+      <div style="position:absolute;inset:0 0 auto 0;height:560px;background:linear-gradient(180deg,var(--wash) 0%,transparent 100%);pointer-events:none"></div>
+      <div style="position:relative;max-width:700px;margin:0 auto;padding:16px 16px 48px;display:flex;flex-direction:column;gap:18px;animation:fflr-sheet-in .32s cubic-bezier(.2,.8,.2,1)">
+
+        <header style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <button onClick="{{ closeSheet }}" style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px 0 12px;border-radius:var(--radius-pill);border:1px solid var(--border-strong);background:var(--surface-glass);color:var(--text-primary);font:800 12px/1 Nunito,sans-serif;letter-spacing:0.04em;cursor:pointer;backdrop-filter:blur(10px)"><span style="font-size:18px;line-height:1">‹</span>Standings</button>
+          <span style="display:flex;align-items:center;gap:5px;height:40px;padding:0 14px;border-radius:var(--radius-pill);background:var(--surface-glass);border:1px solid var(--border-strong);font:800 10px/1 Nunito,sans-serif;letter-spacing:0.14em;color:var(--gap-critical);backdrop-filter:blur(10px)"><span style="width:6px;height:6px;border-radius:50%;background:var(--gap-critical);animation:fflr-pulse 1.6s ease-in-out infinite"></span>LIVE</span>
+        </header>
+
+        <!-- Team hero -->
+        <section style="border-radius:var(--radius-card);background:var(--hero-bg);color:var(--hero-text);box-shadow:var(--shadow-card);border:1px solid var(--border);padding:18px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="display:inline-flex;align-items:center;gap:8px;font:800 10px/1 Nunito,sans-serif;letter-spacing:0.18em;text-transform:uppercase;color:var(--hero-muted)"><span style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:italic 900 12px/1 Archivo,sans-serif">{{ sheet.rank }}</span>Week 12</span>
+            <span style="padding:6px 11px;border-radius:var(--radius-pill);background:rgba(255,255,255,0.14);font:700 11px/1 Nunito,sans-serif">{{ sheet.status }}</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+              <h2 style="margin:0;font:italic 900 30px/1 Archivo,sans-serif;letter-spacing:-0.02em;text-transform:uppercase;text-wrap:balance">{{ sheet.name }}</h2>
+              <span style="font:700 12px/1 Nunito,sans-serif;color:var(--hero-muted)">{{ sheet.record }} all-play</span>
+            </div>
+            <span style="flex:none;font:800 40px/1 Nunito,sans-serif;letter-spacing:-0.03em;transition:color .4s">{{ sheet.pts }}</span>
+          </div>
+        </section>
+
+        <sc-if value="{{ sheet.hasRoster }}" hint-placeholder-val="{{ true }}">
+          <div role="tablist" style="display:flex;gap:4px;padding:4px;border-radius:var(--radius-pill);background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-card)">
+            <button onClick="{{ showStarters }}" role="tab" style="flex:1;border:0;cursor:pointer;height:40px;border-radius:var(--radius-pill);display:flex;align-items:center;justify-content:center;gap:8px;font:800 12px/1 Nunito,sans-serif;background:{{ startersTabBg }};color:{{ startersTabColor }};transition:background .25s,color .25s">Starters <span style="font-weight:700;opacity:.75">{{ sheet.startersTotal }}</span></button>
+            <button onClick="{{ showBench }}" role="tab" style="flex:1;border:0;cursor:pointer;height:40px;border-radius:var(--radius-pill);display:flex;align-items:center;justify-content:center;gap:8px;font:800 12px/1 Nunito,sans-serif;background:{{ benchTabBg }};color:{{ benchTabColor }};transition:background .25s,color .25s">Bench <span style="font-weight:700;opacity:.75">{{ sheet.benchTotal }} behind</span></button>
+          </div>
+
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:8px">
+            <sc-for list="{{ sheet.players }}" as="p" hint-placeholder-count="12">
+              <!-- PlayerRow -->
+              <div style="display:grid;grid-template-columns:40px 40px 1fr auto;gap:10px;align-items:center;padding:9px 8px;border-radius:var(--radius-row);opacity:{{ p.opacity }};transition:background .2s,opacity .3s" style-hover="background:var(--surface-raised)">
+                <div style="width:40px;height:40px;border-radius:50%;background:var(--surface-raised);border:1px solid var(--border-strong);display:grid;place-items:center;font:800 11px/1 Nunito,sans-serif;color:var(--text-muted);letter-spacing:0.02em">{{ p.initials }}</div>
+                <span style="display:inline-grid;place-items:center;height:24px;border-radius:var(--radius-pill);font:800 10.5px/1 Nunito,sans-serif;letter-spacing:0.08em;color:{{ p.posColor }};background:{{ p.posBg }}">{{ p.pos }}</span>
+                <div style="display:flex;flex-direction:column;gap:3px;min-width:0">
+                  <span style="font:700 15px/1.15 Archivo,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span>
+                  <span style="font:700 11px/1 Nunito,sans-serif;letter-spacing:0.08em;color:var(--text-muted)">{{ p.team }}</span>
+                </div>
+                <span style="font:800 17px/1 Nunito,sans-serif;letter-spacing:-0.01em;color:{{ p.ptsColor }};transition:color .4s">{{ p.pts }}</span>
+              </div>
+            </sc-for>
+          </section>
+        </sc-if>
+        <sc-if value="{{ sheet.noRoster }}" hint-placeholder-val="{{ false }}">
+          <section style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:32px 16px">
+            <p style="margin:0;font-size:13px;line-height:1.5;color:var(--text-muted);text-align:center;text-wrap:pretty">Lineup for this franchise isn't in the mock data yet. Uncle Rico (rank 4) has the full roster.</p>
+          </section>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;simulateLive&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;gapCriticalThreshold&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:0.25,&quot;min&quot;:0.05,&quot;max&quot;:1,&quot;step&quot;:0.05,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Gap urgency&quot;},&quot;gapLiveThreshold&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:2.5,&quot;min&quot;:1,&quot;max&quot;:6,&quot;step&quot;:0.5,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Gap urgency&quot;}}">
+class Component extends DCLogic {
+  // ── MOCK_DATA — swap for the liveScoring API response ─────────────
+  static MOCK_DATA = {
+    week: 12,
+    updatedAt: '4:12 PM',
+    teams: [
+      { id: 1,  name: "I'm Just Here to Network", pts: 217.53, toPlay: 0, onNow: false },
+      { id: 2,  name: 'Reggaeton Forever',         pts: 176.96, toPlay: 1, onNow: false },
+      { id: 3,  name: 'Ryaan',                     pts: 151.29, toPlay: 2, onNow: false },
+      { id: 4,  name: 'Uncle Rico',                pts: 144.86, toPlay: 0, onNow: false },
+      { id: 5,  name: 'Vip',                       pts: 140.13, toPlay: 1, onNow: true  },
+      { id: 6,  name: 'WhiskeyDitka',              pts: 140.01, toPlay: 2, onNow: false },
+      { id: 7,  name: "Lil' Sosos",                pts: 138.88, toPlay: 1, onNow: true  },
+      { id: 8,  name: '2-minute Drill',            pts: 138.79, toPlay: 3, onNow: false },
+      { id: 9,  name: 'High Flyers',               pts: 137.09, toPlay: 2, onNow: false },
+      { id: 10, name: 'The Don is Yinz King',      pts: 124.41, toPlay: 1, onNow: false },
+      { id: 11, name: '3rd and 1',                 pts: 96.64,  toPlay: 4, onNow: false },
+    ],
+    rosters: {
+      4: {
+        starters: [
+          { pos: 'QB', name: 'Jacoby Brissett',     team: 'ARI', pts: 22.35 },
+          { pos: 'RB', name: 'Christian McCaffrey', team: 'SFO', pts: 26.67 },
+          { pos: 'RB', name: 'Kenneth Gainwell',    team: 'PIT', pts: 19.17 },
+          { pos: 'RB', name: 'Kyle Monangai',       team: 'CHI', pts: 12.40 },
+          { pos: 'WR', name: 'DeVonta Smith',       team: 'PHI', pts: 11.90 },
+          { pos: 'WR', name: 'Nico Collins',        team: 'HOU', pts: 7.00 },
+          { pos: 'WR', name: 'Ricky Pearsall',      team: 'SFO', pts: 1.87 },
+          { pos: 'TE', name: 'Kyle Pitts',          team: 'ATL', pts: 3.50 },
+          { pos: 'K',  name: 'Jason Myers',         team: 'SEA', pts: 13.00 },
+          { pos: 'LB', name: 'Zack Baun',           team: 'PHI', pts: 11.00 },
+          { pos: 'LB', name: 'Bobby Okereke',       team: 'NYG', pts: 9.00 },
+          { pos: 'LB', name: 'Lavonte David',       team: 'TBB', pts: 7.00 },
+        ],
+        bench: [
+          { pos: 'QB', name: 'Daniel Jones',           team: 'IND', pts: 21.37 },
+          { pos: 'QB', name: 'Jayden Daniels',         team: 'WAS', pts: 0.00 },
+          { pos: 'RB', name: 'Blake Corum',            team: 'LAR', pts: 3.20 },
+          { pos: 'RB', name: 'Jacory Croskey-Merritt', team: 'WAS', pts: 0.00 },
+          { pos: 'WR', name: 'Chris Godwin',           team: 'TBB', pts: 1.90 },
+          { pos: 'WR', name: 'Ladd McConkey',          team: 'LAC', pts: 0.00 },
+          { pos: 'LB', name: 'Bobby Wagner',           team: 'WAS', pts: 0.00 },
+        ],
+      },
+    },
+  };
+
+  state = { theme: 'dark', openId: null, tab: 'starters', deltas: {}, flash: {} };
+
+  componentDidMount() { this.timer = setInterval(() => this.tick(), 3000); }
+  componentWillUnmount() { clearInterval(this.timer); clearTimeout(this.flashTimer); }
+
+  tick() {
+    if (!(this.props.simulateLive ?? false)) return;
+    const live = Component.MOCK_DATA.teams.filter(t => t.onNow);
+    const t = live[Math.floor(Math.random() * live.length)];
+    if (!t) return;
+    const bump = Math.round((Math.random() * 1.6) * 100) / 100;
+    this.setState(s => ({
+      deltas: { ...s.deltas, [t.id]: Math.round(((s.deltas[t.id] || 0) + bump) * 100) / 100 },
+      flash: { [t.id]: true },
+    }));
+    clearTimeout(this.flashTimer);
+    this.flashTimer = setTimeout(() => this.setState({ flash: {} }), 900);
+  }
+
+  fmt(n) { return n.toFixed(2); }
+
+  renderVals() {
+    const D = Component.MOCK_DATA;
+    const CRIT = this.props.gapCriticalThreshold ?? 0.25;
+    const LIVE = this.props.gapLiveThreshold ?? 2.5;
+    const { theme, openId, tab, deltas, flash } = this.state;
+    const FLASH = 'fflr-flash .9s ease-out';
+
+    // All-play record is pure arithmetic on the sorted list
+    const teams = D.teams
+      .map(t => ({ ...t, live: Math.round((t.pts + (deltas[t.id] || 0)) * 100) / 100 }))
+      .sort((a, b) => b.live - a.live)
+      .map((t, i, arr) => ({ ...t, rank: i + 1, record: `${arr.length - 1 - i}-${i}` }));
+    const statusOf = t => t.toPlay === 0 ? 'all played' : `${t.toPlay} to play${t.onNow ? ' · on now' : ''}`;
+
+    const gaps = teams.slice(0, -1).map((t, i) => Math.round((t.live - teams[i + 1].live) * 100) / 100);
+    const tier = g => g < CRIT ? 'critical' : g < LIVE ? 'live' : 'settled';
+    const hotTier = g => g !== undefined && tier(g) !== 'settled';
+
+    const rows = teams.map((t, i) => {
+      const gAbove = gaps[i - 1], g = gaps[i];
+      const fusedTop = hotTier(gAbove), fusedBottom = hotTier(g);
+      const gt = g !== undefined ? tier(g) : null;
+      const tiers = [gAbove, g].filter(x => x !== undefined).map(tier);
+      const hot = tiers.includes('critical') ? 'critical' : tiers.includes('live') ? 'live' : null;
+      const R = 'var(--radius-row)';
+      return {
+        rank: t.rank, name: t.name, record: t.record, pts: this.fmt(t.live),
+        status: statusOf(t), onNow: t.onNow,
+        statusColor: t.onNow ? 'var(--accent)' : 'var(--text-muted)',
+        anim: flash[t.id] ? FLASH : 'none',
+        rowBg: 'var(--surface)',
+        radius: `${fusedTop ? '0' : R} ${fusedTop ? '0' : R} ${fusedBottom ? '0' : R} ${fusedBottom ? '0' : R}`,
+        shadow: fusedTop || fusedBottom ? 'none' : 'var(--shadow-card)',
+        rankBg: hot === 'critical' ? 'var(--gap-critical)' : hot === 'live' ? 'var(--gap-live-soft)' : 'var(--surface-raised)',
+        rankColor: hot === 'critical' ? 'var(--gap-critical-ink)' : hot === 'live' ? 'var(--gap-live)' : 'var(--text-secondary)',
+        open: () => this.setState({ openId: t.id, tab: 'starters' }),
+        hasGap: g !== undefined,
+        gap: g !== undefined ? this.fmt(g) : '',
+        coinFlip: gt === 'critical',
+        gapPad: gt === 'critical' ? '4px 14px' : gt === 'live' ? '2px 14px' : '6px 22px',
+        gapBg: gt === 'settled' ? 'transparent' : 'var(--surface)',
+        gapLine: gt === 'critical' ? 'var(--gap-critical)' : gt === 'live' ? 'var(--gap-live)' : 'var(--gap-settled)',
+        gapPillPad: gt === 'critical' ? '7px 13px' : gt === 'live' ? '5px 11px' : '4px 10px',
+        gapPillBg: gt === 'critical' ? 'var(--gap-critical)' : gt === 'live' ? 'var(--gap-live-soft)' : 'var(--surface)',
+        gapPillBorder: gt === 'settled' ? 'var(--border-strong)' : 'transparent',
+        gapColor: gt === 'critical' ? 'var(--gap-critical-ink)' : gt === 'live' ? 'var(--gap-live)' : 'var(--text-muted)',
+        gapAnim: gt === 'critical' && (flash[t.id] || flash[teams[i + 1]?.id]) ? FLASH : 'none',
+      };
+    });
+
+    // Headline stats derived from the rows, never hardcoded
+    const within = new Set(gaps.flatMap((g, i) => g < 3.0 ? [i, i + 1] : [])).size;
+    const stats = { within, atStake: gaps.filter(g => g < 3.0).length, startersLeft: teams.reduce((a, t) => a + t.toPlay, 0) };
+
+    // Hero: current #1 and their lead over #2
+    const lead = teams[0], chaser = teams[1], ht = tier(gaps[0]);
+    const hero = {
+      name: lead.name, pts: this.fmt(lead.live), record: lead.record, status: statusOf(lead),
+      anim: flash[lead.id] ? FLASH : 'none',
+      chaserName: chaser.name, gap: this.fmt(gaps[0]),
+      label: ht === 'critical' ? 'Coin flip' : ht === 'live' ? 'Live' : 'Settled',
+      pillBg: ht === 'critical' ? 'var(--gap-critical)' : ht === 'live' ? 'var(--gap-live)' : 'rgba(255,255,255,0.14)',
+      pillInk: ht === 'critical' ? 'var(--gap-critical-ink)' : ht === 'live' ? 'var(--gap-live-ink)' : 'var(--hero-text)',
+      open: () => this.setState({ openId: lead.id, tab: 'starters' }),
+    };
+
+    const sel = teams.find(t => t.id === openId);
+    const roster = sel && D.rosters[sel.id];
+    const initials = n => n.split(/[\s-]+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    const player = (p, bench) => ({
+      ...p, pts: this.fmt(p.pts), initials: initials(p.name),
+      posColor: `var(--pos-${p.pos.toLowerCase()})`, posBg: `var(--pos-${p.pos.toLowerCase()}-soft)`,
+      opacity: bench ? (p.pts === 0 ? 0.42 : 0.75) : 1,
+      ptsColor: p.pts === 0 ? 'var(--text-muted)' : 'var(--text-primary)',
+    });
+    const sum = arr => this.fmt(arr.reduce((a, p) => a + p.pts, 0));
+    const sheet = sel ? {
+      name: sel.name, rank: sel.rank, record: sel.record, pts: this.fmt(sel.live), status: statusOf(sel),
+      hasRoster: !!roster, noRoster: !roster,
+      players: roster ? (tab === 'bench' ? roster.bench.map(p => player(p, true)) : roster.starters.map(p => player(p, false))) : [],
+      startersTotal: roster ? sum(roster.starters) : '', benchTotal: roster ? sum(roster.bench) : '',
+    } : {};
+
+    const isDark = theme === 'dark', onStarters = tab === 'starters';
+    return {
+      theme, rows, stats, hero, sheet, sheetOpen: !!sel,
+      criticalLabel: CRIT.toFixed(2), liveLabel: LIVE.toFixed(1),
+      setDark: () => this.setState({ theme: 'dark' }), setLight: () => this.setState({ theme: 'light' }),
+      darkBtnBg: isDark ? 'var(--accent)' : 'transparent', darkBtnColor: isDark ? 'var(--accent-ink)' : 'var(--text-muted)',
+      lightBtnBg: isDark ? 'transparent' : 'var(--accent)', lightBtnColor: isDark ? 'var(--text-muted)' : 'var(--accent-ink)',
+      closeSheet: () => this.setState({ openId: null }),
+      showStarters: () => this.setState({ tab: 'starters' }), showBench: () => this.setState({ tab: 'bench' }),
+      startersTabBg: onStarters ? 'var(--accent)' : 'transparent', startersTabColor: onStarters ? 'var(--accent-ink)' : 'var(--text-muted)', startersTabShadow: onStarters ? 'var(--shadow-card)' : 'none',
+      benchTabBg: onStarters ? 'transparent' : 'var(--accent)', benchTabColor: onStarters ? 'var(--text-muted)' : 'var(--accent-ink)', benchTabShadow: onStarters ? 'none' : 'var(--shadow-card)',
+    };
+  }
+}
+</script>
+</body>
+</html>

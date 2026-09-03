@@ -27,7 +27,7 @@ const CACHE = path.join(HERE, '.cache');
 const SHOTS = path.join(CACHE, 'headshots');
 fs.mkdirSync(SHOTS, { recursive: true });
 
-const AVATAR_PX = 96;   // 2x+ for the ~30px the sheet renders
+const AVATAR_PX = 96;   // 2x+ for the 40px the roster row renders
 const AVATAR_Q  = 70;
 
 async function cachedJson(name, url) {

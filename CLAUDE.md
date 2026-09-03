@@ -39,22 +39,46 @@ Each of these was verified against real 2025 data, not inferred:
 
 ## Visual design
 
-The mockup adopts **Fantasy Architect's** design system
-(<https://fantasy-architect.netlify.app/>) so the two apps read as siblings.
-Tokens were lifted from that site's live CSS, not eyeballed:
+The mockup implements the **FFLR Live v2** redesign in
+`design_handoff_fflr_live/` (README, `tokens.css`, a prototype `.dc.html`,
+reference screenshots). Read that README before touching the UI; it is the
+spec, and the mockup is a pixel-close port of it. Design premise: in all-play
+the **gap between adjacent ranks is worth a full win**, so gaps are the loudest
+element and scores are second.
 
-- **Dark-first**, like Fantasy Architect: bare `:root` is the dark palette and
-  `:root[data-theme="light"]` is the override. That is the inverse of the usual
-  pattern -- do not "fix" it to follow `prefers-color-scheme`.
-- **Archivo** for display, **Nunito** for body and data, via Google Fonts.
-  Fantasy Architect's own typographic rule: Archivo 900 italic uppercase for
-  headers, Archivo 700 roman for names inside lists, Nunito with
-  `tabular-nums` for every number.
-- **Position pills** reuse its `--qb/--rb/--wr/--te/--k/--idp` tokens. All
-  defensive positions share `--idp`, which matches this league's "3 IDP, any
-  combination" rule.
-- `--danger` carries the contested-boundary treatment. `--danger-soft` and
-  `--danger-line` are local additions; Fantasy Architect has no equivalents.
+- **Dark-first**: bare `:root` is the dark palette and
+  `:root[data-theme="light"]` is the override. Do not "fix" it to follow
+  `prefers-color-scheme`; the DARK/LIGHT segmented control stamps the root.
+- **Archivo** for display (900 italic uppercase headers, 700 roman for names
+  in lists), **Nunito** for body and every number, `tabular-nums` on the root.
+- **Accent is mint** and carries "live / on now", the selected segment and the
+  leader's badge -- never urgency. Urgency is a separate warm scale:
+  `--gap-critical` (< 0.25, coin flip) -> `--gap-live` (< 2.5) ->
+  `--gap-settled`. Rows adjacent to a hot gap **fuse into one card** (per-edge
+  radius, shadow dropped); the rank circle takes the hotter of its two gaps.
+- **Position chips** use `--pos-qb/rb/wr/te/k/lb`; every defensive position
+  maps to `--pos-lb`, matching the league's "3 IDP, any combination" rule.
+- The team page is a full-screen route over the board (`position: fixed`),
+  so the board keeps its scroll position. Starters/Bench is a segmented
+  control; bench rows render at 75% opacity, 42% when scoreless.
+- The handoff's headshot placeholder (initials circle) is **replaced by real
+  Sleeper headshots**; the initials circle is the fallback only.
+- **Live transitions** are in: changed values flash once and **roll** from
+  old to new (every live number carries `data-tween="<key>"`; keys are
+  shared across hero, row and team page so a value carries over when it
+  changes surface), team and player scores pop a floating delta chip, rows
+  that change rank slide to their new slot (FLIP on the row elements, keyed
+  by franchise id), and clusters re-fuse. The "Simulate live scoring" toggle under the
+  footnote exercises this by bumping one starter at a time -- it is a mockup
+  affordance, not a feed, and it keeps team total == starters sum.
+- **Lead change** fires a takeover on the hero (mint strobe, lightning
+  bolts, diagonal sweep, badge spin, name rise; ~1.6s) and the ex-leader
+  fades into the list at #2. "Flip the lead" next to the simulate toggle
+  hands #2 just enough to pass #1 so the sequence can be seen on demand.
+
+Thresholds (`CRITICAL`, `LIVE`, `WITHIN`) live in one place in the script and
+the legend and capsules read them. The headline stats and the hero are derived
+from the rows.
 
 `mockup/build-data.mjs` regenerates both embedded blobs from the committed
 fixture (`MFL_UA='imp19716' node mockup/build-data.mjs`). It asserts each team
@@ -181,5 +205,7 @@ deliberately; before that, `git rev-parse --show-toplevel` returned
   that settle payouts), and a wrong storage model (it commits data to git).
   Copy `src/mfl/client.mjs` if useful; do not couple the deployments.
 - **`spike/data/` is gitignored.** Those logs are measurements, not source.
-- **`mockup/` is untracked**, along with `.claude/launch.json` (a static server
-  for previewing the mockup). Both are deliberate, not oversight.
+- **`mockup/.cache/` is gitignored** (23MB of refetchable MFL and Sleeper
+  data plus raw headshots); `mockup/leaderboard.html` and the design handoff
+  in `design_handoff_fflr_live/` are committed. `.claude/launch.json` (a
+  static server for previewing the mockup) stays untracked.
