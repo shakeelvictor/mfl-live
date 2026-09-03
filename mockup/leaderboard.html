@@ -47,6 +47,13 @@
        needs the bright mint, not the theme accent (deep teal in light). */
     --hero-accent: #4fe3c1;
     --hero-accent-soft: rgba(79, 227, 193, 0.22);
+    /* Gold for the week's MVP; deepened in light for contrast on white. */
+    --gold: #f2c94c;
+    --gold-soft: rgba(242, 201, 76, 0.16);
+    --gold-line: rgba(242, 201, 76, 0.45);
+    --hero-gold: #f2c94c;
+    --hero-gold-soft: rgba(242, 201, 76, 0.22);
+    --hero-gold-line: rgba(242, 201, 76, 0.5);
     --gap-critical: #ff5d5d;
     --gap-critical-soft: rgba(255, 93, 93, 0.14);
     --gap-critical-ink: #2a0606;
@@ -103,6 +110,9 @@
     --pos-te: #b7791f; --pos-te-soft: rgba(183, 121, 31, 0.14);
     --pos-k:  #7c4fd8; --pos-k-soft:  rgba(124, 79, 216, 0.12);
     --pos-lb: #5a8a0c; --pos-lb-soft: rgba(90, 138, 12, 0.12);
+    --gold: #9a6b00;
+    --gold-soft: rgba(154, 107, 0, 0.12);
+    --gold-line: rgba(154, 107, 0, 0.35);
   }
 
   @keyframes fflr-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
@@ -354,6 +364,105 @@
      at #2) fade in rather than pop. */
   .row.enter { animation: fflr-row-in .45s ease-out; }
   @keyframes fflr-row-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- spotlight: top scorer of the day / MVP of the week ----------
+     Sits under the hero. Shows the day's top starter once that day's games
+     are final, and turns gold for the week's MVP once the week is official. */
+
+  .spot {
+    border-radius: var(--radius-card);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+    padding: 14px 16px 16px;
+    display: flex; flex-direction: column; gap: 12px;
+    position: relative; overflow: hidden;
+    transition: background .3s, border-color .3s, box-shadow .3s;
+  }
+  /* The card's own display beats the UA's [hidden] rule; make hidden win. */
+  .spot[hidden] { display: none; }
+  .spot-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .spot-label { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); transition: color .3s; }
+  .spot-when {
+    padding: 5px 9px; border-radius: var(--radius-pill);
+    background: var(--surface-raised); color: var(--text-muted);
+    font: 700 11px/1 var(--font-data);
+    transition: background .3s, color .3s;
+  }
+  .spot-body {
+    display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: center;
+    animation: fflr-rise .5s cubic-bezier(.2, .9, .3, 1.3) both;
+  }
+  .spot-face { position: relative; width: 56px; height: 56px; }
+  .spot-face .avatar, .spot-face .avatar-fb { width: 56px; height: 56px; border: 2px solid var(--border-strong); transition: border-color .3s; }
+  .spot-face .avatar-fb { font-size: 14px; }
+  .spot-face .logo {
+    position: absolute; right: -6px; bottom: -4px;
+    width: 26px; height: 26px; border-radius: 50%; padding: 3px;
+    background: var(--surface); border: 1px solid var(--border-strong);
+    display: grid; place-items: center;
+    font: 800 8px/1 var(--font-data); color: var(--text-muted);
+  }
+  .spot-face .logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .spot-who { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .spot-name { font: 700 17px/1.1 var(--font-display); letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .spot-meta { display: flex; align-items: center; gap: 6px; font: 700 11px/1 var(--font-data); letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+  .spot-meta .pos { height: 20px; padding: 0 8px; font-size: 10px; }
+  .spot-stat { font: 600 11.5px/1.2 var(--font-data); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .spot-stat:empty { display: none; }
+  .spot-for { font: 600 11.5px/1.2 var(--font-data); color: var(--text-muted); }
+  .spot-for b { color: var(--text-secondary); font-weight: 700; }
+  .spot-pts { font: 800 28px/1 var(--font-data); letter-spacing: -.02em; text-align: right; transition: color .3s; }
+  .spot-flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: var(--gold); mix-blend-mode: screen; animation: fflr-strobe .8s ease-out both; }
+
+  .spot.mvp { border-color: var(--gold-line); box-shadow: var(--shadow-card), 0 0 0 1px var(--gold-soft) inset; }
+  .spot.mvp .spot-label { color: var(--gold); }
+  .spot.mvp .spot-when { background: var(--gold-soft); color: var(--gold); }
+  .spot.mvp .spot-pts { color: var(--gold); }
+  .spot.mvp .spot-face .avatar, .spot.mvp .spot-face .avatar-fb { border-color: var(--gold); }
+
+  .livemark.final { color: var(--text-muted); }
+  .livemark.final .dot { display: none; }
+
+  /* ---------- colour waves ----------
+     A soft band of colour drifting back and forth across a card. Subtle by
+     design: the band is the -soft alpha of the accent, on a 250%-wide
+     gradient so most of the card is untouched at any moment. */
+  @keyframes fflr-wave { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+
+  .spot::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(115deg, transparent 22%, var(--accent-soft) 45%, transparent 68%);
+    background-size: 250% 100%;
+    animation: fflr-wave 9s ease-in-out infinite alternate;
+  }
+  .spot.mvp::before { background-image: linear-gradient(115deg, transparent 20%, var(--gold-soft) 42%, rgba(255, 255, 255, .06) 50%, var(--gold-soft) 58%, transparent 80%); }
+  .spot-top, .spot-body { position: relative; }
+
+  /* Week winner: the hero gets a gold wave and a money bag hanging over
+     its top-right corner. The bag lives outside the hero (which clips its
+     own overflow for the lightning) so it can overhang the edge. */
+  .hero-wrap { position: relative; }
+  .hero-wave {
+    position: absolute; inset: 0; pointer-events: none; opacity: 0;
+    background: linear-gradient(115deg, transparent 15%, var(--hero-gold-soft) 40%, rgba(255, 255, 255, .08) 50%, var(--hero-gold-soft) 60%, transparent 85%);
+    background-size: 250% 100%;
+    animation: fflr-wave 8s ease-in-out infinite alternate;
+    transition: opacity .6s;
+  }
+  .hero.winner .hero-wave { opacity: 1; }
+  .hero.winner { border-color: var(--hero-gold-line); }
+  .hero.winner .badge { background: var(--hero-gold); color: #3a2a00; }
+  .hero-money {
+    position: absolute; top: -22px; right: 16px;
+    font-size: 46px; line-height: 1;
+    pointer-events: none; opacity: 0;
+    filter: drop-shadow(0 10px 14px rgba(0, 0, 0, .45));
+    transform-origin: 50% 0;
+    transition: opacity .4s;
+  }
+  .hero-wrap.winner .hero-money { opacity: 1; animation: fflr-hang 3.2s ease-in-out infinite; }
+  @keyframes fflr-hang { 0%, 100% { transform: rotate(-7deg) translateY(0); } 50% { transform: rotate(8deg) translateY(3px); } }
 
   /* ---------- standings ---------- */
 
@@ -790,6 +899,7 @@
     .td-scrim, .td-card, .td-card * { animation: none !important; }
     .flash { animation: none; }
     .hero.takeover, .hero.takeover * { animation: none !important; }
+    .spot::before, .hero-wave, .hero-money { animation: none; }
     .row.enter { animation: none; }
     .delta { display: none; }
     .team-page, .team-page .shell { animation: none; }
@@ -823,6 +933,9 @@
       <button class="sim" id="flip" type="button">Flip the lead</button>
       <button class="sim" id="td" type="button">Score a TD</button>
       <button class="sim" id="td-chi" type="button">Bears TD</button>
+      <button class="sim" id="end-day" type="button">End the day</button>
+      <button class="sim" id="end-week" type="button">End the week</button>
+      <button class="sim" id="next-week" type="button">Start next week</button>
     </div>
 
     <div class="week">
@@ -832,8 +945,10 @@
 
     <div class="capsules" id="capsules"></div>
 
+    <div class="hero-wrap" id="hero-wrap">
     <button class="hero" id="hero" type="button">
       <span class="hero-body" id="hero-body"></span>
+      <span class="hero-wave" aria-hidden="true"></span>
       <span class="fx" aria-hidden="true">
         <span class="strobe"></span>
         <span class="sweep"></span>
@@ -844,6 +959,10 @@
         </svg>
       </span>
     </button>
+    <span class="hero-money" aria-hidden="true">💰</span>
+    </div>
+
+    <section class="spot" id="spot" aria-label="Spotlight"></section>
 
     <section class="standings" aria-label="Standings">
       <div class="standings-head">
@@ -977,7 +1096,7 @@
       .map((t) => ({
         ...t,
         live: r2(t.pts + (teamBump[t.id] || 0)),
-        toPlay: YET_TO_PLAY[t.team] ?? 0,
+        toPlay: slate.sunFinal ? 0 : (YET_TO_PLAY[t.team] ?? 0),
         onNow: t.starters.some(isLive),
       }))
       .sort((a, b) => b.live - a.live)
@@ -1033,7 +1152,7 @@
     const lead = teams[0], chaser = teams[1], lt = tier(gaps[0]);
     heroBody.innerHTML =
       `<div class="hero-top">` +
-        `<span class="micro hero-label"><span class="badge">1</span>${takeover ? "New leader" : `Leading Week ${WEEK}`}</span>` +
+        `<span class="micro hero-label"><span class="badge">1</span>${weekIsFinal() ? `Week ${WEEK} winner` : takeover ? "New leader" : `Leading Week ${WEEK}`}</span>` +
         `<span class="hero-status">${statusOf(lead)}</span>` +
       `</div>` +
       `<div class="hero-mid">` +
@@ -1048,6 +1167,8 @@
         `<span class="leads">Leads <b>${esc(chaser.team)}</b> by</span>` +
         `<span class="hero-gap${changed.has(lead.id) || changed.has(chaser.id) ? " flash" : ""}" data-tween="gap:${lead.id}:${chaser.id}">${fmt(gaps[0])}</span>` +
       `</div>`;
+    hero.classList.toggle("winner", weekIsFinal());
+    document.getElementById("hero-wrap").classList.toggle("winner", weekIsFinal());
     hero.setAttribute("aria-label",
       `${lead.team} leads Week ${WEEK} with ${fmt(lead.live)} points, ${fmt(gaps[0])} ahead of ${chaser.team}. Open lineup.`);
 
@@ -1202,8 +1323,12 @@
     renderCapsules();
     renderHero(changed, takeover);
     renderRows(changed);
+    renderSpotlight();
     if (open !== null) renderTeam(changed);
     rollNumbers(shown);
+    const mark = document.querySelector(".livemark");
+    mark.classList.toggle("final", weekIsFinal());
+    mark.lastChild.nodeValue = weekIsFinal() ? "Final" : "Live";
   }
 
   /* ---------------- stat lines ----------------
@@ -1215,11 +1340,17 @@
   // Illustrative slate: two late games still on the field at 4:12 PM.
   // Everyone else is Final. ON_NOW is derived from it, so a franchise reads
   // "on now" exactly when it has a starter in this game.
+  // Where the week stands. Ending the day makes every game final; ending
+  // the week is MFL marking it official (stats corrections done).
+  const slate = { sunFinal: false, weekFinal: false, nextWeek: false };
+  // The week's "final" treatment lasts until the next week begins.
+  const weekIsFinal = () => slate.weekFinal && !slate.nextWeek;
+
   const LIVE_NFL = new Map([
     ["JAC", "Q3 8:12"], ["KCC", "Q3 8:12"],   // Jaguars at Chiefs
     ["CHI", "Q4 2:31"], ["MIN", "Q4 2:31"],   // Bears at Vikings
   ]);
-  const isLive = (p) => LIVE_NFL.has(p.tm);
+  const isLive = (p) => !slate.sunFinal && LIVE_NFL.has(p.tm);
   const clockFor = (p) => LIVE_NFL.get(p.tm);
 
   const liveStats = {};   // `${teamId}:${index}` (bench: `b${index}`) -> mutated copy of st
@@ -1281,6 +1412,54 @@
       st.idp_fum_rec ? `${st.idp_fum_rec} FR` : "", st.idp_pass_def ? `${st.idp_pass_def} PD` : "",
       st.idp_td ? `${st.idp_td} TD` : "",
     ]);
+  }
+
+  /* ---------------- spotlight ----------------
+     A between-days card. After a day's games are all final, the day's
+     highest-scoring STARTER (bench points do not count for anyone) gets a
+     card under the hero; it goes away when the next day's games kick off.
+     Once the week is official it becomes the MVP of the week, which stays
+     until the next week begins. While a day is in progress there is no
+     card. Which day a player's game belongs to is staged here; with the
+     feed it comes from the schedule. */
+
+  const THU_NFL = new Set(["DET", "CLE"]);   // Thursday night: Browns at Lions
+  const spotEl = document.getElementById("spot");
+  let lastSpotKey = null;
+
+  function spotlightPick() {
+    const all = teams.flatMap((t) => liveStarters(t, new Set()).map((p) => ({ ...p, franchise: t.team })));
+    let pool, label, when;
+    if (slate.nextWeek) return { top: null, key: "none" };            // new week, nothing final yet
+    if (slate.weekFinal) { pool = all; label = "\u2605 MVP of the week"; when = `Week ${WEEK} final`; }
+    else if (slate.sunFinal) { pool = all.filter((p) => !THU_NFL.has(p.tm)); label = "Top scorer"; when = "Sunday"; }
+    else return { top: null, key: "none" };                             // Sunday is in progress
+    const top = pool.reduce((a, p) => (p.pts > a.pts ? p : a), pool[0]);
+    return { top, label, when, mvp: slate.weekFinal, key: `${when}:${top?.key}` };
+  }
+
+  function renderSpotlight() {
+    const { top, label, when, mvp, key } = spotlightPick();
+    if (!top) { spotEl.hidden = true; lastSpotKey = key; return; }
+    spotEl.hidden = false;
+    const changed = lastSpotKey !== null && key !== lastSpotKey;
+    const phaseChanged = changed && key.split(":")[0] !== lastSpotKey.split(":")[0];
+    lastSpotKey = key;
+    spotEl.classList.toggle("mvp", mvp);
+    const logo = LOGOS[top.tm] ? `<span class="logo"><img src="${LOGOS[top.tm]}" alt=""></span>` : `<span class="logo">${esc(top.tm)}</span>`;
+    spotEl.innerHTML =
+      (phaseChanged && mvp && !reducedMotion.matches ? `<span class="spot-flash" aria-hidden="true"></span>` : "") +
+      `<div class="spot-top"><span class="micro spot-label">${label}</span><span class="spot-when">${esc(when)}</span></div>` +
+      `<div class="spot-body"${changed ? "" : ` style="animation:none"`}>` +
+        `<span class="spot-face">${avatar(top)}${logo}</span>` +
+        `<span class="spot-who">` +
+          `<span class="spot-name">${esc(top.n)}</span>` +
+          `<span class="spot-meta"><span class="pos ${posClass(top.pos)}">${esc(top.pos)}</span><span>${esc(top.tm)}</span></span>` +
+          `<span class="spot-stat">${esc(statLine(top.pos, top.st))}</span>` +
+          `<span class="spot-for">for <b>${esc(top.franchise)}</b></span>` +
+        `</span>` +
+        `<span class="spot-pts" data-tween="p:${top.key}">${fmt(top.pts)}</span>` +
+      `</div>`;
   }
 
   /* ---------------- team page ---------------- */
@@ -1525,7 +1704,13 @@
     return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
   };
 
+  function stopSim() {
+    if (simTimer) { clearInterval(simTimer); simTimer = null; }
+    simBtn.setAttribute("aria-pressed", "false");
+  }
+
   function simTick() {
+    if (slate.sunFinal) { stopSim(); return; }   // nothing is on the field
     const changed = new Set();
     const benchPick = Math.random() < 0.12 ? randomBench() : null;
     if (benchPick) {
@@ -1546,7 +1731,33 @@
     render(changed);
   }
 
+  document.getElementById("end-day").addEventListener("click", () => {
+    slate.sunFinal = true;
+    stopSim();
+    derive();
+    render();
+  });
+  // Only the card lifecycle: the MVP card and the winner treatment go;
+  // scores stay as they are (a full rollover to a new week is not mocked).
+  document.getElementById("next-week").addEventListener("click", () => {
+    slate.sunFinal = true;
+    slate.weekFinal = true;
+    slate.nextWeek = true;
+    stopSim();
+    derive();
+    render();
+  });
+
+  document.getElementById("end-week").addEventListener("click", () => {
+    slate.sunFinal = true;
+    slate.weekFinal = true;
+    stopSim();
+    derive();
+    render();
+  });
+
   document.getElementById("td-chi").addEventListener("click", () => {
+    if (slate.sunFinal) return;
     const bears = teams.flatMap((t) => t.starters.map((p, k) => ({ t, k, p })))
       .filter(({ p }) => p.tm === "CHI" && isLive(p) && p.pos !== "K");
     const pick = bears.length ? bears[Math.floor(Math.random() * bears.length)] : randomStarter(true);
@@ -1557,6 +1768,7 @@
   });
 
   document.getElementById("td").addEventListener("click", () => {
+    if (slate.sunFinal) return;
     const changed = new Set();
     const { t, k } = randomStarter(true);
     scoreTouchdown(t, k, changed);

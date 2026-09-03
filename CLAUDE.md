@@ -91,7 +91,24 @@ element and scores are second.
   simulated event (6 + yardage); with the feed, MFL gives only fantasy
   points, so the trigger would be one starter jumping a touchdown's worth
   between polls.
-- The **Demo bar** (Simulate live scoring / Flip the lead / Score a TD)
+- **Spotlight card** under the hero, a between-days card: once a day's
+  games are all final it shows that day's highest-scoring *starter*
+  (headshot, logo, stat line, franchise, points) and goes away when the
+  next day's games kick off; once the week is official it turns gold as the
+  MVP of the week and stays until the next week begins. While a day is in
+  progress (the mockup's opening state) there is no card. A soft colour wave drifts across its background (accent, gold
+  as MVP). When the week is official the leader hero becomes the **Week
+  winner**: gold wave, gold badge, and a money-bag emoji hanging over its
+  top-right corner (it sits outside the hero, which clips overflow for the
+  lightning). The slate is staged (`THU_NFL` = Thursday's teams, everything
+  else Sunday, `slate.sunFinal` / `slate.weekFinal`); with the feed the day
+  comes from the schedule and "official" from MFL. "End the day", "End
+  the week" and "Start next week" on the demo bar step through it; the
+  first two stop the simulator, zero the to-play counts and flip the header
+  to Final, the last only clears the card and the winner treatment (a full
+  rollover to a new week is not mocked).
+- The **Demo bar** (Simulate live scoring / Flip the lead / Score a TD /
+  Bears TD / End the day / End the week / Start next week)
   sits under the masthead on purpose, so it is easy to reach while the
   transitions are being tuned. It is mockup-only and will be removed.
 
