@@ -1,0 +1,897 @@
+/* ===================================================================
+   FFLR Live token layer, ported as-is from the handoff's
+   tokens.css. DARK-FIRST: bare :root is the dark palette and
+   :root[data-theme="light"] is the override -- the inverse of the usual
+   pattern, and deliberate (matches Fantasy Architect). It also resolves
+   correctly in all three artifact host states (unstamped -> dark,
+   stamped dark -> dark, stamped light -> light).
+
+   Accent (mint) carries "live / on now", the selected segment and the
+   leader's rank badge -- never urgency. Urgency is its own warm scale:
+   --gap-critical (coin flip) -> --gap-live (at risk) -> --gap-settled.
+   =================================================================== */
+:root {
+  --canvas: #070b0a;
+  --wash: oklch(0.62 0.13 178 / 0.62);
+  --surface: #0f1917;
+  --surface-raised: #172522;
+  --surface-sunken: #0b1311;
+  --surface-glass: rgba(255, 255, 255, 0.05);
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 16px 40px rgba(0, 0, 0, 0.4);
+  --shadow-sheet: 0 -24px 80px rgba(0, 0, 0, 0.65);
+  --scrim: rgba(3, 6, 6, 0.72);
+  --text-primary: #f6faf8;
+  --text-secondary: #a7b5b0;
+  --text-muted: #6b7a75;
+  --text-faint: #3f4b47;
+  --accent: #4fe3c1;
+  --accent-ink: #052a24;
+  --accent-soft: rgba(79, 227, 193, 0.14);
+  --hero-bg: linear-gradient(160deg, oklch(0.42 0.1 178) 0%, #0f1917 70%);
+  --hero-text: #f6faf8;
+  --hero-muted: rgba(246, 250, 248, 0.66);
+  --hero-strip: rgba(255, 255, 255, 0.10);
+  --hero-pill: rgba(255, 255, 255, 0.14);
+  /* The hero gradient stays dark in both themes, so anything mint on it
+     needs the bright mint, not the theme accent (deep teal in light). */
+  --hero-accent: #4fe3c1;
+  --hero-accent-soft: rgba(79, 227, 193, 0.22);
+  /* Gold for the week's MVP; deepened in light for contrast on white. */
+  --gold: #f2c94c;
+  --gold-soft: rgba(242, 201, 76, 0.16);
+  --gold-line: rgba(242, 201, 76, 0.45);
+  --hero-gold: #f2c94c;
+  --hero-gold-soft: rgba(242, 201, 76, 0.22);
+  --hero-gold-line: rgba(242, 201, 76, 0.5);
+  --gap-critical: #ff5d5d;
+  --gap-critical-soft: rgba(255, 93, 93, 0.14);
+  --gap-critical-ink: #2a0606;
+  --gap-live: #ff9a57;
+  --gap-live-soft: rgba(255, 154, 87, 0.13);
+  --gap-live-ink: #2a1204;
+  --gap-settled: rgba(255, 255, 255, 0.10);
+  --pos-qb: #f472b6; --pos-qb-soft: rgba(244, 114, 182, 0.16);
+  --pos-rb: #34d399; --pos-rb-soft: rgba(52, 211, 153, 0.16);
+  --pos-wr: #60a5fa; --pos-wr-soft: rgba(96, 165, 250, 0.16);
+  --pos-te: #fbbf24; --pos-te-soft: rgba(251, 191, 36, 0.16);
+  --pos-k:  #a78bfa; --pos-k-soft:  rgba(167, 139, 250, 0.16);
+  --pos-lb: #a3e635; --pos-lb-soft: rgba(163, 230, 53, 0.16);
+  --radius-card: 24px;
+  --radius-row: 18px;
+  --radius-pill: 999px;
+
+  --font-display: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-data: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+:root[data-theme="light"] {
+  --canvas: #f1f3f2;
+  --wash: oklch(0.86 0.07 178 / 0.55);
+  --surface: #ffffff;
+  --surface-raised: #f3f6f5;
+  --surface-sunken: #e9edeb;
+  --surface-glass: rgba(255, 255, 255, 0.7);
+  --border: rgba(10, 20, 18, 0.04);
+  --border-strong: rgba(10, 20, 18, 0.10);
+  --shadow-card: 0 1px 2px rgba(15, 25, 22, 0.04), 0 16px 40px rgba(15, 25, 22, 0.09);
+  --shadow-sheet: 0 -24px 80px rgba(15, 25, 22, 0.25);
+  --scrim: rgba(20, 30, 28, 0.38);
+  --text-primary: #101514;
+  --text-secondary: #475350;
+  --text-muted: #86908c;
+  --text-faint: #c3cac7;
+  --accent: #0e9c83;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(14, 156, 131, 0.12);
+  --hero-bg: linear-gradient(160deg, #0c5a4b 0%, #0e7a66 100%);
+  --hero-text: #ffffff;
+  --hero-muted: rgba(255, 255, 255, 0.7);
+  --gap-critical: #e0342f;
+  --gap-critical-soft: rgba(224, 52, 47, 0.09);
+  --gap-critical-ink: #ffffff;
+  --gap-live: #e2621a;
+  --gap-live-soft: rgba(226, 98, 26, 0.10);
+  --gap-live-ink: #ffffff;
+  --gap-settled: rgba(10, 20, 18, 0.10);
+  --pos-qb: #c8347f; --pos-qb-soft: rgba(200, 52, 127, 0.12);
+  --pos-rb: #0f8f63; --pos-rb-soft: rgba(15, 143, 99, 0.12);
+  --pos-wr: #2a6fd6; --pos-wr-soft: rgba(42, 111, 214, 0.12);
+  --pos-te: #b7791f; --pos-te-soft: rgba(183, 121, 31, 0.14);
+  --pos-k:  #7c4fd8; --pos-k-soft:  rgba(124, 79, 216, 0.12);
+  --pos-lb: #5a8a0c; --pos-lb-soft: rgba(90, 138, 12, 0.12);
+  --gold: #9a6b00;
+  --gold-soft: rgba(154, 107, 0, 0.12);
+  --gold-line: rgba(154, 107, 0, 0.35);
+}
+
+@keyframes fflr-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
+@keyframes fflr-flash { 0% { color: var(--accent); } 100% { color: inherit; } }
+@keyframes fflr-sheet-in { from { transform: translateY(32px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes fflr-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fflr-fade-out { from { opacity: 1; } to { opacity: 0; } }
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--text-primary);
+  font-family: var(--font-data);
+  font-size: 14px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  transition: background .3s, color .3s;
+}
+body.team-open { overflow: hidden; }
+
+button { font-family: inherit; color: inherit; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- shell ---------- */
+
+.app { position: relative; min-height: 100vh; overflow-x: hidden; }
+
+.wash {
+  position: absolute; inset: 0 0 auto 0; height: 560px;
+  background: linear-gradient(180deg, var(--wash) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.shell {
+  position: relative;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 16px 16px 48px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+.micro {
+  font: 800 10px/1 var(--font-data);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor;
+  flex: none;
+  animation: fflr-pulse 1.6s ease-in-out infinite;
+}
+
+/* ---------- header ---------- */
+
+.masthead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brandwrap { display: flex; align-items: center; gap: 10px; }
+
+.brand-mark {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-ink);
+  display: grid; place-items: center;
+}
+.brand-mark svg { width: 24px; height: 24px; display: block; }
+
+.brandstack { display: flex; flex-direction: column; gap: 2px; }
+.brand {
+  font: italic 900 16px/1 var(--font-display);
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+.livemark {
+  display: flex; align-items: center; gap: 5px;
+  font: 800 10px/1 var(--font-data);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--gap-critical);
+}
+
+.seg {
+  display: flex; height: 40px; padding: 4px; gap: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-strong);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.seg-btn {
+  border: 0; cursor: pointer; height: 100%; padding: 0 13px;
+  border-radius: var(--radius-pill);
+  font: 800 11px/1 var(--font-data);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  background: transparent; color: var(--text-muted);
+  transition: background .25s, color .25s;
+}
+.seg-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+
+/* ---------- week title ---------- */
+
+.week { display: flex; flex-direction: column; gap: 8px; }
+h1 {
+  margin: 0;
+  font: italic 900 56px/0.9 var(--font-display);
+  letter-spacing: -.03em;
+  text-transform: uppercase;
+}
+.subhead { margin: 0; font-size: 14px; line-height: 1.4; color: var(--text-secondary); text-wrap: pretty; }
+
+/* ---------- week summary capsules ---------- */
+
+.capsules { display: flex; flex-wrap: wrap; gap: 8px; }
+.capsule {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 38px; padding: 0 14px 0 12px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  font: 700 12px/1 var(--font-data);
+  color: var(--text-secondary);
+  transition: background .3s;
+}
+.capsule b { font: 800 16px/1 var(--font-data); color: var(--gap-critical); }
+.capsule b.accent { color: var(--accent); }
+
+/* ---------- hero (leader + team page header) ---------- */
+
+.hero {
+  position: relative;
+  width: 100%; text-align: left;
+  border-radius: var(--radius-card);
+  background: var(--hero-bg);
+  color: var(--hero-text);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border);
+  padding: 18px;
+  display: flex; flex-direction: column; gap: 14px;
+  overflow: hidden;
+  transition: background .3s;
+}
+button.hero { cursor: pointer; }
+
+.hero-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.hero-label { display: inline-flex; align-items: center; gap: 8px; color: var(--hero-muted); }
+.badge {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-ink);
+  display: grid; place-items: center;
+  font: italic 900 12px/1 var(--font-display);
+  letter-spacing: 0;
+}
+.hero-status {
+  padding: 6px 11px; border-radius: var(--radius-pill);
+  background: var(--hero-pill);
+  font: 700 11px/1 var(--font-data);
+  white-space: nowrap;
+}
+
+.hero-mid { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; }
+.hero-id { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.hero-name {
+  margin: 0;
+  font: italic 900 28px/1 var(--font-display);
+  letter-spacing: -.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.team-page .hero-name { font-size: 30px; }
+.hero-rec { font: 700 12px/1 var(--font-data); color: var(--hero-muted); }
+.hero-pts {
+  flex: none;
+  font: 800 40px/1 var(--font-data);
+  letter-spacing: -.03em;
+  transition: color .4s;
+}
+
+.hero-strip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 16px;
+  background: var(--hero-strip);
+}
+.tier {
+  padding: 5px 10px; border-radius: var(--radius-pill);
+  font: 800 10px/1 var(--font-data);
+  letter-spacing: .14em; text-transform: uppercase;
+  white-space: nowrap;
+  background: var(--hero-pill); color: var(--hero-text);
+}
+.tier.critical { background: var(--gap-critical); color: var(--gap-critical-ink); }
+.tier.live     { background: var(--gap-live);     color: var(--gap-live-ink); }
+.leads { font: 700 12px/1.3 var(--font-data); color: var(--hero-muted); min-width: 0; }
+.leads b { color: var(--hero-text); font-weight: 700; }
+.hero-gap { margin-left: auto; font: 800 18px/1 var(--font-data); letter-spacing: -.01em; white-space: nowrap; }
+
+/* ---------- new-leader takeover ----------
+   Fires on the hero when the #1 franchise changes: a mint strobe, three
+   lightning bolts that draw in and flicker, a bright diagonal sweep, the
+   badge spinning in and the new name rising into place. All layers live
+   in .fx, which is invisible until the hero carries .takeover. */
+
+.hero-body { display: flex; flex-direction: column; gap: 14px; }
+
+.fx {
+  position: absolute; inset: 0;
+  border-radius: inherit; overflow: hidden;
+  pointer-events: none; visibility: hidden;
+}
+.hero.takeover .fx { visibility: visible; }
+
+.fx .strobe { position: absolute; inset: 0; background: var(--accent); mix-blend-mode: screen; opacity: 0; }
+.fx .sweep {
+  position: absolute; top: -30%; bottom: -30%; left: 0; width: 38%;
+  transform: translateX(-130%) skewX(-22deg);
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.35) 40%, #fff 50%, rgba(255,255,255,.35) 60%, transparent 100%);
+  mix-blend-mode: screen; filter: blur(1px); opacity: 0;
+}
+.fx .bolts { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fx .bolt {
+  fill: none; stroke: #fff; stroke-width: 2.5;
+  stroke-linejoin: round; stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0;
+  filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px var(--accent));
+}
+
+.hero.takeover { animation: fflr-pop-card 1s cubic-bezier(.2, .8, .2, 1); }
+.hero.takeover .strobe { animation: fflr-strobe .8s ease-out both; }
+.hero.takeover .sweep { animation: fflr-sweep .8s cubic-bezier(.3, .7, .2, 1) .15s both; }
+.hero.takeover .bolt { animation: fflr-bolt .95s ease-out both; }
+.hero.takeover .bolt:nth-child(2) { animation-delay: .1s; }
+.hero.takeover .bolt:nth-child(3) { animation-delay: .22s; }
+.hero.takeover .badge { animation: fflr-badge .7s cubic-bezier(.2, .8, .2, 1) .05s both; }
+/* The whole middle band rises, so the score keeps its own .flash. */
+.hero.takeover .hero-mid { animation: fflr-rise .6s cubic-bezier(.2, .9, .3, 1.3) .1s both; }
+
+@keyframes fflr-pop-card { 0% { transform: scale(1); } 6% { transform: scale(1.03); } 30% { transform: scale(1); } 100% { transform: scale(1); } }
+@keyframes fflr-strobe { 0% { opacity: .9; } 10% { opacity: .1; } 18% { opacity: .65; } 30% { opacity: 0; } 44% { opacity: .35; } 100% { opacity: 0; } }
+@keyframes fflr-sweep { from { transform: translateX(-130%) skewX(-22deg); opacity: 0; } 15% { opacity: 1; } to { transform: translateX(400%) skewX(-22deg); opacity: 0; } }
+@keyframes fflr-bolt { 0% { stroke-dashoffset: 1; opacity: 1; } 14% { stroke-dashoffset: 0; opacity: 1; } 22% { opacity: .15; } 30% { opacity: 1; } 42% { opacity: .3; } 52% { opacity: .85; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes fflr-badge { from { transform: rotate(-540deg) scale(.3); } to { transform: none; } }
+@keyframes fflr-rise { from { transform: translateY(14px) scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Rows that were not on the list a moment ago (the ex-leader dropping in
+   at #2) fade in rather than pop. */
+.row.enter { animation: fflr-row-in .45s ease-out; }
+@keyframes fflr-row-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+
+/* ---------- spotlight: top scorer of the day / MVP of the week ----------
+   Sits under the hero. Shows the day's top starter once that day's games
+   are final, and turns gold for the week's MVP once the week is official. */
+
+.spot {
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  padding: 14px 16px 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  position: relative; overflow: hidden;
+  transition: background .3s, border-color .3s, box-shadow .3s;
+}
+/* The card's own display beats the UA's [hidden] rule; make hidden win. */
+.spot[hidden] { display: none; }
+.spot-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.spot-label { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); transition: color .3s; }
+.spot-when {
+  padding: 5px 9px; border-radius: var(--radius-pill);
+  background: var(--surface-raised); color: var(--text-muted);
+  font: 700 11px/1 var(--font-data);
+  transition: background .3s, color .3s;
+}
+.spot-body {
+  display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: center;
+  animation: fflr-rise .5s cubic-bezier(.2, .9, .3, 1.3) both;
+}
+.spot-face { position: relative; width: 56px; height: 56px; }
+.spot-face .avatar, .spot-face .avatar-fb { width: 56px; height: 56px; border: 2px solid var(--border-strong); transition: border-color .3s; }
+.spot-face .avatar-fb { font-size: 14px; }
+.spot-face .logo {
+  position: absolute; right: -6px; bottom: -4px;
+  width: 26px; height: 26px; border-radius: 50%; padding: 3px;
+  background: var(--surface); border: 1px solid var(--border-strong);
+  display: grid; place-items: center;
+  font: 800 8px/1 var(--font-data); color: var(--text-muted);
+}
+.spot-face .logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.spot-who { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.spot-name { font: 700 17px/1.1 var(--font-display); letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spot-meta { display: flex; align-items: center; gap: 6px; font: 700 11px/1 var(--font-data); letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+.spot-meta .pos { height: 20px; padding: 0 8px; font-size: 10px; }
+.spot-stat { font: 600 11.5px/1.2 var(--font-data); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spot-stat:empty { display: none; }
+.spot-for { font: 600 11.5px/1.2 var(--font-data); color: var(--text-muted); }
+.spot-for b { color: var(--text-secondary); font-weight: 700; }
+.spot-pts { font: 800 28px/1 var(--font-data); letter-spacing: -.02em; text-align: right; transition: color .3s; }
+.spot-flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: var(--gold); mix-blend-mode: screen; animation: fflr-strobe .8s ease-out both; }
+
+.spot.mvp { border-color: var(--gold-line); box-shadow: var(--shadow-card), 0 0 0 1px var(--gold-soft) inset; }
+.spot.mvp .spot-label { color: var(--gold); }
+.spot.mvp .spot-when { background: var(--gold-soft); color: var(--gold); }
+.spot.mvp .spot-pts { color: var(--gold); }
+.spot.mvp .spot-face .avatar, .spot.mvp .spot-face .avatar-fb { border-color: var(--gold); }
+
+.livemark.final { color: var(--text-muted); }
+.livemark.final .dot { display: none; }
+
+/* ---------- colour waves ----------
+   A soft band of colour drifting back and forth across a card. Subtle by
+   design: the band is the -soft alpha of the accent, on a 250%-wide
+   gradient so most of the card is untouched at any moment. */
+@keyframes fflr-wave { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+
+.spot::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 22%, var(--accent-soft) 45%, transparent 68%);
+  background-size: 250% 100%;
+  animation: fflr-wave 9s ease-in-out infinite alternate;
+}
+.spot.mvp::before { background-image: linear-gradient(115deg, transparent 20%, var(--gold-soft) 42%, rgba(255, 255, 255, .06) 50%, var(--gold-soft) 58%, transparent 80%); }
+.spot-top, .spot-body { position: relative; }
+
+/* Week winner: the hero gets a gold wave and a money bag hanging over
+   its top-right corner. The bag lives outside the hero (which clips its
+   own overflow for the lightning) so it can overhang the edge. */
+.hero-wrap { position: relative; }
+.hero-wave {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: linear-gradient(115deg, transparent 15%, var(--hero-gold-soft) 40%, rgba(255, 255, 255, .08) 50%, var(--hero-gold-soft) 60%, transparent 85%);
+  background-size: 250% 100%;
+  animation: fflr-wave 8s ease-in-out infinite alternate;
+  transition: opacity .6s;
+}
+.hero.winner .hero-wave { opacity: 1; }
+.hero.winner { border-color: var(--hero-gold-line); }
+.hero.winner .badge { background: var(--hero-gold); color: #3a2a00; }
+.hero-money {
+  position: absolute; top: -22px; right: 16px;
+  font-size: 46px; line-height: 1;
+  pointer-events: none; opacity: 0;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, .45));
+  transform-origin: 50% 0;
+  transition: opacity .4s;
+}
+.hero-wrap.winner .hero-money { opacity: 1; animation: fflr-hang 3.2s ease-in-out infinite; }
+@keyframes fflr-hang { 0%, 100% { transform: rotate(-7deg) translateY(0); } 50% { transform: rotate(8deg) translateY(3px); } }
+
+/* ---------- standings ---------- */
+
+.standings { display: flex; flex-direction: column; gap: 10px; }
+.standings-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 6px; }
+.standings-head h2 { margin: 0; font: 700 20px/1 var(--font-display); letter-spacing: -.01em; }
+.standings-head span { font: 700 12px/1 var(--font-data); color: var(--text-muted); }
+
+.board { display: flex; flex-direction: column; }
+
+.row {
+  display: grid;
+  grid-template-columns: 36px 1fr 82px 14px;
+  gap: 12px; align-items: center;
+  width: 100%; text-align: left;
+  border: 0; cursor: pointer;
+  padding: 12px 14px 12px 12px;
+  background: var(--surface);
+  color: var(--text-primary);
+  border-radius: var(--radius-row);
+  box-shadow: var(--shadow-card);
+  transition: background .25s, border-radius .3s;
+}
+.row:hover { filter: brightness(1.06); }
+.row:focus-visible { outline-offset: -2px; }
+/* Cluster fusing: rows adjacent to a hot gap share one card. Each edge
+   that borders a hot gap loses its radius; fused rows drop the shadow. */
+.row.fuse-top    { border-top-left-radius: 0;    border-top-right-radius: 0; }
+.row.fuse-bottom { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.row.fused       { box-shadow: none; }
+
+.rank {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--surface-raised); color: var(--text-secondary);
+  font: 800 13px/1 var(--font-data);
+  transition: background .3s, color .3s;
+}
+.rank.critical { background: var(--gap-critical);  color: var(--gap-critical-ink); }
+.rank.live     { background: var(--gap-live-soft); color: var(--gap-live); }
+
+.who { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.name {
+  font: 700 15px/1.15 var(--font-display);
+  letter-spacing: -.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sub { display: flex; align-items: center; gap: 6px; font: 600 11.5px/1 var(--font-data); color: var(--text-muted); }
+.rec {
+  padding: 3px 7px; border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  font: 800 10.5px/1 var(--font-data);
+  color: var(--text-secondary);
+}
+.status { display: flex; align-items: center; gap: 5px; transition: color .4s; white-space: nowrap; }
+.status.on { color: var(--accent); }
+
+.pts { font: 800 20px/1 var(--font-data); text-align: right; letter-spacing: -.02em; transition: color .4s; }
+.chev { font: 400 20px/1 var(--font-data); color: var(--text-faint); }
+
+/* ---------- gap divider: the designed object ---------- */
+
+.gap {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: center; gap: 10px;
+  padding: 6px 22px;
+  background: transparent;
+  transition: background .3s;
+}
+.gap .line { height: 1px; background: var(--gap-settled); transition: background .3s; }
+.gap .pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  font: 800 12px/1 var(--font-data);
+  letter-spacing: .02em;
+  transition: background .3s, color .3s;
+}
+.gap .flip { font: 800 10px/1 var(--font-data); letter-spacing: .16em; text-transform: uppercase; }
+
+.gap.live { padding: 2px 14px; background: var(--surface); }
+.gap.live .line { background: var(--gap-live); }
+.gap.live .pill { padding: 5px 11px; background: var(--gap-live-soft); border-color: transparent; color: var(--gap-live); }
+
+.gap.critical { padding: 4px 14px; background: var(--surface); }
+.gap.critical .line { background: var(--gap-critical); }
+.gap.critical .pill { padding: 7px 13px; background: var(--gap-critical); border-color: transparent; color: var(--gap-critical-ink); }
+
+/* ---------- legend + footnotes ---------- */
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px; }
+.legend span {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 30px; padding: 0 12px;
+  border-radius: var(--radius-pill);
+  font: 800 11px/1 var(--font-data);
+  background: var(--surface); border: 1px solid var(--border-strong); color: var(--text-muted);
+}
+.legend .critical { background: var(--gap-critical-soft); border-color: transparent; color: var(--gap-critical); }
+.legend .live     { background: var(--gap-live-soft);     border-color: transparent; color: var(--gap-live); }
+
+.note { margin: 0; padding: 0 6px; font-size: 13px; line-height: 1.55; color: var(--text-muted); text-wrap: pretty; }
+.note strong { color: var(--text-secondary); font-weight: 700; }
+
+/* ---------- team page: full-screen route over the board ---------- */
+
+.team-page {
+  position: fixed; inset: 0; z-index: 50;
+  overflow-y: auto;
+  background: var(--canvas); color: var(--text-primary);
+  display: none;
+  animation: fflr-fade-in .2s ease-out;
+}
+.team-page[data-open="true"] { display: block; }
+/* Closing: stay mounted for the fade, then the script flips to "false". */
+.team-page[data-open="closing"] { display: block; pointer-events: none; animation: fflr-fade-out .22s ease-out forwards; }
+.team-page[data-open="closing"] .shell { animation: none; }
+.team-page .shell { gap: 18px; animation: fflr-sheet-in .32s cubic-bezier(.2, .8, .2, 1); }
+
+.team-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.glass {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 40px; padding: 0 14px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-strong);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.back {
+  padding: 0 16px 0 12px; cursor: pointer;
+  font: 800 12px/1 var(--font-data);
+  letter-spacing: .04em;
+}
+.back .chev-l { font-size: 18px; line-height: 1; }
+.live-pill { gap: 5px; font: 800 10px/1 var(--font-data); letter-spacing: .14em; text-transform: uppercase; color: var(--gap-critical); }
+
+.tabs {
+  display: flex; gap: 4px; padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+}
+.tab {
+  flex: 1; border: 0; cursor: pointer; height: 40px;
+  border-radius: var(--radius-pill);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font: 800 12px/1 var(--font-data);
+  background: transparent; color: var(--text-muted);
+  transition: background .25s, color .25s;
+}
+.tab span { font-weight: 700; opacity: .75; }
+.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+
+.roster {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 8px;
+}
+.roster .empty { margin: 0; padding: 24px 8px; font-size: 13px; line-height: 1.5; color: var(--text-muted); text-align: center; text-wrap: pretty; }
+
+.prow {
+  display: grid;
+  grid-template-columns: 40px 40px 1fr auto;
+  gap: 10px; align-items: center;
+  padding: 9px 8px;
+  border-radius: var(--radius-row);
+  transition: background .2s, opacity .3s;
+}
+.prow:hover { background: var(--surface-raised); }
+.prow.bench { opacity: .75; }
+.prow.bench.zero { opacity: .42; }
+
+/* Sleeper headshot, cropped square at build time (see build-data.mjs) so
+   the face fills the circle. */
+.avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 12%;   /* headshots sit high in frame */
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  display: block;
+}
+/* Fallback when Sleeper has no headshot: the handoff's initials circle. */
+.avatar-fb {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  display: grid; place-items: center;
+  font: 800 11px/1 var(--font-data);
+  letter-spacing: .02em;
+  color: var(--text-muted);
+}
+
+.pos {
+  display: inline-grid; place-items: center;
+  height: 24px; border-radius: var(--radius-pill);
+  font: 800 10.5px/1 var(--font-data);
+  letter-spacing: .08em;
+}
+.pos-QB  { color: var(--pos-qb); background: var(--pos-qb-soft); }
+.pos-RB  { color: var(--pos-rb); background: var(--pos-rb-soft); }
+.pos-WR  { color: var(--pos-wr); background: var(--pos-wr-soft); }
+.pos-TE  { color: var(--pos-te); background: var(--pos-te-soft); }
+.pos-K   { color: var(--pos-k);  background: var(--pos-k-soft); }
+/* All defensive positions share one colour: this league starts 3 IDP in
+   any combination, so DE/DT/LB/CB/S are one slot type. */
+.pos-IDP { color: var(--pos-lb); background: var(--pos-lb-soft); }
+
+.pname { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pname b {
+  font: 700 15px/1.15 var(--font-display);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pname .pmeta { display: flex; align-items: center; gap: 6px; font: 700 11px/1 var(--font-data); letter-spacing: .08em; color: var(--text-muted); text-transform: uppercase; }
+.pname .pmeta .clock { display: inline-flex; align-items: center; gap: 5px; color: var(--accent); }
+/* Stat line: context beside MFL's number, never a score of its own. */
+.pname .pstat {
+  font: 600 11.5px/1.2 var(--font-data);
+  color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pname .pstat:empty { display: none; }
+.prow.bench .pstat { color: var(--text-muted); }
+
+.ppts { font: 800 17px/1 var(--font-data); letter-spacing: -.01em; text-align: right; transition: color .4s; }
+.ppts.zero { color: var(--text-muted); }
+
+/* Live values flash once on change; rows in flight sit above the dividers. */
+.flash { animation: fflr-flash .9s ease-out; }
+
+/* Scores roll from old to new (script tween) and pop a floating delta. */
+.pts, .ppts, .hero-pts { position: relative; }
+.delta {
+  position: absolute; right: 0; top: -15px;
+  font: 800 11px/1 var(--font-data); letter-spacing: .02em;
+  color: var(--accent); pointer-events: none; white-space: nowrap;
+  animation: fflr-delta 1.1s ease-out forwards;
+}
+.delta.neg { color: var(--gap-critical); }
+@keyframes fflr-delta { 0% { opacity: 0; transform: translateY(8px); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-18px); } }
+.row.moving { position: relative; z-index: 2; }
+
+.devbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.devlabel { padding: 0 4px; font: 800 10px/1 var(--font-data); letter-spacing: .18em; text-transform: uppercase; color: var(--text-faint); }
+.sim {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 32px; padding: 0 14px;
+  border-radius: var(--radius-pill);
+  background: var(--surface); border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  font: 800 11px/1 var(--font-data);
+  cursor: pointer;
+  transition: background .25s, color .25s;
+}
+.sim .dot { display: none; }
+.sim[aria-pressed="true"] { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.sim[aria-pressed="true"] .dot { display: block; }
+
+/* ---------- touchdown announcement ----------
+   A celebration card over everything (z above the team page). Rays turn
+   behind the headshot, TOUCHDOWN slams in from the left, the team logo
+   badges the portrait, and a bar drains for the four seconds it stays. */
+
+.td {
+  position: fixed; inset: 0; z-index: 60;
+  display: none; align-items: center; justify-content: center;
+  padding: clamp(12px, 4vw, 24px);
+}
+.td[data-open="true"], .td[data-open="closing"] { display: flex; }
+
+.td-scrim { position: absolute; inset: 0; background: var(--scrim); animation: fflr-fade-in .2s ease-out both; }
+.td[data-open="closing"] .td-scrim { animation: fflr-fade-out .22s ease-out forwards; }
+
+.td-card {
+  position: relative;
+  width: min(420px, 100%);
+  border-radius: var(--radius-card);
+  background: var(--hero-bg);
+  color: var(--hero-text);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sheet);
+  padding: 28px 22px 24px;
+  overflow: hidden;
+  container-type: inline-size;   /* the headline sizes itself from the card */
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  text-align: center;
+  animation: fflr-td-in .55s cubic-bezier(.2, .9, .3, 1.25) both;
+}
+.td[data-open="closing"] .td-card { animation: fflr-td-out .22s ease-in forwards; }
+
+.td-rays {
+  position: absolute; inset: -60%;
+  background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.09) 0 10deg, transparent 10deg 24deg);
+  animation: fflr-rays 14s linear infinite;
+  pointer-events: none;
+}
+.td-more {
+  position: absolute; top: 14px; right: 14px;
+  padding: 6px 10px; border-radius: var(--radius-pill);
+  background: var(--hero-pill);
+  font: 800 10px/1 var(--font-data); letter-spacing: .14em; text-transform: uppercase;
+}
+.td-word {
+  position: relative;
+  /* Archivo 900 italic runs 7.2x the font size for this word, so 13.5% of
+     the card's inner width always fits, capped at the design's 46px. */
+  font: italic 900 min(46px, 13.5cqi)/0.9 var(--font-display);
+  letter-spacing: -.02em; text-transform: uppercase;
+  white-space: nowrap;
+  animation: fflr-slam .5s cubic-bezier(.2, .9, .3, 1.3) .12s both;
+}
+.td-face {
+  position: relative; width: 132px; height: 132px;
+  animation: fflr-td-pop .5s cubic-bezier(.2, .9, .3, 1.3) .05s both;
+}
+.td-face .td-shot {
+  width: 132px; height: 132px; border-radius: 50%;
+  object-fit: cover; object-position: 50% 12%;
+  background: var(--surface-raised);
+  border: 3px solid var(--hero-accent);
+  box-shadow: 0 0 0 7px var(--hero-accent-soft), 0 16px 40px rgba(0, 0, 0, .35);
+  display: grid; place-items: center;
+  font: 800 28px/1 var(--font-data); color: var(--text-muted);
+}
+.td-face .td-logo {
+  position: absolute; right: -8px; bottom: -4px;
+  width: 54px; height: 54px; border-radius: 50%;
+  background: var(--surface); border: 2px solid var(--hero-text);
+  display: grid; place-items: center; padding: 7px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .35);
+  font: 800 11px/1 var(--font-data); color: var(--text-primary);
+}
+.td-face .td-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.td-name { position: relative; font: 700 22px/1.1 var(--font-display); letter-spacing: -.01em; text-wrap: balance; }
+.td-meta {
+  position: relative;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font: 700 12px/1 var(--font-data); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--hero-muted);
+}
+.td-meta .pos { padding: 0 10px; background: var(--hero-pill); color: var(--hero-text); }
+.td-for { position: relative; font: 700 13px/1.3 var(--font-data); color: var(--hero-muted); }
+.td-for b { color: var(--hero-text); }
+.td-pts {
+  position: relative;
+  font: 800 40px/1 var(--font-data); letter-spacing: -.03em;
+  color: var(--hero-accent);
+  animation: fflr-rise .5s cubic-bezier(.2, .9, .3, 1.3) .28s both;
+}
+.td-bar {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+  background: var(--hero-accent); transform-origin: left;
+  animation: fflr-td-bar var(--td-ms, 4000ms) linear both;
+}
+
+/* ---------- Bears touchdown: BEAR DOWN! ----------
+   The whole card goes Bears: navy ground with an orange glow, an orange
+   flash on entry, orange rays, orange-and-white portrait ring. Team
+   colours are literal on purpose -- they are the Bears', not the theme's,
+   and the navy ground is the same in both themes so the card reads
+   identically over a light or dark page. */
+.td.td-chi { --chi-orange: #c83803; --chi-navy: #0b162a; --chi-navy-2: #1b3059; }
+.td-chi .td-scrim { background: rgba(11, 22, 42, .72); }
+.td-chi .td-card {
+  background:
+    radial-gradient(120% 70% at 50% -10%, rgba(200, 56, 3, .55), transparent 62%),
+    linear-gradient(165deg, var(--chi-navy-2) 0%, var(--chi-navy) 70%);
+  color: #fff;
+  border-color: rgba(200, 56, 3, .5);
+}
+/* Entry flash: a real element (rebuilt with every card, so it replays
+   for back-to-back Bears) resting at opacity 0. */
+.td-flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; display: none; }
+.td-chi .td-flash { display: block; background: var(--chi-orange); mix-blend-mode: screen; animation: fflr-strobe .8s ease-out both; }
+.td-chi .td-rays { background: repeating-conic-gradient(from 0deg, rgba(200, 56, 3, .3) 0 10deg, transparent 10deg 24deg); }
+.td-chi .td-shot {
+  border-color: var(--chi-orange);
+  box-shadow: 0 0 0 5px #fff, 0 0 0 9px var(--chi-orange), 0 16px 40px rgba(0, 0, 0, .45);
+}
+.td-chi .td-logo { background: #fff; border-color: var(--chi-orange); }
+.td-chi .td-more, .td-chi .td-meta .pos { background: rgba(255, 255, 255, .16); }
+.td-chi .td-meta, .td-chi .td-for { color: rgba(255, 255, 255, .72); }
+.td-chi .td-for b { color: #fff; }
+.td-chi .td-bar { background: var(--chi-orange); }
+.td-chi .td-pts { color: var(--chi-orange); text-shadow: 0 0 18px rgba(200, 56, 3, .55); }
+.td-chant {
+  position: relative;
+  display: flex; justify-content: center; gap: .04em;
+  margin-top: -6px;
+  font: italic 900 min(34px, 12.4cqi)/1 var(--font-display);   /* 7.7x ratio */
+  letter-spacing: .02em; text-transform: uppercase;
+  color: var(--chi-orange);
+  -webkit-text-stroke: 1.5px var(--chi-navy);
+  paint-order: stroke fill;
+  /* Navy trim, then a soft white edge so the trim still reads on navy. */
+  text-shadow: 3px 3px 0 var(--chi-navy), 4px 4px 0 rgba(255, 255, 255, .55), 0 0 14px rgba(255, 255, 255, .25);
+  animation: fflr-growl .5s ease-in-out 1.35s both;
+}
+.td-chant span {
+  display: inline-block;
+  animation: fflr-stomp .45s cubic-bezier(.2, .9, .3, 1.4) both;
+  animation-delay: calc(.55s + var(--i) * 65ms);
+}
+.td-chant .sp { width: .35em; }
+@keyframes fflr-stomp {
+  0% { transform: translateY(-46px) scale(1.9) rotate(-8deg); opacity: 0; }
+  60% { transform: translateY(5px) scale(.94) rotate(2deg); opacity: 1; }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes fflr-growl {
+  0%, 100% { transform: none; }
+  20% { transform: translateX(-5px) rotate(-2deg); }
+  40% { transform: translateX(5px) rotate(2deg); }
+  60% { transform: translateX(-4px) rotate(-1deg); }
+  80% { transform: translateX(4px) rotate(1deg); }
+}
+
+@keyframes fflr-td-in { from { transform: translateY(40px) scale(.82); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes fflr-td-out { to { transform: translateY(16px) scale(.94); opacity: 0; } }
+@keyframes fflr-td-pop { from { transform: scale(.3) rotate(-12deg); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes fflr-slam { from { transform: translateX(-40px) skewX(-14deg) scale(1.18); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes fflr-rays { to { transform: rotate(360deg); } }
+@keyframes fflr-td-bar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .dot { animation: none; }
+  .td-scrim, .td-card, .td-card * { animation: none !important; }
+  .flash { animation: none; }
+  .hero.takeover, .hero.takeover * { animation: none !important; }
+  .spot::before, .hero-wave, .hero-money { animation: none; }
+  .row.enter { animation: none; }
+  .delta { display: none; }
+  .team-page, .team-page .shell { animation: none; }
+}

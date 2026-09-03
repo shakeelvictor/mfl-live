@@ -116,10 +116,18 @@ Thresholds (`CRITICAL`, `LIVE`, `WITHIN`) live in one place in the script and
 the legend and capsules read them. The headline stats and the hero are derived
 from the rows.
 
-`mockup/build-data.mjs` regenerates both embedded blobs from the committed
-fixture (`MFL_UA='imp19716' node mockup/build-data.mjs`). It asserts each team
-has 12 starters whose points sum to the team total, so a bad join fails loudly
-rather than shipping. Do not hand-edit the blobs.
+**Mockup layout.** `mockup/index.html` is the markup; it links `styles.css`,
+`app.js` and the generated `data.js` (ROSTERS, HEADSHOTS, LOGOS -- 2.2MB of
+base64, and the only reason the page is big). That is what the preview server
+serves. The Artifact needs one self-contained file, so `mockup/bundle.mjs`
+inlines the four into `mockup/dist/leaderboard.html` (gitignored) -- publish
+that, never `index.html`.
+
+`mockup/build-data.mjs` regenerates `data.js` from the committed fixture and
+then rebundles (`MFL_UA='imp19716' node mockup/build-data.mjs`; plain
+`node mockup/bundle.mjs` when only code changed). It asserts each team has 12
+starters whose points sum to the team total, so a bad join fails loudly rather
+than shipping. Do not hand-edit `data.js`.
 
 ## Player images and stats
 
@@ -135,8 +143,9 @@ headshot.
   (SFO/NEP/GBP/KCC/TBB/NOS/LVR/JAC -> sf/ne/gb/kc/tb/no/lv/jax), mapped in
   `build-data.mjs`. **An unknown id returns 403, not 404** -- don't branch
   on 404.
-- The mockup **inlines** them as data: URIs (~2.2MB: 215 headshots at 160px
-  plus 32 logos) because the Artifact CSP blocks `sleepercdn.com`; a plain `<img src>` to the CDN renders nothing with
+- The mockup **inlines** them as data: URIs in `data.js` (~2.2MB: 215
+  headshots at 160px plus 32 logos) because the Artifact CSP blocks
+  `sleepercdn.com`; a plain `<img src>` to the CDN renders nothing with
   no error. On Netlify there is no such constraint -- load them from the CDN.
 - `sips` applies `-Z` **before** `-c` regardless of argument order, so cropping
   square and resizing must be two separate calls or the crop clamps to the
@@ -254,6 +263,7 @@ deliberately; before that, `git rev-parse --show-toplevel` returned
   Copy `src/mfl/client.mjs` if useful; do not couple the deployments.
 - **`spike/data/` is gitignored.** Those logs are measurements, not source.
 - **`mockup/.cache/` is gitignored** (23MB of refetchable MFL and Sleeper
-  data plus raw headshots); `mockup/leaderboard.html` and the remaining
-  handoff files at the repo root are committed. `.claude/launch.json` (a
+  data plus raw headshots) and so is `mockup/dist/` (the bundle); the split
+  mockup sources including `data.js`, and the remaining handoff files at the
+  repo root, are committed. `.claude/launch.json` (a
   static server for previewing the mockup) stays untracked.

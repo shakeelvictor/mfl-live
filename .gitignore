@@ -9,3 +9,6 @@ spike/data/
 
 # Fetched MFL reference data for the mockup generator; refetchable.
 mockup/.cache/
+
+# Single-file bundle for publishing; rebuilt by mockup/bundle.mjs.
+mockup/dist/
