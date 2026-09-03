@@ -45,6 +45,9 @@ const B = 'https://api.myfantasyleague.com/2025/export';
 const league  = await cachedJson('league.json',  `${B}?TYPE=league&L=19716&JSON=1`);
 const players = await cachedJson('players.json', `${B}?TYPE=players&L=19716&DETAILS=1&JSON=1`);
 const sleeper = await cachedJson('sleeper-players.json', 'https://api.sleeper.app/v1/players/nfl');
+// Real Week 12 stat lines, keyed by Sleeper id. Context beside MFL's points,
+// never a substitute for them (see CLAUDE.md: recomputing is disqualified).
+const stats = await cachedJson('sleeper-stats-2025-w12.json', 'https://api.sleeper.app/v1/stats/nfl/regular/2025/12');
 
 const ls = JSON.parse(fs.readFileSync('spike/fixtures/liveScoring-2025-w12.json', 'utf8')).liveScoring;
 
@@ -62,6 +65,16 @@ for (const [sid, s] of Object.entries(sleeper)) {
 }
 
 const nm = (s) => { const [l, f] = String(s).split(',').map((x) => x.trim()); return f ? `${f} ${l}` : l; };
+// The subset of Sleeper's stat keys a stat line is built from; zeros dropped.
+const STAT_KEYS = ['pass_cmp', 'pass_att', 'pass_yd', 'pass_td', 'pass_int', 'rush_att', 'rush_yd', 'rush_td',
+  'rec', 'rec_tgt', 'rec_yd', 'rec_td', 'fum_lost', 'fgm', 'fga', 'xpm', 'xpa',
+  'idp_tkl', 'idp_tkl_solo', 'idp_sack', 'idp_int', 'idp_ff', 'idp_fum_rec', 'idp_pass_def', 'idp_tkl_loss'];
+const statLine = (sid) => {
+  const src = (sid && stats[sid]) || {};
+  const out = {};
+  for (const k of STAT_KEYS) if (src[k]) out[k] = src[k];
+  return out;
+};
 const POS = (p) => (p === 'PK' ? 'K' : p);
 
 const rosters = ls.franchise.map((f) => {
@@ -75,7 +88,8 @@ const rosters = ls.franchise.map((f) => {
       s: p.status === 'starter',
     };
   });
-  const strip = ({ n, pos, tm, pts, sid }) => ({ n, pos, tm, pts, sid });
+  for (const p of ps) p.st = statLine(p.sid);
+  const strip = ({ n, pos, tm, pts, sid, st }) => ({ n, pos, tm, pts, sid, st });
   return {
     id: f.id, team: names[f.id], pts: Number(f.score),
     starters: ps.filter((p) => p.s).map(strip),
@@ -211,5 +225,6 @@ const kb = (b) => (b / 1024).toFixed(0) + 'KB';
 console.log(`ok: ${rosters.length} franchises, ${everyone.length} players`);
 console.log(`    sleeper ids resolved : ${everyone.filter((p) => p.sid).length}/${everyone.length}`);
 console.log(`    headshots embedded   : ${got}/${wanted.length}${missing.length ? '  missing: ' + missing.join(',') : ''}`);
+console.log(`    stat lines           : ${everyone.filter((p) => Object.keys(p.st).length).length}/${everyone.length} non-empty`);
 console.log(`    team logos embedded  : ${teamsSeen.length}`);
 console.log(`    rosters ${kb(rostersBlob.length)}  headshots ${kb(shotsBlob.length)}  logos ${kb(logosBlob.length)}  file ${kb(html.length)}`);

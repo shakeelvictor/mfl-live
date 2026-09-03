@@ -574,7 +574,16 @@
     font: 700 15px/1.15 var(--font-display);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .pname span { font: 700 11px/1 var(--font-data); letter-spacing: .08em; color: var(--text-muted); }
+  .pname .pmeta { display: flex; align-items: center; gap: 6px; font: 700 11px/1 var(--font-data); letter-spacing: .08em; color: var(--text-muted); text-transform: uppercase; }
+  .pname .pmeta .clock { display: inline-flex; align-items: center; gap: 5px; color: var(--accent); }
+  /* Stat line: context beside MFL's number, never a score of its own. */
+  .pname .pstat {
+    font: 600 11.5px/1.2 var(--font-data);
+    color: var(--text-secondary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pname .pstat:empty { display: none; }
+  .prow.bench .pstat { color: var(--text-muted); }
 
   .ppts { font: 800 17px/1 var(--font-data); letter-spacing: -.01em; text-align: right; transition: color .4s; }
   .ppts.zero { color: var(--text-muted); }
@@ -618,7 +627,7 @@
   .td {
     position: fixed; inset: 0; z-index: 60;
     display: none; align-items: center; justify-content: center;
-    padding: 24px;
+    padding: clamp(12px, 4vw, 24px);
   }
   .td[data-open="true"], .td[data-open="closing"] { display: flex; }
 
@@ -635,6 +644,7 @@
     box-shadow: var(--shadow-sheet);
     padding: 28px 22px 24px;
     overflow: hidden;
+    container-type: inline-size;   /* the headline sizes itself from the card */
     display: flex; flex-direction: column; align-items: center; gap: 14px;
     text-align: center;
     animation: fflr-td-in .55s cubic-bezier(.2, .9, .3, 1.25) both;
@@ -655,8 +665,11 @@
   }
   .td-word {
     position: relative;
-    font: italic 900 46px/0.9 var(--font-display);
+    /* Archivo 900 italic runs 7.2x the font size for this word, so 13.5% of
+       the card's inner width always fits, capped at the design's 46px. */
+    font: italic 900 min(46px, 13.5cqi)/0.9 var(--font-display);
     letter-spacing: -.02em; text-transform: uppercase;
+    white-space: nowrap;
     animation: fflr-slam .5s cubic-bezier(.2, .9, .3, 1.3) .12s both;
   }
   .td-face {
@@ -703,10 +716,72 @@
     animation: fflr-td-bar var(--td-ms, 4000ms) linear both;
   }
 
+  /* ---------- Bears touchdown: BEAR DOWN! ----------
+     The whole card goes Bears: navy ground with an orange glow, an orange
+     flash on entry, orange rays, orange-and-white portrait ring. Team
+     colours are literal on purpose -- they are the Bears', not the theme's,
+     and the navy ground is the same in both themes so the card reads
+     identically over a light or dark page. */
+  .td.td-chi { --chi-orange: #c83803; --chi-navy: #0b162a; --chi-navy-2: #1b3059; }
+  .td-chi .td-scrim { background: rgba(11, 22, 42, .72); }
+  .td-chi .td-card {
+    background:
+      radial-gradient(120% 70% at 50% -10%, rgba(200, 56, 3, .55), transparent 62%),
+      linear-gradient(165deg, var(--chi-navy-2) 0%, var(--chi-navy) 70%);
+    color: #fff;
+    border-color: rgba(200, 56, 3, .5);
+  }
+  /* Entry flash: a real element (rebuilt with every card, so it replays
+     for back-to-back Bears) resting at opacity 0. */
+  .td-flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; display: none; }
+  .td-chi .td-flash { display: block; background: var(--chi-orange); mix-blend-mode: screen; animation: fflr-strobe .8s ease-out both; }
+  .td-chi .td-rays { background: repeating-conic-gradient(from 0deg, rgba(200, 56, 3, .3) 0 10deg, transparent 10deg 24deg); }
+  .td-chi .td-shot {
+    border-color: var(--chi-orange);
+    box-shadow: 0 0 0 5px #fff, 0 0 0 9px var(--chi-orange), 0 16px 40px rgba(0, 0, 0, .45);
+  }
+  .td-chi .td-logo { background: #fff; border-color: var(--chi-orange); }
+  .td-chi .td-more, .td-chi .td-meta .pos { background: rgba(255, 255, 255, .16); }
+  .td-chi .td-meta, .td-chi .td-for { color: rgba(255, 255, 255, .72); }
+  .td-chi .td-for b { color: #fff; }
+  .td-chi .td-bar { background: var(--chi-orange); }
+  .td-chi .td-pts { color: var(--chi-orange); text-shadow: 0 0 18px rgba(200, 56, 3, .55); }
+  .td-chant {
+    position: relative;
+    display: flex; justify-content: center; gap: .04em;
+    margin-top: -6px;
+    font: italic 900 min(34px, 12.4cqi)/1 var(--font-display);   /* 7.7x ratio */
+    letter-spacing: .02em; text-transform: uppercase;
+    color: var(--chi-orange);
+    -webkit-text-stroke: 1.5px var(--chi-navy);
+    paint-order: stroke fill;
+    /* Navy trim, then a soft white edge so the trim still reads on navy. */
+    text-shadow: 3px 3px 0 var(--chi-navy), 4px 4px 0 rgba(255, 255, 255, .55), 0 0 14px rgba(255, 255, 255, .25);
+    animation: fflr-growl .5s ease-in-out 1.35s both;
+  }
+  .td-chant span {
+    display: inline-block;
+    animation: fflr-stomp .45s cubic-bezier(.2, .9, .3, 1.4) both;
+    animation-delay: calc(.55s + var(--i) * 65ms);
+  }
+  .td-chant .sp { width: .35em; }
+  @keyframes fflr-stomp {
+    0% { transform: translateY(-46px) scale(1.9) rotate(-8deg); opacity: 0; }
+    60% { transform: translateY(5px) scale(.94) rotate(2deg); opacity: 1; }
+    100% { transform: none; opacity: 1; }
+  }
+  @keyframes fflr-growl {
+    0%, 100% { transform: none; }
+    20% { transform: translateX(-5px) rotate(-2deg); }
+    40% { transform: translateX(5px) rotate(2deg); }
+    60% { transform: translateX(-4px) rotate(-1deg); }
+    80% { transform: translateX(4px) rotate(1deg); }
+  }
+
   @keyframes fflr-td-in { from { transform: translateY(40px) scale(.82); opacity: 0; } to { transform: none; opacity: 1; } }
   @keyframes fflr-td-out { to { transform: translateY(16px) scale(.94); opacity: 0; } }
   @keyframes fflr-td-pop { from { transform: scale(.3) rotate(-12deg); opacity: 0; } to { transform: none; opacity: 1; } }
-  @keyframes fflr-slam { from { transform: translateX(-48px) skewX(-14deg) scale(1.35); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes fflr-slam { from { transform: translateX(-40px) skewX(-14deg) scale(1.18); opacity: 0; } to { transform: none; opacity: 1; } }
   @keyframes fflr-rays { to { transform: rotate(360deg); } }
   @keyframes fflr-td-bar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
@@ -747,6 +822,7 @@
       <button class="sim" id="sim" type="button" aria-pressed="false"><span class="dot"></span>Simulate live scoring</button>
       <button class="sim" id="flip" type="button">Flip the lead</button>
       <button class="sim" id="td" type="button">Score a TD</button>
+      <button class="sim" id="td-chi" type="button">Bears TD</button>
     </div>
 
     <div class="week">
@@ -837,7 +913,7 @@
   // Real 2025 Week 12 data from MFL liveScoring (league 19716) + the players
   // export: franchise names, final scores, lineups, starter/bench split and
   // per-player points. Injected at build time -- nothing here is invented.
-  const ROSTERS = [{"id":"0005","team":"I'm Just Here to Network","pts":217.53,"starters":[{"n":"Jahmyr Gibbs","pos":"RB","tm":"DET","pts":63.2,"sid":"9221"},{"n":"Kamren Curl","pos":"S","tm":"LAR","pts":7,"sid":"7136"},{"n":"Dak Prescott","pos":"QB","tm":"DAL","pts":37.36,"sid":"3294"},{"n":"Jake Bates","pos":"K","tm":"DET","pts":12,"sid":"11539"},{"n":"Quinshon Judkins","pos":"RB","tm":"CLE","pts":18.27,"sid":"12512"},{"n":"Hunter Henry","pos":"TE","tm":"NEP","pts":21,"sid":"3214"},{"n":"Tee Higgins","pos":"WR","tm":"CIN","pts":5.6,"sid":"6801"},{"n":"Jack Campbell","pos":"LB","tm":"DET","pts":9,"sid":"10880"},{"n":"Robert Spillane","pos":"LB","tm":"NEP","pts":4,"sid":"5726"},{"n":"TreVeyon Henderson","pos":"RB","tm":"NEP","pts":11.8,"sid":"12529"},{"n":"Michael Wilson","pos":"WR","tm":"ARI","pts":16.8,"sid":"10232"},{"n":"Tetairoa McMillan","pos":"WR","tm":"CAR","pts":11.5,"sid":"12526"}],"bench":[{"n":"Evan McPherson","pos":"K","tm":"CIN","pts":13,"sid":"7839"},{"n":"Devin Bush","pos":"LB","tm":"CLE","pts":10.5,"sid":"5843"},{"n":"Bo Nix","pos":"QB","tm":"DEN","pts":0,"sid":"11563"},{"n":"Luke Musgrave","pos":"TE","tm":"GBP","pts":1.2,"sid":"9481"},{"n":"Adonai Mitchell","pos":"WR","tm":"NYJ","pts":6.2,"sid":"11625"},{"n":"Drake London","pos":"WR","tm":"ATL","pts":0,"sid":"8112"}]},{"id":"0010","team":"Reggaeton Forever","pts":176.96,"starters":[{"n":"Eric Wilson","pos":"LB","tm":"MIN","pts":4.5,"sid":"4413"},{"n":"Tyler Loop","pos":"K","tm":"BAL","pts":10,"sid":"12711"},{"n":"Demario Davis","pos":"LB","tm":"NOS","pts":8.5,"sid":"1052"},{"n":"Wan'Dale Robinson","pos":"WR","tm":"NYG","pts":30.1,"sid":"8126"},{"n":"Mark Andrews","pos":"TE","tm":"BAL","pts":1.67,"sid":"5012"},{"n":"Rashee Rice","pos":"WR","tm":"KCC","pts":21.1,"sid":"10229"},{"n":"Ashton Jeanty","pos":"RB","tm":"LVR","pts":22.47,"sid":"12527"},{"n":"Kyren Williams","pos":"RB","tm":"LAR","pts":7.23,"sid":"8150"},{"n":"Marcus Jones","pos":"CB","tm":"NEP","pts":17,"sid":"8359"},{"n":"Rashid Shaheed","pos":"WR","tm":"SEA","pts":4.57,"sid":"8676"},{"n":"Matthew Stafford","pos":"QB","tm":"LAR","pts":28.92,"sid":"421"},{"n":"D.J. Moore","pos":"WR","tm":"CHI","pts":20.9,"sid":"4983"}],"bench":[{"n":"Tyrel Dodson","pos":"LB","tm":"MIA","pts":0,"sid":"6315"},{"n":"Tre Tucker","pos":"WR","tm":"LVR","pts":4.3,"sid":"10213"},{"n":"Brashard Smith","pos":"RB","tm":"KCC","pts":5.27,"sid":"12455"},{"n":"AJ Barner","pos":"TE","tm":"SEA","pts":2.8,"sid":"11603"},{"n":"Keenan Allen","pos":"WR","tm":"LAC","pts":0,"sid":"1479"},{"n":"Rashod Bateman","pos":"WR","tm":"BAL","pts":0,"sid":"7571"},{"n":"Kareem Hunt","pos":"RB","tm":"KCC","pts":22.97,"sid":"4098"},{"n":"Jaxson Dart","pos":"QB","tm":"NYG","pts":0,"sid":"12508"}]},{"id":"0002","team":"Ryaan","pts":151.29,"starters":[{"n":"Michael Carter","pos":"RB","tm":"ARI","pts":8.23,"sid":"7607"},{"n":"Kayshon Boutte","pos":"WR","tm":"NEP","pts":2.5,"sid":"9504"},{"n":"Jauan Jennings","pos":"WR","tm":"SFO","pts":12.6,"sid":"7049"},{"n":"Myles Garrett","pos":"DE","tm":"CLE","pts":23.5,"sid":"3973"},{"n":"Danielle Hunter","pos":"DE","tm":"HOU","pts":12.5,"sid":"2393"},{"n":"Emeka Egbuka","pos":"WR","tm":"TBB","pts":4.7,"sid":"12514"},{"n":"Jake Ferguson","pos":"TE","tm":"DAL","pts":8.63,"sid":"8110"},{"n":"Davante Adams","pos":"WR","tm":"LAR","pts":20.7,"sid":"2133"},{"n":"Kenneth Walker III","pos":"RB","tm":"SEA","pts":13.97,"sid":"8151"},{"n":"Will Reichard","pos":"K","tm":"MIN","pts":10,"sid":"11792"},{"n":"Joey Bosa","pos":"DE","tm":"BUF","pts":0,"sid":"3156"},{"n":"Jalen Hurts","pos":"QB","tm":"PHI","pts":33.96,"sid":"6904"}],"bench":[{"n":"Aaron Rodgers","pos":"QB","tm":"PIT","pts":0,"sid":"96"},{"n":"Nik Bonitto","pos":"DE","tm":"DEN","pts":0,"sid":"8280"},{"n":"Xavier Worthy","pos":"WR","tm":"KCC","pts":7.9,"sid":"11624"},{"n":"Matthew Golden","pos":"WR","tm":"GBP","pts":0,"sid":"12501"},{"n":"Josh Jacobs","pos":"RB","tm":"GBP","pts":0,"sid":"5850"},{"n":"Ja'Marr Chase","pos":"WR","tm":"CIN","pts":0,"sid":"7564"},{"n":"David Njoku","pos":"TE","tm":"CLE","pts":0,"sid":"4033"},{"n":"Chris Rodriguez","pos":"RB","tm":"WAS","pts":0,"sid":"10219"}]},{"id":"0001","team":"Uncle Rico","pts":144.86,"starters":[{"n":"Kenneth Gainwell","pos":"RB","tm":"PIT","pts":19.17,"sid":"7567"},{"n":"Kyle Pitts","pos":"TE","tm":"ATL","pts":3.5,"sid":"7553"},{"n":"Bobby Okereke","pos":"LB","tm":"NYG","pts":9,"sid":"5944"},{"n":"DeVonta Smith","pos":"WR","tm":"PHI","pts":11.9,"sid":"7525"},{"n":"Ricky Pearsall","pos":"WR","tm":"SFO","pts":1.87,"sid":"11638"},{"n":"Nico Collins","pos":"WR","tm":"HOU","pts":7,"sid":"7569"},{"n":"Kyle Monangai","pos":"RB","tm":"CHI","pts":12.4,"sid":"12534"},{"n":"Jacoby Brissett","pos":"QB","tm":"ARI","pts":22.35,"sid":"3257"},{"n":"Christian McCaffrey","pos":"RB","tm":"SFO","pts":26.67,"sid":"4034"},{"n":"Lavonte David","pos":"LB","tm":"TBB","pts":7,"sid":"1192"},{"n":"Zack Baun","pos":"LB","tm":"PHI","pts":11,"sid":"6815"},{"n":"Jason Myers","pos":"K","tm":"SEA","pts":13,"sid":"2747"}],"bench":[{"n":"Daniel Jones","pos":"QB","tm":"IND","pts":21.37,"sid":"5870"},{"n":"Ladd McConkey","pos":"WR","tm":"LAC","pts":0,"sid":"11635"},{"n":"Chris Godwin","pos":"WR","tm":"TBB","pts":1.9,"sid":"4037"},{"n":"Jacory Croskey-Merritt","pos":"RB","tm":"WAS","pts":0,"sid":"12533"},{"n":"Jayden Daniels","pos":"QB","tm":"WAS","pts":0,"sid":"11566"},{"n":"Blake Corum","pos":"RB","tm":"LAR","pts":3.2,"sid":"11586"},{"n":"Bobby Wagner","pos":"LB","tm":"WAS","pts":0,"sid":"1233"}]},{"id":"0009","team":"Vip","pts":140.13,"starters":[{"n":"Jared Goff","pos":"QB","tm":"DET","pts":21.16,"sid":"3163"},{"n":"Alec Pierce","pos":"WR","tm":"IND","pts":3.1,"sid":"8142"},{"n":"Jake Elliott","pos":"K","tm":"PHI","pts":3,"sid":"4195"},{"n":"Darnell Mooney","pos":"WR","tm":"ATL","pts":14.9,"sid":"7090"},{"n":"Travis Kelce","pos":"TE","tm":"KCC","pts":6.43,"sid":"1466"},{"n":"Dallas Goedert","pos":"TE","tm":"PHI","pts":3,"sid":"5022"},{"n":"Chase Brown","pos":"RB","tm":"CIN","pts":18.57,"sid":"9224"},{"n":"Kaden Elliss","pos":"LB","tm":"ATL","pts":9.5,"sid":"6302"},{"n":"Roquan Smith","pos":"LB","tm":"BAL","pts":8.5,"sid":"4960"},{"n":"A.J. Brown","pos":"WR","tm":"PHI","pts":21,"sid":"5859"},{"n":"Drake Thomas","pos":"LB","tm":"SEA","pts":9,"sid":"11470"},{"n":"Travis Etienne","pos":"RB","tm":"JAC","pts":21.97,"sid":"7543"}],"bench":[{"n":"Joe Flacco","pos":"QB","tm":"CIN","pts":11.72,"sid":"19"},{"n":"RJ Harvey","pos":"RB","tm":"DEN","pts":0,"sid":"12489"},{"n":"Brandon Aubrey","pos":"K","tm":"DAL","pts":7,"sid":"11533"},{"n":"Bhayshul Tuten","pos":"RB","tm":"JAC","pts":4.22,"sid":"12490"},{"n":"Azeez Al-Shaair","pos":"LB","tm":"HOU","pts":7.5,"sid":"6485"},{"n":"Luther Burden","pos":"WR","tm":"CHI","pts":8.1,"sid":"12519"},{"n":"Cam Skattebo","pos":"RB","tm":"NYG","pts":0,"sid":"12481"}]},{"id":"0008","team":"WhiskeyDitka","pts":140.01,"starters":[{"n":"Chimere Dike","pos":"WR","tm":"TEN","pts":28.3,"sid":"12540"},{"n":"Parker Washington","pos":"WR","tm":"JAC","pts":18.75,"sid":"9487"},{"n":"Breece Hall","pos":"RB","tm":"NYJ","pts":13.37,"sid":"8155"},{"n":"Brian Burns","pos":"DE","tm":"NYG","pts":1,"sid":"5862"},{"n":"Brock Purdy","pos":"QB","tm":"SFO","pts":9.85,"sid":"8183"},{"n":"Trey McBride","pos":"TE","tm":"ARI","pts":12.4,"sid":"8130"},{"n":"Payton Wilson","pos":"LB","tm":"PIT","pts":4.5,"sid":"11727"},{"n":"Woody Marks","pos":"RB","tm":"HOU","pts":9.87,"sid":"12474"},{"n":"Joey Slye","pos":"K","tm":"TEN","pts":5,"sid":"6528"},{"n":"Christian Watson","pos":"WR","tm":"GBP","pts":7.4,"sid":"8167"},{"n":"Tyrone Tracy","pos":"RB","tm":"NYG","pts":16.57,"sid":"11655"},{"n":"Tyson Campbell","pos":"CB","tm":"CLE","pts":13,"sid":"7667"}],"bench":[{"n":"Jaylen Waddle","pos":"WR","tm":"MIA","pts":0,"sid":"7526"},{"n":"Bam Knight","pos":"RB","tm":"ARI","pts":11.6,"sid":"8122"},{"n":"Chuba Hubbard","pos":"RB","tm":"CAR","pts":6.83,"sid":"7594"},{"n":"Quentin Johnston","pos":"WR","tm":"LAC","pts":0,"sid":"9754"},{"n":"Troy Franklin","pos":"WR","tm":"DEN","pts":0,"sid":"11627"},{"n":"Justin Herbert","pos":"QB","tm":"LAC","pts":0,"sid":"6797"},{"n":"Harold Fannin","pos":"TE","tm":"CLE","pts":6.53,"sid":"12506"},{"n":"De'Von Achane","pos":"RB","tm":"MIA","pts":0,"sid":"9226"}]},{"id":"0011","team":"Lil' Sosos","pts":138.88,"starters":[{"n":"Carson Schwesinger","pos":"LB","tm":"CLE","pts":9.5,"sid":"12578"},{"n":"Foyesade Oluokun","pos":"LB","tm":"JAC","pts":8.5,"sid":"5332"},{"n":"Rome Odunze","pos":"WR","tm":"CHI","pts":6.8,"sid":"11620"},{"n":"Chris Boswell","pos":"K","tm":"PIT","pts":4,"sid":"1945"},{"n":"David Montgomery","pos":"RB","tm":"DET","pts":5.8,"sid":"5892"},{"n":"Jaylen Warren","pos":"RB","tm":"PIT","pts":15.07,"sid":"8228"},{"n":"Saquon Barkley","pos":"RB","tm":"PHI","pts":9.63,"sid":"4866"},{"n":"Amon-Ra St. Brown","pos":"WR","tm":"DET","pts":27.4,"sid":"7547"},{"n":"Edgerrin Cooper","pos":"LB","tm":"GBP","pts":3,"sid":"11687"},{"n":"Patrick Mahomes","pos":"QB","tm":"KCC","pts":25.08,"sid":"4046"},{"n":"DK Metcalf","pos":"WR","tm":"PIT","pts":13.3,"sid":"5846"},{"n":"George Kittle","pos":"TE","tm":"SFO","pts":10.8,"sid":"4217"}],"bench":[{"n":"Trevor Lawrence","pos":"QB","tm":"JAC","pts":24.11,"sid":"7523"},{"n":"Evan Engram","pos":"TE","tm":"DEN","pts":0,"sid":"4066"},{"n":"T.J. Edwards","pos":"LB","tm":"CHI","pts":0,"sid":"5960"},{"n":"Deebo Samuel","pos":"WR","tm":"WAS","pts":0,"sid":"5872"},{"n":"Jordan Mason","pos":"RB","tm":"MIN","pts":5.6,"sid":"8408"},{"n":"Dontayvion Wicks","pos":"WR","tm":"GBP","pts":4.2,"sid":"9486"},{"n":"Christian Kirk","pos":"WR","tm":"HOU","pts":13.9,"sid":"4950"},{"n":"Calais Campbell","pos":"DT","tm":"ARI","pts":5.5,"sid":"125"}]},{"id":"0006","team":"2-minute Drill","pts":138.79,"starters":[{"n":"Will Anderson","pos":"DE","tm":"HOU","pts":16,"sid":"10892"},{"n":"Jaxon Smith-Njigba","pos":"WR","tm":"SEA","pts":36.23,"sid":"9488"},{"n":"Jaquan Brisker","pos":"S","tm":"CHI","pts":7.5,"sid":"8323"},{"n":"Chris Olave","pos":"WR","tm":"NOS","pts":11.5,"sid":"8144"},{"n":"Matt Prater","pos":"K","tm":"BUF","pts":8,"sid":"17"},{"n":"Brock Bowers","pos":"TE","tm":"LVR","pts":8.5,"sid":"11604"},{"n":"Drake Maye","pos":"QB","tm":"NEP","pts":18.69,"sid":"11564"},{"n":"Cooper Kupp","pos":"WR","tm":"SEA","pts":3.4,"sid":"4039"},{"n":"Byron Young","pos":"DE","tm":"LAR","pts":1.5,"sid":"10917"},{"n":"Zay Flowers","pos":"WR","tm":"BAL","pts":9.77,"sid":"9997"},{"n":"Rhamondre Stevenson","pos":"RB","tm":"NEP","pts":1.67,"sid":"7611"},{"n":"Bijan Robinson","pos":"RB","tm":"ATL","pts":16.03,"sid":"9509"}],"bench":[{"n":"Samaje Perine","pos":"RB","tm":"CIN","pts":0,"sid":"4147"},{"n":"Dalton Kincaid","pos":"TE","tm":"BUF","pts":0,"sid":"10236"},{"n":"Caleb Williams","pos":"QB","tm":"CHI","pts":28.36,"sid":"11560"},{"n":"Jake Tonges","pos":"TE","tm":"SFO","pts":0,"sid":"8698"},{"n":"Justice Hill","pos":"RB","tm":"BAL","pts":1.35,"sid":"5995"},{"n":"Talanoa Hufanga","pos":"S","tm":"DEN","pts":0,"sid":"7811"},{"n":"Marvin Harrison Jr.","pos":"WR","tm":"ARI","pts":0,"sid":"11628"},{"n":"Josh Downs","pos":"WR","tm":"IND","pts":2,"sid":"9500"}]},{"id":"0007","team":"High Flyers","pts":137.09,"starters":[{"n":"Jameson Williams","pos":"WR","tm":"DET","pts":0,"sid":"8148"},{"n":"Chase McLaughlin","pos":"K","tm":"TBB","pts":1,"sid":"6650"},{"n":"George Pickens","pos":"WR","tm":"DAL","pts":26.1,"sid":"8137"},{"n":"Sean Tucker","pos":"RB","tm":"TBB","pts":6.5,"sid":"9506"},{"n":"Cedric Gray","pos":"LB","tm":"TEN","pts":6.5,"sid":"11742"},{"n":"Colston Loveland","pos":"TE","tm":"CHI","pts":12.9,"sid":"12517"},{"n":"Derrick Henry","pos":"RB","tm":"BAL","pts":23.93,"sid":"3198"},{"n":"Stefon Diggs","pos":"WR","tm":"NEP","pts":3,"sid":"2449"},{"n":"Blake Cashman","pos":"LB","tm":"MIN","pts":13,"sid":"6217"},{"n":"Nate Landman","pos":"LB","tm":"LAR","pts":6.5,"sid":"8659"},{"n":"Emanuel Wilson","pos":"RB","tm":"GBP","pts":30.07,"sid":"11435"},{"n":"Lamar Jackson","pos":"QB","tm":"BAL","pts":7.59,"sid":"4881"}],"bench":[{"n":"Jordyn Brooks","pos":"LB","tm":"MIA","pts":0,"sid":"6949"},{"n":"Oronde Gadsden","pos":"TE","tm":"LAC","pts":0,"sid":"12493"},{"n":"Tony Pollard","pos":"RB","tm":"TEN","pts":6.77,"sid":"5967"},{"n":"Khalil Shakir","pos":"WR","tm":"BUF","pts":13.75,"sid":"8134"},{"n":"Devin Singletary","pos":"RB","tm":"NYG","pts":6.27,"sid":"6130"},{"n":"Zach Charbonnet","pos":"RB","tm":"SEA","pts":10.67,"sid":"9753"},{"n":"Terry McLaurin","pos":"WR","tm":"WAS","pts":0,"sid":"5927"},{"n":"Joe Burrow","pos":"QB","tm":"CIN","pts":0,"sid":"6770"}]},{"id":"0004","team":"The Don is Yinz King","pts":124.41,"starters":[{"n":"Baker Mayfield","pos":"QB","tm":"TBB","pts":6.17,"sid":"4892"},{"n":"Marquise Brown","pos":"WR","tm":"KCC","pts":1.5,"sid":"5848"},{"n":"T.J. Watt","pos":"DE","tm":"PIT","pts":10.5,"sid":"4070"},{"n":"Jamien Sherwood","pos":"LB","tm":"NYJ","pts":8,"sid":"7841"},{"n":"Maxx Crosby","pos":"DE","tm":"LVR","pts":11.5,"sid":"5991"},{"n":"Justin Jefferson","pos":"WR","tm":"MIN","pts":6.8,"sid":"6794"},{"n":"James Cook","pos":"RB","tm":"BUF","pts":25.27,"sid":"8138"},{"n":"Rachaad White","pos":"RB","tm":"TBB","pts":5.97,"sid":"8136"},{"n":"CeeDee Lamb","pos":"WR","tm":"DAL","pts":9.5,"sid":"6786"},{"n":"Theo Johnson","pos":"TE","tm":"NYG","pts":9.2,"sid":"11597"},{"n":"Andres Borregales","pos":"K","tm":"NEP","pts":16,"sid":"12713"},{"n":"Javonte Williams","pos":"RB","tm":"DAL","pts":14,"sid":"7588"}],"bench":[{"n":"Bucky Irving","pos":"RB","tm":"TBB","pts":0,"sid":"11584"},{"n":"Alex Singleton","pos":"LB","tm":"DEN","pts":0,"sid":"2617"},{"n":"Malik Washington","pos":"WR","tm":"MIA","pts":0,"sid":"11610"},{"n":"Cameron Dicker","pos":"K","tm":"LAC","pts":0,"sid":"8259"},{"n":"Keon Coleman","pos":"WR","tm":"BUF","pts":0,"sid":"11637"},{"n":"Jordan Love","pos":"QB","tm":"GBP","pts":7.56,"sid":"6804"},{"n":"Courtland Sutton","pos":"WR","tm":"DEN","pts":0,"sid":"5045"},{"n":"Alvin Kamara","pos":"RB","tm":"NOS","pts":2.87,"sid":"4035"}]},{"id":"0003","team":"3rd and 1","pts":96.64,"starters":[{"n":"Cam Little","pos":"K","tm":"JAC","pts":13,"sid":"11786"},{"n":"Jonathan Taylor","pos":"RB","tm":"IND","pts":9.53,"sid":"6813"},{"n":"Devin White","pos":"LB","tm":"LVR","pts":5.5,"sid":"6119"},{"n":"Romeo Doubs","pos":"WR","tm":"GBP","pts":4.35,"sid":"8121"},{"n":"Puka Nacua","pos":"WR","tm":"LAR","pts":13.2,"sid":"9493"},{"n":"Claudin Cherelus","pos":"LB","tm":"CAR","pts":3.5,"sid":"11305"},{"n":"D'Andre Swift","pos":"RB","tm":"CHI","pts":1.9,"sid":"6790"},{"n":"Rico Dowdle","pos":"RB","tm":"CAR","pts":10.67,"sid":"7021"},{"n":"Tyler Warren","pos":"TE","tm":"IND","pts":7,"sid":"12518"},{"n":"Tykee Smith","pos":"S","tm":"TBB","pts":8,"sid":"11705"},{"n":"Michael Pittman","pos":"WR","tm":"IND","pts":11.2,"sid":"6819"},{"n":"Josh Allen","pos":"QB","tm":"BUF","pts":8.79,"sid":"4984"}],"bench":[{"n":"Tyjae Spears","pos":"RB","tm":"TEN","pts":4.63,"sid":"9508"},{"n":"Kimani Vidal","pos":"RB","tm":"LAC","pts":0,"sid":"11647"},{"n":"Tyler Allgeier","pos":"RB","tm":"ATL","pts":8.87,"sid":"8132"},{"n":"Jordan Addison","pos":"WR","tm":"MIN","pts":0,"sid":"9756"},{"n":"Aaron Jones","pos":"RB","tm":"MIN","pts":9.57,"sid":"4199"},{"n":"Cade Otton","pos":"TE","tm":"TBB","pts":5.1,"sid":"8111"},{"n":"Jerry Jeudy","pos":"WR","tm":"CLE","pts":2.4,"sid":"6783"}]}];
+  const ROSTERS = [{"id":"0005","team":"I'm Just Here to Network","pts":217.53,"starters":[{"n":"Jahmyr Gibbs","pos":"RB","tm":"DET","pts":63.2,"sid":"9221","st":{"rush_att":15,"rush_yd":219,"rush_td":2,"rec":11,"rec_tgt":12,"rec_yd":45,"rec_td":1}},{"n":"Kamren Curl","pos":"S","tm":"LAR","pts":7,"sid":"7136","st":{"idp_tkl":8,"idp_tkl_solo":6}},{"n":"Dak Prescott","pos":"QB","tm":"DAL","pts":37.36,"sid":"3294","st":{"pass_cmp":23,"pass_att":36,"pass_yd":354,"pass_td":2,"pass_int":1,"rush_att":5,"rush_yd":9,"rush_td":1}},{"n":"Jake Bates","pos":"K","tm":"DET","pts":12,"sid":"11539","st":{"fgm":2,"fga":2,"xpm":4,"xpa":4}},{"n":"Quinshon Judkins","pos":"RB","tm":"CLE","pts":18.27,"sid":"12512","st":{"rush_att":16,"rush_yd":47,"rush_td":2}},{"n":"Hunter Henry","pos":"TE","tm":"NEP","pts":21,"sid":"3214","st":{"rec":7,"rec_tgt":10,"rec_yd":115,"rec_td":1}},{"n":"Tee Higgins","pos":"WR","tm":"CIN","pts":5.6,"sid":"6801","st":{"rec":5,"rec_tgt":6,"rec_yd":31}},{"n":"Jack Campbell","pos":"LB","tm":"DET","pts":9,"sid":"10880","st":{"idp_tkl":11,"idp_tkl_solo":5,"idp_tkl_loss":1}},{"n":"Robert Spillane","pos":"LB","tm":"NEP","pts":4,"sid":"5726","st":{"idp_tkl":5,"idp_tkl_solo":3}},{"n":"TreVeyon Henderson","pos":"RB","tm":"NEP","pts":11.8,"sid":"12529","st":{"rush_att":18,"rush_yd":66,"rec":3,"rec_tgt":4,"rec_yd":15}},{"n":"Michael Wilson","pos":"WR","tm":"ARI","pts":16.8,"sid":"10232","st":{"rec":10,"rec_tgt":15,"rec_yd":118}},{"n":"Tetairoa McMillan","pos":"WR","tm":"CAR","pts":11.5,"sid":"12526","st":{"rec":2,"rec_tgt":7,"rec_yd":35,"rec_td":1,"idp_tkl":1,"idp_tkl_solo":1}}],"bench":[{"n":"Evan McPherson","pos":"K","tm":"CIN","pts":13,"sid":"7839","st":{"fgm":2,"fga":2,"xpm":2,"xpa":2}},{"n":"Devin Bush","pos":"LB","tm":"CLE","pts":10.5,"sid":"5843","st":{"idp_tkl":9,"idp_tkl_solo":4,"idp_sack":1,"idp_tkl_loss":1}},{"n":"Bo Nix","pos":"QB","tm":"DEN","pts":0,"sid":"11563","st":{}},{"n":"Luke Musgrave","pos":"TE","tm":"GBP","pts":1.2,"sid":"9481","st":{"rec":1,"rec_tgt":2,"rec_yd":7}},{"n":"Adonai Mitchell","pos":"WR","tm":"NYJ","pts":6.2,"sid":"11625","st":{"rec":2,"rec_tgt":7,"rec_yd":42,"idp_tkl":1,"idp_tkl_solo":1}},{"n":"Drake London","pos":"WR","tm":"ATL","pts":0,"sid":"8112","st":{}}]},{"id":"0010","team":"Reggaeton Forever","pts":176.96,"starters":[{"n":"Eric Wilson","pos":"LB","tm":"MIN","pts":4.5,"sid":"4413","st":{"idp_tkl":4,"idp_tkl_solo":3,"idp_tkl_loss":1}},{"n":"Tyler Loop","pos":"K","tm":"BAL","pts":10,"sid":"12711","st":{"fgm":3,"fga":3,"xpm":2,"xpa":2}},{"n":"Demario Davis","pos":"LB","tm":"NOS","pts":8.5,"sid":"1052","st":{"idp_tkl":11,"idp_tkl_solo":6}},{"n":"Wan'Dale Robinson","pos":"WR","tm":"NYG","pts":30.1,"sid":"8126","st":{"rush_att":1,"rec":9,"rec_tgt":14,"rec_yd":156,"rec_td":1,"idp_tkl":1,"idp_tkl_solo":1}},{"n":"Mark Andrews","pos":"TE","tm":"BAL","pts":1.67,"sid":"5012","st":{"rush_att":2,"rush_yd":2,"rec":1,"rec_tgt":3,"rec_yd":9}},{"n":"Rashee Rice","pos":"WR","tm":"KCC","pts":21.1,"sid":"10229","st":{"rec":8,"rec_tgt":12,"rec_yd":141}},{"n":"Ashton Jeanty","pos":"RB","tm":"LVR","pts":22.47,"sid":"12527","st":{"rush_att":17,"rush_yd":50,"rec":8,"rec_tgt":8,"rec_yd":58,"rec_td":1}},{"n":"Kyren Williams","pos":"RB","tm":"LAR","pts":7.23,"sid":"8150","st":{"rush_att":12,"rush_yd":46,"rec":1,"rec_tgt":1,"rec_yd":2}},{"n":"Marcus Jones","pos":"CB","tm":"NEP","pts":17,"sid":"8359","st":{"idp_tkl":5,"idp_tkl_solo":3,"idp_int":1,"idp_pass_def":2}},{"n":"Rashid Shaheed","pos":"WR","tm":"SEA","pts":4.57,"sid":"8676","st":{"rush_att":1,"rush_yd":5,"rec_tgt":2}},{"n":"Matthew Stafford","pos":"QB","tm":"LAR","pts":28.92,"sid":"421","st":{"pass_cmp":25,"pass_att":35,"pass_yd":273,"pass_td":3}},{"n":"D.J. Moore","pos":"WR","tm":"CHI","pts":20.9,"sid":"4983","st":{"rec":5,"rec_tgt":7,"rec_yd":64,"rec_td":2}}],"bench":[{"n":"Tyrel Dodson","pos":"LB","tm":"MIA","pts":0,"sid":"6315","st":{}},{"n":"Tre Tucker","pos":"WR","tm":"LVR","pts":4.3,"sid":"10213","st":{"rec":3,"rec_tgt":10,"rec_yd":28}},{"n":"Brashard Smith","pos":"RB","tm":"KCC","pts":5.27,"sid":"12455","st":{"rush_att":1,"rush_yd":5,"rec":3,"rec_tgt":4,"rec_yd":31}},{"n":"AJ Barner","pos":"TE","tm":"SEA","pts":2.8,"sid":"11603","st":{"rec":2,"rec_tgt":4,"rec_yd":18}},{"n":"Keenan Allen","pos":"WR","tm":"LAC","pts":0,"sid":"1479","st":{}},{"n":"Rashod Bateman","pos":"WR","tm":"BAL","pts":0,"sid":"7571","st":{}},{"n":"Kareem Hunt","pos":"RB","tm":"KCC","pts":22.97,"sid":"4098","st":{"rush_att":30,"rush_yd":104,"rush_td":1,"rec":3,"rec_tgt":3,"rec_yd":26,"fum_lost":1}},{"n":"Jaxson Dart","pos":"QB","tm":"NYG","pts":0,"sid":"12508","st":{}}]},{"id":"0002","team":"Ryaan","pts":151.29,"starters":[{"n":"Michael Carter","pos":"RB","tm":"ARI","pts":8.23,"sid":"7607","st":{"rush_att":5,"rush_yd":28,"rec":3,"rec_tgt":3,"rec_yd":30}},{"n":"Kayshon Boutte","pos":"WR","tm":"NEP","pts":2.5,"sid":"9504","st":{"rec":2,"rec_tgt":2,"rec_yd":15}},{"n":"Jauan Jennings","pos":"WR","tm":"SFO","pts":12.6,"sid":"7049","st":{"rec":5,"rec_tgt":7,"rec_yd":41,"rec_td":1}},{"n":"Myles Garrett","pos":"DE","tm":"CLE","pts":23.5,"sid":"3973","st":{"idp_tkl":5,"idp_tkl_solo":4,"idp_sack":3,"idp_ff":2,"idp_tkl_loss":4}},{"n":"Danielle Hunter","pos":"DE","tm":"HOU","pts":12.5,"sid":"2393","st":{"idp_tkl":6,"idp_tkl_solo":3,"idp_sack":2,"idp_tkl_loss":2}},{"n":"Emeka Egbuka","pos":"WR","tm":"TBB","pts":4.7,"sid":"12514","st":{"rec":3,"rec_tgt":8,"rec_yd":32}},{"n":"Jake Ferguson","pos":"TE","tm":"DAL","pts":8.63,"sid":"8110","st":{"rush_att":1,"rush_yd":1,"rec":5,"rec_tgt":6,"rec_yd":60}},{"n":"Davante Adams","pos":"WR","tm":"LAR","pts":20.7,"sid":"2133","st":{"rec":5,"rec_tgt":8,"rec_yd":62,"rec_td":2}},{"n":"Kenneth Walker III","pos":"RB","tm":"SEA","pts":13.97,"sid":"8151","st":{"rush_att":11,"rush_yd":71,"rec":3,"rec_tgt":4,"rec_yd":30}},{"n":"Will Reichard","pos":"K","tm":"MIN","pts":10,"sid":"11792","st":{"fgm":2,"fga":2}},{"n":"Joey Bosa","pos":"DE","tm":"BUF","pts":0,"sid":"3156","st":{}},{"n":"Jalen Hurts","pos":"QB","tm":"PHI","pts":33.96,"sid":"6904","st":{"pass_cmp":27,"pass_att":39,"pass_yd":289,"pass_td":1,"rush_att":7,"rush_yd":33,"rush_td":2}}],"bench":[{"n":"Aaron Rodgers","pos":"QB","tm":"PIT","pts":0,"sid":"96","st":{}},{"n":"Nik Bonitto","pos":"DE","tm":"DEN","pts":0,"sid":"8280","st":{}},{"n":"Xavier Worthy","pos":"WR","tm":"KCC","pts":7.9,"sid":"11624","st":{"rec":4,"rec_tgt":8,"rec_yd":59}},{"n":"Matthew Golden","pos":"WR","tm":"GBP","pts":0,"sid":"12501","st":{}},{"n":"Josh Jacobs","pos":"RB","tm":"GBP","pts":0,"sid":"5850","st":{}},{"n":"Ja'Marr Chase","pos":"WR","tm":"CIN","pts":0,"sid":"7564","st":{}},{"n":"David Njoku","pos":"TE","tm":"CLE","pts":0,"sid":"4033","st":{}},{"n":"Chris Rodriguez","pos":"RB","tm":"WAS","pts":0,"sid":"10219","st":{}}]},{"id":"0001","team":"Uncle Rico","pts":144.86,"starters":[{"n":"Kenneth Gainwell","pos":"RB","tm":"PIT","pts":19.17,"sid":"7567","st":{"rush_att":10,"rush_yd":92,"rec":6,"rec_tgt":6,"rec_yd":30}},{"n":"Kyle Pitts","pos":"TE","tm":"ATL","pts":3.5,"sid":"7553","st":{"rec":2,"rec_tgt":5,"rec_yd":25}},{"n":"Bobby Okereke","pos":"LB","tm":"NYG","pts":9,"sid":"5944","st":{"idp_tkl":8,"idp_tkl_solo":6,"idp_pass_def":1}},{"n":"DeVonta Smith","pos":"WR","tm":"PHI","pts":11.9,"sid":"7525","st":{"rec":6,"rec_tgt":11,"rec_yd":89}},{"n":"Ricky Pearsall","pos":"WR","tm":"SFO","pts":1.87,"sid":"11638","st":{"rush_att":1,"rush_yd":2,"rec":2,"rec_tgt":4,"rec_yd":6}},{"n":"Nico Collins","pos":"WR","tm":"HOU","pts":7,"sid":"7569","st":{"rec":3,"rec_tgt":3,"rec_yd":55}},{"n":"Kyle Monangai","pos":"RB","tm":"CHI","pts":12.4,"sid":"12534","st":{"rush_att":12,"rush_yd":48,"rush_td":1}},{"n":"Jacoby Brissett","pos":"QB","tm":"ARI","pts":22.35,"sid":"3257","st":{"pass_cmp":33,"pass_att":49,"pass_yd":317,"pass_td":1,"rush_att":3,"rush_yd":20}},{"n":"Christian McCaffrey","pos":"RB","tm":"SFO","pts":26.67,"sid":"4034","st":{"rush_att":24,"rush_yd":89,"rush_td":1,"rec":7,"rec_tgt":7,"rec_yd":53}},{"n":"Lavonte David","pos":"LB","tm":"TBB","pts":7,"sid":"1192","st":{"idp_tkl":8,"idp_tkl_solo":4,"idp_tkl_loss":1}},{"n":"Zack Baun","pos":"LB","tm":"PHI","pts":11,"sid":"6815","st":{"idp_tkl":9,"idp_tkl_solo":3,"idp_fum_rec":1,"idp_pass_def":1}},{"n":"Jason Myers","pos":"K","tm":"SEA","pts":13,"sid":"2747","st":{"fgm":3,"fga":3,"xpm":3,"xpa":3}}],"bench":[{"n":"Daniel Jones","pos":"QB","tm":"IND","pts":21.37,"sid":"5870","st":{"pass_cmp":19,"pass_att":31,"pass_yd":181,"pass_td":2,"rush_att":3,"rush_yd":16}},{"n":"Ladd McConkey","pos":"WR","tm":"LAC","pts":0,"sid":"11635","st":{}},{"n":"Chris Godwin","pos":"WR","tm":"TBB","pts":1.9,"sid":"4037","st":{"rec":2,"rec_tgt":4,"rec_yd":9}},{"n":"Jacory Croskey-Merritt","pos":"RB","tm":"WAS","pts":0,"sid":"12533","st":{}},{"n":"Jayden Daniels","pos":"QB","tm":"WAS","pts":0,"sid":"11566","st":{}},{"n":"Blake Corum","pos":"RB","tm":"LAR","pts":3.2,"sid":"11586","st":{"rush_att":7,"rush_yd":24}},{"n":"Bobby Wagner","pos":"LB","tm":"WAS","pts":0,"sid":"1233","st":{}}]},{"id":"0009","team":"Vip","pts":140.13,"starters":[{"n":"Jared Goff","pos":"QB","tm":"DET","pts":21.16,"sid":"3163","st":{"pass_cmp":28,"pass_att":42,"pass_yd":279,"pass_td":2,"pass_int":1}},{"n":"Alec Pierce","pos":"WR","tm":"IND","pts":3.1,"sid":"8142","st":{"rec":1,"rec_tgt":2,"rec_yd":26}},{"n":"Jake Elliott","pos":"K","tm":"PHI","pts":3,"sid":"4195","st":{"fga":1,"xpm":3,"xpa":3}},{"n":"Darnell Mooney","pos":"WR","tm":"ATL","pts":14.9,"sid":"7090","st":{"rec":3,"rec_tgt":3,"rec_yd":74,"rec_td":1}},{"n":"Travis Kelce","pos":"TE","tm":"KCC","pts":6.43,"sid":"1466","st":{"rush_att":1,"rush_yd":1,"rec":4,"rec_tgt":6,"rec_yd":43}},{"n":"Dallas Goedert","pos":"TE","tm":"PHI","pts":3,"sid":"5022","st":{"rec":2,"rec_tgt":2,"rec_yd":20}},{"n":"Chase Brown","pos":"RB","tm":"CIN","pts":18.57,"sid":"9224","st":{"rush_att":19,"rush_yd":107,"rec":2,"rec_tgt":4,"rec_yd":23}},{"n":"Kaden Elliss","pos":"LB","tm":"ATL","pts":9.5,"sid":"6302","st":{"idp_tkl":9,"idp_tkl_solo":7,"idp_tkl_loss":1}},{"n":"Roquan Smith","pos":"LB","tm":"BAL","pts":8.5,"sid":"4960","st":{"idp_tkl":11,"idp_tkl_solo":6}},{"n":"A.J. Brown","pos":"WR","tm":"PHI","pts":21,"sid":"5859","st":{"rec":8,"rec_tgt":10,"rec_yd":110,"rec_td":1}},{"n":"Drake Thomas","pos":"LB","tm":"SEA","pts":9,"sid":"11470","st":{"idp_tkl":10,"idp_tkl_solo":6,"idp_tkl_loss":1}},{"n":"Travis Etienne","pos":"RB","tm":"JAC","pts":21.97,"sid":"7543","st":{"rush_att":15,"rush_yd":86,"rec":3,"rec_tgt":4,"rec_yd":30,"rec_td":1}}],"bench":[{"n":"Joe Flacco","pos":"QB","tm":"CIN","pts":11.72,"sid":"19","st":{"pass_cmp":19,"pass_att":37,"pass_yd":183,"pass_td":1,"pass_int":1,"rush_att":1,"rush_yd":3}},{"n":"RJ Harvey","pos":"RB","tm":"DEN","pts":0,"sid":"12489","st":{}},{"n":"Brandon Aubrey","pos":"K","tm":"DAL","pts":7,"sid":"11533","st":{"fgm":1,"fga":2,"xpm":3,"xpa":3}},{"n":"Bhayshul Tuten","pos":"RB","tm":"JAC","pts":4.22,"sid":"12490","st":{"rush_att":7,"rush_yd":17,"rec_tgt":1}},{"n":"Azeez Al-Shaair","pos":"LB","tm":"HOU","pts":7.5,"sid":"6485","st":{"idp_tkl":7,"idp_tkl_solo":4,"idp_pass_def":1}},{"n":"Luther Burden","pos":"WR","tm":"CHI","pts":8.1,"sid":"12519","st":{"rush_att":1,"rush_yd":15,"rec":3,"rec_tgt":5,"rec_yd":46}},{"n":"Cam Skattebo","pos":"RB","tm":"NYG","pts":0,"sid":"12481","st":{}}]},{"id":"0008","team":"WhiskeyDitka","pts":140.01,"starters":[{"n":"Chimere Dike","pos":"WR","tm":"TEN","pts":28.3,"sid":"12540","st":{"rec":5,"rec_tgt":7,"rec_yd":44,"rec_td":1}},{"n":"Parker Washington","pos":"WR","tm":"JAC","pts":18.75,"sid":"9487","st":{"rec":5,"rec_tgt":7,"rec_yd":71,"rec_td":1,"idp_tkl":1,"idp_tkl_solo":1}},{"n":"Breece Hall","pos":"RB","tm":"NYJ","pts":13.37,"sid":"8155","st":{"rush_att":16,"rush_yd":44,"rec":4,"rec_tgt":4,"rec_yd":75,"fum_lost":1}},{"n":"Brian Burns","pos":"DE","tm":"NYG","pts":1,"sid":"5862","st":{"idp_tkl":2}},{"n":"Brock Purdy","pos":"QB","tm":"SFO","pts":9.85,"sid":"8183","st":{"pass_cmp":23,"pass_att":32,"pass_yd":193,"pass_td":1,"pass_int":3,"rush_att":6,"rush_yd":16}},{"n":"Trey McBride","pos":"TE","tm":"ARI","pts":12.4,"sid":"8130","st":{"rec":9,"rec_tgt":10,"rec_yd":79}},{"n":"Payton Wilson","pos":"LB","tm":"PIT","pts":4.5,"sid":"11727","st":{"idp_tkl":4,"idp_tkl_solo":3}},{"n":"Woody Marks","pos":"RB","tm":"HOU","pts":9.87,"sid":"12474","st":{"rush_att":16,"rush_yd":74,"rec":1,"rec_tgt":1,"rec_yd":-5}},{"n":"Joey Slye","pos":"K","tm":"TEN","pts":5,"sid":"6528","st":{"fgm":1,"fga":1,"xpm":3,"xpa":3}},{"n":"Christian Watson","pos":"WR","tm":"GBP","pts":7.4,"sid":"8167","st":{"rec":5,"rec_tgt":7,"rec_yd":49}},{"n":"Tyrone Tracy","pos":"RB","tm":"NYG","pts":16.57,"sid":"11655","st":{"rush_att":20,"rush_yd":62,"rec":3,"rec_tgt":4,"rec_yd":68}},{"n":"Tyson Campbell","pos":"CB","tm":"CLE","pts":13,"sid":"7667","st":{"idp_tkl":9,"idp_tkl_solo":7,"idp_pass_def":2}}],"bench":[{"n":"Jaylen Waddle","pos":"WR","tm":"MIA","pts":0,"sid":"7526","st":{}},{"n":"Bam Knight","pos":"RB","tm":"ARI","pts":11.6,"sid":"8122","st":{"rush_att":10,"rush_yd":12,"rush_td":1,"rec":4,"rec_tgt":5,"rec_yd":20}},{"n":"Chuba Hubbard","pos":"RB","tm":"CAR","pts":6.83,"sid":"7594","st":{"rush_att":3,"rush_yd":16,"rec":4,"rec_tgt":4,"rec_yd":27}},{"n":"Quentin Johnston","pos":"WR","tm":"LAC","pts":0,"sid":"9754","st":{}},{"n":"Troy Franklin","pos":"WR","tm":"DEN","pts":0,"sid":"11627","st":{}},{"n":"Justin Herbert","pos":"QB","tm":"LAC","pts":0,"sid":"6797","st":{}},{"n":"Harold Fannin","pos":"TE","tm":"CLE","pts":6.53,"sid":"12506","st":{"rush_att":1,"rush_yd":4,"rec":4,"rec_tgt":6,"rec_yd":40}},{"n":"De'Von Achane","pos":"RB","tm":"MIA","pts":0,"sid":"9226","st":{}}]},{"id":"0011","team":"Lil' Sosos","pts":138.88,"starters":[{"n":"Carson Schwesinger","pos":"LB","tm":"CLE","pts":9.5,"sid":"12578","st":{"idp_tkl":10,"idp_tkl_solo":6,"idp_tkl_loss":1}},{"n":"Foyesade Oluokun","pos":"LB","tm":"JAC","pts":8.5,"sid":"5332","st":{"idp_tkl":10,"idp_tkl_solo":5,"idp_tkl_loss":1}},{"n":"Rome Odunze","pos":"WR","tm":"CHI","pts":6.8,"sid":"11620","st":{"rec":3,"rec_tgt":9,"rec_yd":53}},{"n":"Chris Boswell","pos":"K","tm":"PIT","pts":4,"sid":"1945","st":{"xpm":4,"xpa":4}},{"n":"David Montgomery","pos":"RB","tm":"DET","pts":5.8,"sid":"5892","st":{"rush_att":5,"rush_yd":18,"rec":3,"rec_tgt":3,"rec_yd":19}},{"n":"Jaylen Warren","pos":"RB","tm":"PIT","pts":15.07,"sid":"8228","st":{"rush_att":18,"rush_yd":68,"rush_td":1}},{"n":"Saquon Barkley","pos":"RB","tm":"PHI","pts":9.63,"sid":"4866","st":{"rush_att":10,"rush_yd":22,"rec":7,"rec_tgt":8,"rec_yd":52,"fum_lost":1}},{"n":"Amon-Ra St. Brown","pos":"WR","tm":"DET","pts":27.4,"sid":"7547","st":{"rec":9,"rec_tgt":13,"rec_yd":149,"rec_td":1,"idp_tkl":1,"idp_tkl_solo":1}},{"n":"Edgerrin Cooper","pos":"LB","tm":"GBP","pts":3,"sid":"11687","st":{"idp_tkl":4,"idp_tkl_solo":2}},{"n":"Patrick Mahomes","pos":"QB","tm":"KCC","pts":25.08,"sid":"4046","st":{"pass_cmp":29,"pass_att":46,"pass_yd":352,"pass_int":1,"rush_att":4,"rush_yd":30,"idp_tkl":1,"idp_tkl_solo":1}},{"n":"DK Metcalf","pos":"WR","tm":"PIT","pts":13.3,"sid":"5846","st":{"rush_att":2,"rush_yd":12,"rush_td":1,"rec":5,"rec_tgt":8,"rec_yd":22,"idp_tkl":1,"idp_tkl_solo":1}},{"n":"George Kittle","pos":"TE","tm":"SFO","pts":10.8,"sid":"4217","st":{"rec":6,"rec_tgt":10,"rec_yd":78}}],"bench":[{"n":"Trevor Lawrence","pos":"QB","tm":"JAC","pts":24.11,"sid":"7523","st":{"pass_cmp":18,"pass_att":30,"pass_yd":256,"pass_td":3,"pass_int":3,"rush_att":5,"rush_yd":29,"fum_lost":1}},{"n":"Evan Engram","pos":"TE","tm":"DEN","pts":0,"sid":"4066","st":{}},{"n":"T.J. Edwards","pos":"LB","tm":"CHI","pts":0,"sid":"5960","st":{}},{"n":"Deebo Samuel","pos":"WR","tm":"WAS","pts":0,"sid":"5872","st":{}},{"n":"Jordan Mason","pos":"RB","tm":"MIN","pts":5.6,"sid":"8408","st":{"rush_att":8,"rush_yd":42}},{"n":"Dontayvion Wicks","pos":"WR","tm":"GBP","pts":4.2,"sid":"9486","st":{"rec":2,"rec_tgt":4,"rec_yd":32}},{"n":"Christian Kirk","pos":"WR","tm":"HOU","pts":13.9,"sid":"4950","st":{"rec":5,"rec_tgt":6,"rec_yd":54,"rec_td":1}},{"n":"Calais Campbell","pos":"DT","tm":"ARI","pts":5.5,"sid":"125","st":{"idp_tkl":3,"idp_tkl_solo":1,"idp_sack":0.5,"idp_pass_def":1}}]},{"id":"0006","team":"2-minute Drill","pts":138.79,"starters":[{"n":"Will Anderson","pos":"DE","tm":"HOU","pts":16,"sid":"10892","st":{"idp_tkl":6,"idp_tkl_solo":3,"idp_sack":2.5,"idp_pass_def":1,"idp_tkl_loss":2}},{"n":"Jaxon Smith-Njigba","pos":"WR","tm":"SEA","pts":36.23,"sid":"9488","st":{"rush_att":1,"rush_yd":4,"rec":8,"rec_tgt":10,"rec_yd":167,"rec_td":2}},{"n":"Jaquan Brisker","pos":"S","tm":"CHI","pts":7.5,"sid":"8323","st":{"idp_tkl":7,"idp_tkl_solo":4,"idp_pass_def":1}},{"n":"Chris Olave","pos":"WR","tm":"NOS","pts":11.5,"sid":"8144","st":{"rec":9,"rec_tgt":13,"rec_yd":70}},{"n":"Matt Prater","pos":"K","tm":"BUF","pts":8,"sid":"17","st":{"fgm":2,"fga":2,"xpm":1,"xpa":2}},{"n":"Brock Bowers","pos":"TE","tm":"LVR","pts":8.5,"sid":"11604","st":{"rec":6,"rec_tgt":9,"rec_yd":55}},{"n":"Drake Maye","pos":"QB","tm":"NEP","pts":18.69,"sid":"11564","st":{"pass_cmp":22,"pass_att":35,"pass_yd":294,"pass_td":1,"pass_int":1,"rush_att":5,"rush_yd":22}},{"n":"Cooper Kupp","pos":"WR","tm":"SEA","pts":3.4,"sid":"4039","st":{"rec":2,"rec_tgt":4,"rec_yd":24}},{"n":"Byron Young","pos":"DE","tm":"LAR","pts":1.5,"sid":"10917","st":{"idp_tkl":2,"idp_tkl_solo":1}},{"n":"Zay Flowers","pos":"WR","tm":"BAL","pts":9.77,"sid":"9997","st":{"rush_att":2,"rush_yd":11,"rec":5,"rec_tgt":6,"rec_yd":58}},{"n":"Rhamondre Stevenson","pos":"RB","tm":"NEP","pts":1.67,"sid":"7611","st":{"rush_att":6,"rush_yd":5,"rec":1,"rec_tgt":2,"rec_yd":5}},{"n":"Bijan Robinson","pos":"RB","tm":"ATL","pts":16.03,"sid":"9509","st":{"rush_att":14,"rush_yd":70,"rec":2,"rec_tgt":2,"rec_yd":37}}],"bench":[{"n":"Samaje Perine","pos":"RB","tm":"CIN","pts":0,"sid":"4147","st":{}},{"n":"Dalton Kincaid","pos":"TE","tm":"BUF","pts":0,"sid":"10236","st":{}},{"n":"Caleb Williams","pos":"QB","tm":"CHI","pts":28.36,"sid":"11560","st":{"pass_cmp":19,"pass_att":35,"pass_yd":239,"pass_td":3,"rush_att":4,"rush_yd":21,"fum_lost":1}},{"n":"Jake Tonges","pos":"TE","tm":"SFO","pts":0,"sid":"8698","st":{}},{"n":"Justice Hill","pos":"RB","tm":"BAL","pts":1.35,"sid":"5995","st":{}},{"n":"Talanoa Hufanga","pos":"S","tm":"DEN","pts":0,"sid":"7811","st":{}},{"n":"Marvin Harrison Jr.","pos":"WR","tm":"ARI","pts":0,"sid":"11628","st":{}},{"n":"Josh Downs","pos":"WR","tm":"IND","pts":2,"sid":"9500","st":{"rec":2,"rec_tgt":6,"rec_yd":10}}]},{"id":"0007","team":"High Flyers","pts":137.09,"starters":[{"n":"Jameson Williams","pos":"WR","tm":"DET","pts":0,"sid":"8148","st":{"rec_tgt":3}},{"n":"Chase McLaughlin","pos":"K","tm":"TBB","pts":1,"sid":"6650","st":{"xpm":1,"xpa":1}},{"n":"George Pickens","pos":"WR","tm":"DAL","pts":26.1,"sid":"8137","st":{"rec":9,"rec_tgt":9,"rec_yd":146,"rec_td":1}},{"n":"Sean Tucker","pos":"RB","tm":"TBB","pts":6.5,"sid":"9506","st":{"rush_att":12,"rush_yd":42,"rec":1,"rec_tgt":2,"rec_yd":4}},{"n":"Cedric Gray","pos":"LB","tm":"TEN","pts":6.5,"sid":"11742","st":{"idp_tkl":7,"idp_tkl_solo":6}},{"n":"Colston Loveland","pos":"TE","tm":"CHI","pts":12.9,"sid":"12517","st":{"rec":4,"rec_tgt":5,"rec_yd":49,"rec_td":1}},{"n":"Derrick Henry","pos":"RB","tm":"BAL","pts":23.93,"sid":"3198","st":{"rush_att":21,"rush_yd":64,"rush_td":2,"rec":2,"rec_tgt":2,"rec_yd":24}},{"n":"Stefon Diggs","pos":"WR","tm":"NEP","pts":3,"sid":"2449","st":{"rec":2,"rec_tgt":3,"rec_yd":20}},{"n":"Blake Cashman","pos":"LB","tm":"MIN","pts":13,"sid":"6217","st":{"idp_tkl":16,"idp_tkl_solo":8}},{"n":"Nate Landman","pos":"LB","tm":"LAR","pts":6.5,"sid":"8659","st":{"idp_tkl":7,"idp_tkl_solo":4,"idp_tkl_loss":1}},{"n":"Emanuel Wilson","pos":"RB","tm":"GBP","pts":30.07,"sid":"11435","st":{"rush_att":28,"rush_yd":107,"rush_td":2,"rec":2,"rec_tgt":2,"rec_yd":18}},{"n":"Lamar Jackson","pos":"QB","tm":"BAL","pts":7.59,"sid":"4881","st":{"pass_cmp":13,"pass_att":23,"pass_yd":153,"rush_att":7,"rush_yd":11}}],"bench":[{"n":"Jordyn Brooks","pos":"LB","tm":"MIA","pts":0,"sid":"6949","st":{}},{"n":"Oronde Gadsden","pos":"TE","tm":"LAC","pts":0,"sid":"12493","st":{}},{"n":"Tony Pollard","pos":"RB","tm":"TEN","pts":6.77,"sid":"5967","st":{"rush_att":11,"rush_yd":20,"rec":4,"rec_tgt":5,"rec_yd":21}},{"n":"Khalil Shakir","pos":"WR","tm":"BUF","pts":13.75,"sid":"8134","st":{"rec":8,"rec_tgt":10,"rec_yd":110,"fum_lost":1}},{"n":"Devin Singletary","pos":"RB","tm":"NYG","pts":6.27,"sid":"6130","st":{"rush_att":14,"rush_yd":47}},{"n":"Zach Charbonnet","pos":"RB","tm":"SEA","pts":10.67,"sid":"9753","st":{"rush_att":6,"rush_yd":35,"rush_td":1}},{"n":"Terry McLaurin","pos":"WR","tm":"WAS","pts":0,"sid":"5927","st":{}},{"n":"Joe Burrow","pos":"QB","tm":"CIN","pts":0,"sid":"6770","st":{}}]},{"id":"0004","team":"The Don is Yinz King","pts":124.41,"starters":[{"n":"Baker Mayfield","pos":"QB","tm":"TBB","pts":6.17,"sid":"4892","st":{"pass_cmp":9,"pass_att":19,"pass_yd":41,"pass_td":1,"pass_int":2,"rush_att":4,"rush_yd":19}},{"n":"Marquise Brown","pos":"WR","tm":"KCC","pts":1.5,"sid":"5848","st":{"rec":1,"rec_tgt":1,"rec_yd":10}},{"n":"T.J. Watt","pos":"DE","tm":"PIT","pts":10.5,"sid":"4070","st":{"idp_tkl":5,"idp_tkl_solo":2,"idp_sack":1,"idp_ff":1,"idp_tkl_loss":1}},{"n":"Jamien Sherwood","pos":"LB","tm":"NYJ","pts":8,"sid":"7841","st":{"idp_tkl":13,"idp_tkl_solo":3}},{"n":"Maxx Crosby","pos":"DE","tm":"LVR","pts":11.5,"sid":"5991","st":{"idp_tkl":8,"idp_tkl_solo":5,"idp_tkl_loss":5}},{"n":"Justin Jefferson","pos":"WR","tm":"MIN","pts":6.8,"sid":"6794","st":{"rec":4,"rec_tgt":6,"rec_yd":48}},{"n":"James Cook","pos":"RB","tm":"BUF","pts":25.27,"sid":"8138","st":{"rush_att":17,"rush_yd":116,"rush_td":1,"rec":3,"rec_tgt":3,"rec_yd":13}},{"n":"Rachaad White","pos":"RB","tm":"TBB","pts":5.97,"sid":"8136","st":{"rush_att":7,"rush_yd":38,"rec":1,"rec_tgt":1,"rec_yd":4}},{"n":"CeeDee Lamb","pos":"WR","tm":"DAL","pts":9.5,"sid":"6786","st":{"rec":4,"rec_tgt":11,"rec_yd":75}},{"n":"Theo Johnson","pos":"TE","tm":"NYG","pts":9.2,"sid":"11597","st":{"rec":3,"rec_tgt":5,"rec_yd":77}},{"n":"Andres Borregales","pos":"K","tm":"NEP","pts":16,"sid":"12713","st":{"fgm":4,"fga":4,"xpm":2,"xpa":2}},{"n":"Javonte Williams","pos":"RB","tm":"DAL","pts":14,"sid":"7588","st":{"rush_att":20,"rush_yd":87,"rec":2,"rec_tgt":3,"rec_yd":14}}],"bench":[{"n":"Bucky Irving","pos":"RB","tm":"TBB","pts":0,"sid":"11584","st":{}},{"n":"Alex Singleton","pos":"LB","tm":"DEN","pts":0,"sid":"2617","st":{}},{"n":"Malik Washington","pos":"WR","tm":"MIA","pts":0,"sid":"11610","st":{}},{"n":"Cameron Dicker","pos":"K","tm":"LAC","pts":0,"sid":"8259","st":{}},{"n":"Keon Coleman","pos":"WR","tm":"BUF","pts":0,"sid":"11637","st":{}},{"n":"Jordan Love","pos":"QB","tm":"GBP","pts":7.56,"sid":"6804","st":{"pass_cmp":14,"pass_att":21,"pass_yd":139,"rush_att":3,"rush_yd":15}},{"n":"Courtland Sutton","pos":"WR","tm":"DEN","pts":0,"sid":"5045","st":{}},{"n":"Alvin Kamara","pos":"RB","tm":"NOS","pts":2.87,"sid":"4035","st":{"rush_att":3,"rush_yd":11,"rec":2,"rec_tgt":2,"rec_yd":4}}]},{"id":"0003","team":"3rd and 1","pts":96.64,"starters":[{"n":"Cam Little","pos":"K","tm":"JAC","pts":13,"sid":"11786","st":{"fgm":2,"fga":2,"xpm":3,"xpa":3}},{"n":"Jonathan Taylor","pos":"RB","tm":"IND","pts":9.53,"sid":"6813","st":{"rush_att":16,"rush_yd":58,"rec":2,"rec_tgt":3,"rec_yd":8}},{"n":"Devin White","pos":"LB","tm":"LVR","pts":5.5,"sid":"6119","st":{"idp_tkl":6,"idp_tkl_solo":3,"idp_tkl_loss":1}},{"n":"Romeo Doubs","pos":"WR","tm":"GBP","pts":4.35,"sid":"8121","st":{"rec":2,"rec_tgt":3,"rec_yd":23}},{"n":"Puka Nacua","pos":"WR","tm":"LAR","pts":13.2,"sid":"9493","st":{"rec":7,"rec_tgt":11,"rec_yd":97}},{"n":"Claudin Cherelus","pos":"LB","tm":"CAR","pts":3.5,"sid":"11305","st":{"idp_tkl":4,"idp_tkl_solo":3}},{"n":"D'Andre Swift","pos":"RB","tm":"CHI","pts":1.9,"sid":"6790","st":{"rush_att":8,"rush_yd":15,"rec":1,"rec_tgt":1,"rec_yd":14,"fum_lost":1}},{"n":"Rico Dowdle","pos":"RB","tm":"CAR","pts":10.67,"sid":"7021","st":{"rush_att":6,"rush_yd":38,"rec":4,"rec_tgt":4,"rec_yd":36}},{"n":"Tyler Warren","pos":"TE","tm":"IND","pts":7,"sid":"12518","st":{"rec":5,"rec_tgt":7,"rec_yd":45}},{"n":"Tykee Smith","pos":"S","tm":"TBB","pts":8,"sid":"11705","st":{"idp_tkl":6,"idp_tkl_solo":4,"idp_pass_def":1,"idp_tkl_loss":1}},{"n":"Michael Pittman","pos":"WR","tm":"IND","pts":11.2,"sid":"6819","st":{"rec":5,"rec_tgt":8,"rec_yd":27,"rec_td":1}},{"n":"Josh Allen","pos":"QB","tm":"BUF","pts":8.79,"sid":"4984","st":{"pass_cmp":24,"pass_att":34,"pass_yd":253,"pass_int":2,"rush_att":5,"rush_yd":20}}],"bench":[{"n":"Tyjae Spears","pos":"RB","tm":"TEN","pts":4.63,"sid":"9508","st":{"rush_att":3,"rush_yd":4,"rec":4,"rec_tgt":5,"rec_yd":21}},{"n":"Kimani Vidal","pos":"RB","tm":"LAC","pts":0,"sid":"11647","st":{}},{"n":"Tyler Allgeier","pos":"RB","tm":"ATL","pts":8.87,"sid":"8132","st":{"rush_att":12,"rush_yd":44,"rec":1,"rec_tgt":1,"rec_yd":5}},{"n":"Jordan Addison","pos":"WR","tm":"MIN","pts":0,"sid":"9756","st":{"rec_tgt":1}},{"n":"Aaron Jones","pos":"RB","tm":"MIN","pts":9.57,"sid":"4199","st":{"rush_att":9,"rush_yd":41,"rec":3,"rec_tgt":4,"rec_yd":16,"idp_tkl":1,"idp_tkl_solo":1}},{"n":"Cade Otton","pos":"TE","tm":"TBB","pts":5.1,"sid":"8111","st":{"rec":4,"rec_tgt":7,"rec_yd":21,"idp_tkl":1,"idp_tkl_solo":1}},{"n":"Jerry Jeudy","pos":"WR","tm":"CLE","pts":2.4,"sid":"6783","st":{"rec":1,"rec_tgt":3,"rec_yd":39,"fum_lost":1}}]}];
 
   // Sleeper headshots, downscaled and inlined as data: URIs -- the Artifact
   // CSP blocks sleepercdn.com, so a plain <img src> to the CDN renders
@@ -860,7 +936,7 @@
     "2-minute Drill": 3, "High Flyers": 2, "The Don is Yinz King": 1,
     "3rd and 1": 4,
   };
-  const ON_NOW = new Set(["Vip", "Lil' Sosos"]);
+  // "on now" is derived from the staged live game below (LIVE_NFL).
 
   // Gap urgency thresholds. The legend reads these same values.
   const CRITICAL = 0.25;  // a boundary this thin is a coin flip
@@ -901,7 +977,7 @@
         ...t,
         live: r2(t.pts + (teamBump[t.id] || 0)),
         toPlay: YET_TO_PLAY[t.team] ?? 0,
-        onNow: ON_NOW.has(t.team),
+        onNow: t.starters.some(isLive),
       }))
       .sort((a, b) => b.live - a.live)
       .map((t, i, arr) => ({ ...t, rank: i + 1, record: `${arr.length - 1 - i}-${i}` }));
@@ -1129,6 +1205,81 @@
     rollNumbers(shown);
   }
 
+  /* ---------------- stat lines ----------------
+     Real Week 12 lines from Sleeper, embedded per player as `st`. They are
+     context beside MFL's number and never feed it: recomputing points from
+     stats is disqualified (CLAUDE.md). The simulator edits a live player's
+     line so it keeps pace with the bump it just gave them. */
+
+  // Illustrative slate: two late games still on the field at 4:12 PM.
+  // Everyone else is Final. ON_NOW is derived from it, so a franchise reads
+  // "on now" exactly when it has a starter in this game.
+  const LIVE_NFL = new Map([
+    ["JAC", "Q3 8:12"], ["KCC", "Q3 8:12"],   // Jaguars at Chiefs
+    ["CHI", "Q4 2:31"], ["MIN", "Q4 2:31"],   // Bears at Vikings
+  ]);
+  const isLive = (p) => LIVE_NFL.has(p.tm);
+  const clockFor = (p) => LIVE_NFL.get(p.tm);
+
+  const liveStats = {};   // `${teamId}:${starterIndex}` -> mutated copy of st
+  const statsFor = (t, k) => liveStats[`${t.id}:${k}`] || t.starters[k].st || {};
+
+  const ri = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
+  const inc = (st, key, by = 1) => { st[key] = (st[key] || 0) + by; };
+
+  // Keep the line consistent with the bump: a TD adds the score and a
+  // plausible play; a small bump adds yardage (or a tackle) in proportion.
+  function bumpStats(t, k, pts, td) {
+    const key = `${t.id}:${k}`;
+    const st = liveStats[key] || (liveStats[key] = { ...(t.starters[k].st || {}) });
+    const pos = t.starters[k].pos;
+    if (pos === "QB") {
+      inc(st, "pass_cmp"); inc(st, "pass_att"); inc(st, "pass_yd", td ? ri(8, 35) : Math.round(pts * 25));
+      if (td) inc(st, "pass_td");
+    } else if (pos === "RB") {
+      inc(st, "rush_att"); inc(st, "rush_yd", td ? ri(1, 25) : Math.round(pts * 10));
+      if (td) inc(st, "rush_td");
+    } else if (pos === "WR" || pos === "TE") {
+      inc(st, "rec"); inc(st, "rec_tgt"); inc(st, "rec_yd", td ? ri(5, 40) : Math.round(pts * 10));
+      if (td) inc(st, "rec_td");
+    } else if (pos === "K") {
+      if (pts >= 3) { inc(st, "fgm"); inc(st, "fga"); } else { inc(st, "xpm"); inc(st, "xpa"); }
+    } else {
+      inc(st, "idp_tkl"); inc(st, "idp_tkl_solo");
+      if (td) { inc(st, "idp_int"); inc(st, "idp_td"); }
+    }
+  }
+
+  const j = (parts) => parts.filter(Boolean).join(" \u00b7 ");
+  function statLine(pos, st) {
+    if (!st || !Object.keys(st).length) return "";
+    if (pos === "QB") return j([
+      st.pass_att ? `${st.pass_cmp || 0}/${st.pass_att} · ${st.pass_yd || 0} YDS` : "",
+      st.pass_td ? `${st.pass_td} TD` : "", st.pass_int ? `${st.pass_int} INT` : "",
+      st.rush_yd ? `${st.rush_yd} RUSH` : "", st.rush_td ? `${st.rush_td} RUSH TD` : "",
+    ]);
+    if (pos === "RB") return j([
+      st.rush_att ? `${st.rush_att} CAR · ${st.rush_yd || 0} YDS` : "", st.rush_td ? `${st.rush_td} TD` : "",
+      st.rec ? `${st.rec} REC · ${st.rec_yd || 0} YDS` : "", st.rec_td ? `${st.rec_td} REC TD` : "",
+      st.fum_lost ? `${st.fum_lost} FUM` : "",
+    ]);
+    if (pos === "WR" || pos === "TE") return j([
+      st.rec_tgt || st.rec ? `${st.rec || 0}/${st.rec_tgt || st.rec || 0} REC · ${st.rec_yd || 0} YDS` : "",
+      st.rec_td ? `${st.rec_td} TD` : "", st.rush_yd ? `${st.rush_yd} RUSH` : "", st.rush_td ? `${st.rush_td} RUSH TD` : "",
+      st.fum_lost ? `${st.fum_lost} FUM` : "",
+    ]);
+    if (pos === "K") return j([
+      st.fga ? `${st.fgm || 0}/${st.fga} FG` : "", st.xpa ? `${st.xpm || 0}/${st.xpa} XP` : "",
+    ]);
+    return j([
+      st.idp_tkl ? `${st.idp_tkl} TKL${st.idp_tkl_solo ? ` (${st.idp_tkl_solo} solo)` : ""}` : "",
+      st.idp_tkl_loss ? `${st.idp_tkl_loss} TFL` : "", st.idp_sack ? `${st.idp_sack} SCK` : "",
+      st.idp_int ? `${st.idp_int} INT` : "", st.idp_ff ? `${st.idp_ff} FF` : "",
+      st.idp_fum_rec ? `${st.idp_fum_rec} FR` : "", st.idp_pass_def ? `${st.idp_pass_def} PD` : "",
+      st.idp_td ? `${st.idp_td} TD` : "",
+    ]);
+  }
+
   /* ---------------- team page ---------------- */
 
   const POS_CLASS = { QB: "QB", RB: "RB", WR: "WR", TE: "TE", K: "K" };
@@ -1152,7 +1303,12 @@
     `<div class="prow${bench ? " bench" : ""}${p.pts === 0 ? " zero" : ""}">` +
       avatar(p) +
       `<span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span>` +
-      `<span class="pname"><b>${esc(p.n)}</b><span>${esc(p.tm)}</span></span>` +
+      `<span class="pname"><b>${esc(p.n)}</b>` +
+        `<span class="pmeta">${esc(p.tm)}<span aria-hidden="true">·</span>` +
+          (isLive(p) ? `<span class="clock"><span class="dot"></span>${clockFor(p)}</span>` : `<span>Final</span>`) +
+        `</span>` +
+        `<span class="pstat">${esc(statLine(p.pos, p.st))}</span>` +
+      `</span>` +
       `<span class="ppts${p.pts === 0 ? " zero" : ""}${p.flash ? " flash" : ""}"${p.key ? ` data-tween="p:${p.key}" data-delta` : ""}>${fmt(p.pts)}</span>` +
     `</div>`;
 
@@ -1166,7 +1322,7 @@
   // Starters with any live bumps applied, in fixture order.
   const liveStarters = (t, changed) => t.starters.map((p, k) => {
     const key = `${t.id}:${k}`;
-    return { ...p, key, pts: r2(p.pts + (playerBump[key] || 0)), flash: changed.has(key) };
+    return { ...p, key, pts: r2(p.pts + (playerBump[key] || 0)), flash: changed.has(key), st: statsFor(t, k) };
   });
 
   function renderTeam(changed = new Set()) {
@@ -1261,6 +1417,11 @@
     ? `<img class="td-shot" src="${HEADSHOTS[p.sid]}" alt="">`
     : `<span class="td-shot">${esc(initials(p.n))}</span>`;
 
+  // One span per letter so each can stomp in on its own beat.
+  const chant = (text) => `<span class="td-chant" aria-hidden="true">` +
+    [...text].map((ch, i) => ch === " " ? `<span class="sp" style="--i:${i}"></span>` : `<span style="--i:${i}">${esc(ch)}</span>`).join("") +
+    `</span>`;
+
   function renderTdMore() {
     const el = document.getElementById("td-more");
     if (!el) return;
@@ -1274,10 +1435,13 @@
     tdShowing = true;
     const p = ev.player;
     tdCard.style.setProperty("--td-ms", `${TD_MS}ms`);
+    tdModal.classList.toggle("td-chi", p.tm === "CHI");
     tdCard.innerHTML =
       `<span class="td-rays" aria-hidden="true"></span>` +
+      `<span class="td-flash" aria-hidden="true"></span>` +
       `<span class="td-more" id="td-more" hidden></span>` +
       `<span class="td-word">Touchdown</span>` +
+      (p.tm === "CHI" ? chant("Bear down!") : "") +
       `<span class="td-face">${bigShot(p)}${teamLogo(p.tm)}</span>` +
       `<span class="td-name">${esc(p.n)}</span>` +
       `<span class="td-meta"><span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span><span>${esc(p.tm)}</span></span>` +
@@ -1314,38 +1478,55 @@
   const simBtn = document.getElementById("sim");
   let simTimer = null;
 
-  const randomStarter = () => {
-    const pool = teams.filter((t) => t.toPlay > 0);
-    const t = pool[Math.floor(Math.random() * pool.length)];
-    return { t, k: Math.floor(Math.random() * t.starters.length) };
+  // Only players whose game is on the field can score. Kickers never
+  // score touchdowns, so they are left out of the TD pool.
+  const randomStarter = (forTd = false) => {
+    const pool = teams.flatMap((t) => t.starters
+      .map((p, k) => ({ t, k, p }))
+      .filter(({ p }) => isLive(p) && !(forTd && p.pos === "K")));
+    return pool[Math.floor(Math.random() * pool.length)];
   };
 
   // Six for the score plus a little yardage, announced as a touchdown.
   function scoreTouchdown(t, k, changed) {
     const pts = r2(6 + Math.random() * 4);
     bump(t, k, pts);
+    bumpStats(t, k, pts, true);
     announceTouchdown({ player: t.starters[k], franchise: t.team, pts });
     changed.add(t.id).add(`${t.id}:${k}`);
   }
 
   function simTick() {
     const changed = new Set();
-    const { t, k } = randomStarter();
     if (Math.random() < 0.25) {
+      const { t, k } = randomStarter(true);
       scoreTouchdown(t, k, changed);
       // Now and then two land in the same poll, to exercise the queue.
-      if (Math.random() < 0.3) { const o = randomStarter(); scoreTouchdown(o.t, o.k, changed); }
+      if (Math.random() < 0.3) { const o = randomStarter(true); scoreTouchdown(o.t, o.k, changed); }
     } else {
-      bump(t, k, r2(0.3 + Math.random() * 2.7));
+      const { t, k } = randomStarter();
+      const pts = r2(0.3 + Math.random() * 2.7);
+      bump(t, k, pts);
+      bumpStats(t, k, pts, false);
       changed.add(t.id).add(`${t.id}:${k}`);
     }
     derive();
     render(changed);
   }
 
+  document.getElementById("td-chi").addEventListener("click", () => {
+    const bears = teams.flatMap((t) => t.starters.map((p, k) => ({ t, k, p })))
+      .filter(({ p }) => p.tm === "CHI" && isLive(p) && p.pos !== "K");
+    const pick = bears.length ? bears[Math.floor(Math.random() * bears.length)] : randomStarter(true);
+    const changed = new Set();
+    scoreTouchdown(pick.t, pick.k, changed);
+    derive();
+    render(changed);
+  });
+
   document.getElementById("td").addEventListener("click", () => {
     const changed = new Set();
-    const { t, k } = randomStarter();
+    const { t, k } = randomStarter(true);
     scoreTouchdown(t, k, changed);
     derive();
     render(changed);
@@ -1354,8 +1535,11 @@
   // Hands #2 exactly enough (plus a little) to pass #1, on one starter.
   document.getElementById("flip").addEventListener("click", () => {
     const chaser = teams[1];
-    const k = Math.floor(Math.random() * chaser.starters.length);
-    bump(chaser, k, r2(gaps[0] + 0.5 + Math.random() * 2.5));
+    const live = chaser.starters.map((p, k) => (isLive(p) ? k : -1)).filter((k) => k >= 0);
+    const k = live.length ? live[Math.floor(Math.random() * live.length)] : Math.floor(Math.random() * chaser.starters.length);
+    const pts = r2(gaps[0] + 0.5 + Math.random() * 2.5);
+    bump(chaser, k, pts);
+    bumpStats(chaser, k, pts, pts >= 6);
     derive();
     render(new Set([chaser.id, `${chaser.id}:${k}`]));
   });

@@ -79,7 +79,11 @@ element and scores are second.
 - **Touchdowns** raise a celebration card over everything: headshot with
   the NFL team logo badged on it, TOUCHDOWN slam, franchise, points. It
   stays 4s; further scores queue in arrival order ("+N more") and each gets
-  its own card. Tap the scrim or Escape to skip. In the mockup a TD is a
+  its own card. Tap the scrim or Escape to skip. A Bears scorer adds
+  "BEAR DOWN!" stomping in letter by letter in Bears orange with a navy
+  trim, and the whole card goes Bears: navy ground, orange glow, flash and
+  rays, orange-and-white portrait ring. Literal team colours on purpose,
+  identical in both themes. "Bears TD" on the demo bar triggers one. In the mockup a TD is a
   simulated event (6 + yardage); with the feed, MFL gives only fantasy
   points, so the trigger would be one starter jumping a touchdown's worth
   between polls.
@@ -117,6 +121,15 @@ headshot.
   square and resizing must be two separate calls or the crop clamps to the
   already-shrunken image. Raw downloads are cached so re-processing never
   re-fetches 215 images.
+
+**The Team view mocks stat lines as context.** `build-data.mjs` embeds each
+player's real Week 12 line from Sleeper's free stats endpoint
+(`/v1/stats/nfl/regular/2025/12`, keyed by Sleeper id) as `st`, and the row
+shows it under the name beside a game status. The status is staged: one
+late game (JAC at KCC, "Q3 8:12") and a second (CHI at MIN, "Q4 2:31") are
+on the field and everything else is Final; "on now" on the leaderboard is derived from that slate, and the
+simulator only bumps players in that game, editing their line to match the
+bump. The line is context next to MFL's number and never feeds it.
 
 **Images are off the live path; stat lines are on it.** The crosswalk is a
 cache job and headshots are static files, so neither touches Sunday polling --
