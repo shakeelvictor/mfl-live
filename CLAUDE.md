@@ -74,8 +74,18 @@ element and scores are second.
   affordance, not a feed, and it keeps team total == starters sum.
 - **Lead change** fires a takeover on the hero (mint strobe, lightning
   bolts, diagonal sweep, badge spin, name rise; ~1.6s) and the ex-leader
-  fades into the list at #2. "Flip the lead" next to the simulate toggle
-  hands #2 just enough to pass #1 so the sequence can be seen on demand.
+  fades into the list at #2. "Flip the lead" hands #2 just enough to pass
+  #1 so the sequence can be seen on demand.
+- **Touchdowns** raise a celebration card over everything: headshot with
+  the NFL team logo badged on it, TOUCHDOWN slam, franchise, points. It
+  stays 4s; further scores queue in arrival order ("+N more") and each gets
+  its own card. Tap the scrim or Escape to skip. In the mockup a TD is a
+  simulated event (6 + yardage); with the feed, MFL gives only fantasy
+  points, so the trigger would be one starter jumping a touchdown's worth
+  between polls.
+- The **Demo bar** (Simulate live scoring / Flip the lead / Score a TD)
+  sits under the masthead on purpose, so it is easy to reach while the
+  transitions are being tuned. It is mockup-only and will be removed.
 
 Thresholds (`CRITICAL`, `LIVE`, `WITHIN`) live in one place in the script and
 the legend and capsules read them. The headline stats and the hero are derived
@@ -95,10 +105,13 @@ which is unused so far.) Both come from Sleeper, reached through the same
 headshot.
 
 - Headshots: `sleepercdn.com/content/nfl/players/thumb/{sleeper_id}.jpg`
-  (250x181). Team logos: `sleepercdn.com/images/team_logos/nfl/{team}.png`.
-  **An unknown id returns 403, not 404** -- don't branch on 404.
-- The mockup **inlines** them as data: URIs (~1MB) because the Artifact CSP
-  blocks `sleepercdn.com`; a plain `<img src>` to the CDN renders nothing with
+  (250x181). Team logos: `sleepercdn.com/images/team_logos/nfl/{code}.png`
+  with Sleeper's **lowercase** codes; MFL's differ for eight teams
+  (SFO/NEP/GBP/KCC/TBB/NOS/LVR/JAC -> sf/ne/gb/kc/tb/no/lv/jax), mapped in
+  `build-data.mjs`. **An unknown id returns 403, not 404** -- don't branch
+  on 404.
+- The mockup **inlines** them as data: URIs (~2.2MB: 215 headshots at 160px
+  plus 32 logos) because the Artifact CSP blocks `sleepercdn.com`; a plain `<img src>` to the CDN renders nothing with
   no error. On Netlify there is no such constraint -- load them from the CDN.
 - `sips` applies `-Z` **before** `-c` regardless of argument order, so cropping
   square and resizing must be two separate calls or the crop clamps to the

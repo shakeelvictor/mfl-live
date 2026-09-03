@@ -27,7 +27,7 @@ const CACHE = path.join(HERE, '.cache');
 const SHOTS = path.join(CACHE, 'headshots');
 fs.mkdirSync(SHOTS, { recursive: true });
 
-const AVATAR_PX = 96;   // 2x+ for the 40px the roster row renders
+const AVATAR_PX = 160;  // 4x for the 40px roster row, 1.2x for the 132px touchdown card
 const AVATAR_Q  = 70;
 
 async function cachedJson(name, url) {
@@ -148,6 +148,38 @@ for (const sid of wanted) {
   if (fs.existsSync(f)) headshots[sid] = 'data:image/jpeg;base64,' + fs.readFileSync(f).toString('base64');
 }
 
+/* ---------------- team logos ---------------- */
+
+// Sleeper serves NFL team logos at images/team_logos/nfl/<code>.png, keyed
+// by its own lowercase codes. MFL uses different codes for eight teams.
+const SLEEPER_TEAM = { SFO: "SF", NEP: "NE", GBP: "GB", KCC: "KC", TBB: "TB", NOS: "NO", LVR: "LV", JAC: "JAX" };
+const LOGOS_DIR = path.join(CACHE, "logos");
+fs.mkdirSync(LOGOS_DIR, { recursive: true });
+const LOGO_PX = 96;
+
+async function ensureLogo(tm) {
+  const code = (SLEEPER_TEAM[tm] || tm).toLowerCase();
+  const raw = path.join(LOGOS_DIR, `${tm}.raw.png`);
+  const small = path.join(LOGOS_DIR, `${tm}.png`);
+  if (!fs.existsSync(raw)) {
+    const res = await fetch(`https://sleepercdn.com/images/team_logos/nfl/${code}.png`,
+      { headers: { "User-Agent": UA } });
+    // A wrong code should stop the build, not ship a blank badge.
+    if (!res.ok) throw new Error(`${res.status} fetching logo for ${tm} (${code})`);
+    fs.writeFileSync(raw, Buffer.from(await res.arrayBuffer()));
+  }
+  if (!fs.existsSync(small)) {
+    execFileSync("sips", ["-Z", String(LOGO_PX), raw, "--out", small], { stdio: "ignore" });
+  }
+  return "data:image/png;base64," + fs.readFileSync(small).toString("base64");
+}
+
+// Only teams that appear on a roster; free agents carry no logo.
+const teamsSeen = [...new Set(everyone.map((p) => p.tm))]
+  .filter((tm) => /^[A-Z]{2,3}$/.test(tm) && tm !== "FA").sort();
+const logos = {};
+for (const tm of teamsSeen) logos[tm] = await ensureLogo(tm);
+
 /* ---------------- inject ---------------- */
 
 const target = path.join(HERE, 'leaderboard.html');
@@ -169,6 +201,9 @@ html = inject(html, '/*__ROSTERS__*/[]', /const ROSTERS = \[.*?\];\n/s, 'ROSTERS
   html.includes('/*__ROSTERS__*/[]') ? rostersBlob : `const ROSTERS = ${rostersBlob};\n`);
 html = inject(html, '/*__HEADSHOTS__*/{}', /const HEADSHOTS = \{.*?\};\n/s, 'HEADSHOTS',
   html.includes('/*__HEADSHOTS__*/{}') ? shotsBlob : `const HEADSHOTS = ${shotsBlob};\n`);
+const logosBlob = JSON.stringify(logos);
+html = inject(html, '/*__LOGOS__*/{}', /const LOGOS = \{.*?\};\n/s, 'LOGOS',
+  html.includes('/*__LOGOS__*/{}') ? logosBlob : `const LOGOS = ${logosBlob};\n`);
 
 fs.writeFileSync(target, html);
 
@@ -176,4 +211,5 @@ const kb = (b) => (b / 1024).toFixed(0) + 'KB';
 console.log(`ok: ${rosters.length} franchises, ${everyone.length} players`);
 console.log(`    sleeper ids resolved : ${everyone.filter((p) => p.sid).length}/${everyone.length}`);
 console.log(`    headshots embedded   : ${got}/${wanted.length}${missing.length ? '  missing: ' + missing.join(',') : ''}`);
-console.log(`    rosters ${kb(rostersBlob.length)}  headshots ${kb(shotsBlob.length)}  file ${kb(html.length)}`);
+console.log(`    team logos embedded  : ${teamsSeen.length}`);
+console.log(`    rosters ${kb(rostersBlob.length)}  headshots ${kb(shotsBlob.length)}  logos ${kb(logosBlob.length)}  file ${kb(html.length)}`);
