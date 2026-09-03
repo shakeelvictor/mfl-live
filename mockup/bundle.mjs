@@ -23,9 +23,9 @@ export function bundle() {
   const swaps = [
     ['<link rel="stylesheet" href="styles.css">', () => `<style>\n${read('styles.css')}</style>`],
     ['src="logo.png"', () => `src="${dataUri('logo.png')}"`],
-    ['href="favicon-32.png"', () => `href="${dataUri('favicon-32.png')}"`],
-    ['<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">\n', () => ''],
-    ['<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">\n', () => ''],
+    ['href="favicon-32.png?v=2"', () => `href="${dataUri('favicon-32.png')}"`],
+    ['<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2">\n', () => ''],
+    ['<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2">\n', () => ''],
     ['<script src="data.js"></script>', () => `<script>\n${read('data.js')}</script>`],
     ['<script src="app.js"></script>', () => `<script>\n${read('app.js')}</script>`],
   ];
