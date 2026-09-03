@@ -1,9 +1,27 @@
-// Illustrative mid-slate framing. The fixture is a finished week, so the
-// clock, starters yet to play and "on now" are staged to show the board
-// in progress. liveScoring supplies the real values (playersYetToPlay,
-// gameSecondsRemaining) once the feed is wired.
-const WEEK = 12;
-const UPDATED = "4:12 PM";
+/* ---------------- data source ----------------
+   Live: the league itself, through /api/mfl (server/mfl.mjs): franchises,
+   rosters, a player map with Sleeper ids, the NFL schedule and, once the
+   season starts, liveScoring polled every 30s. Fixture: the embedded 2025
+   Week 12 data in data.js -- the POC's world, and the fallback when the
+   feed cannot be reached (the artifact, offline). ?source=fixture forces
+   it; the bundle sets window.MFL_FIXTURE. */
+
+const QUERY = new URLSearchParams(location.search);
+let FIXTURE = QUERY.get("source") === "fixture" || window.MFL_FIXTURE === true;
+
+let rosters = [];              // [{ id, team, pts, toPlay, starters, bench }]
+let headshotSrc = () => null;  // (player) -> img src, or null for the initials fallback
+let logoSrc = () => null;      // (NFL team code) -> img src, or null
+let WEEK = 12;
+let UPDATED = "4:12 PM";
+let phase = "live";            // "live" | "preseason" (liveScoring not available yet)
+let kickoff = null;            // Date of the week's first game (live source)
+let games = new Map();         // NFL team -> { kickoff: Date, secs } from nflSchedule (live source)
+let dayTeams = { early: new Set() };   // NFL teams whose game is on the week's first day
+
+// Illustrative mid-slate framing for the FIXTURE: it is a finished week, so
+// the clock, starters yet to play and "on now" are staged to show the board
+// in progress. The live source has the real values.
 const YET_TO_PLAY = {
   "I'm Just Here to Network": 0, "Reggaeton Forever": 1, "Ryaan": 2,
   "Uncle Rico": 0, "Vip": 1, "WhiskeyDitka": 2, "Lil' Sosos": 1,
@@ -47,38 +65,67 @@ let gaps = [];    // gaps[i] is the gap below row i (between rank i+1 and rank i
 // page shows -- ranks, records, gaps, tiers, headline stats -- comes from
 // ROSTERS, never from a constant that could disagree with its own rows.
 function derive() {
-  teams = ROSTERS
+  teams = rosters
     .map((t) => ({
       ...t,
       live: r2(t.pts + (teamBump[t.id] || 0)),
-      toPlay: slate.sunFinal ? 0 : (YET_TO_PLAY[t.team] ?? 0),
+      toPlay: slate.sunFinal ? 0 : (FIXTURE ? (YET_TO_PLAY[t.team] ?? 0) : (t.toPlay ?? 0)),
       onNow: t.starters.some(isLive),
     }))
-    .sort((a, b) => b.live - a.live)
+    // Pre-season nobody has a score, so the list is alphabetical, not ranked.
+    .sort((a, b) => (phase === "preseason" ? a.team.localeCompare(b.team) : b.live - a.live))
     .map((t, i, arr) => ({ ...t, rank: i + 1, record: `${arr.length - 1 - i}-${i}` }));
   gaps = teams.slice(0, -1).map((t, i) => r2(t.live - teams[i + 1].live));
+  n = teams.length;
 }
 
-const n = ROSTERS.length;
+let n = 0;
 const byId = (id) => teams.find((t) => t.id === id);
 const tier = (g) => (g < CRITICAL ? "critical" : g < LIVE ? "live" : "settled");
 const hot = (g) => g !== undefined && tier(g) !== "settled";
 const TIER_LABEL = { critical: "Coin flip", live: "Live", settled: "Settled" };
 
-const statusOf = (t) => t.toPlay === 0
-  ? "all played"
-  : `${t.toPlay} to play${t.onNow ? " &middot; on now" : ""}`;
+const statusOf = (t) => phase === "preseason"
+  ? `${t.bench.length} on roster`
+  : t.toPlay === 0
+    ? "all played"
+    : `${t.toPlay} to play${t.onNow ? " &middot; on now" : ""}`;
 
-/* ---------------- static chrome ---------------- */
+const fmtDay = (d) => d ? d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) : "";
+const fmtTime = (d) => d ? d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
+const fmtKick = (d) => d ? `${fmtDay(d)} ${fmtTime(d)}` : "";
 
-document.getElementById("week-title").textContent = `Week ${WEEK}`;
-document.getElementById("subhead").innerHTML =
-  `All-play &middot; every team plays every other team &middot; updated ${esc(UPDATED)}`;
-document.getElementById("franchise-count").textContent = `${n} franchises`;
-document.getElementById("legend").innerHTML =
-  `<span class="critical">under ${CRITICAL.toFixed(2)} &mdash; coin flip</span>` +
-  `<span class="live">under ${LIVE.toFixed(1)} &mdash; live</span>` +
-  `<span>settled</span>`;
+// "6d 19h 27m 23s" until kickoff; ticks once a second while pre-season.
+// Days drop off at zero; hours, minutes and seconds always show.
+function countdownText() {
+  if (!kickoff) return "";
+  let left = Math.max(0, Math.floor((kickoff - Date.now()) / 1000));
+  const d = Math.floor(left / 86400); left -= d * 86400;
+  const h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60), sec = left % 60;
+  const p = (x) => String(x).padStart(2, "0");
+  return `${d ? d + "d " : ""}${p(h)}h ${p(m)}m ${p(sec)}s`;
+}
+setInterval(() => {
+  const el = document.getElementById("countdown");
+  if (el) el.textContent = countdownText();
+}, 1000);
+
+// A franchise's own icon, when one is set in MFL.
+const franchiseIcon = (t, cls = "ficon") => t.icon ? `<img class="${cls}" src="${t.icon}" alt="" loading="lazy" onerror="this.remove()">` : "";
+
+/* ---------------- chrome ---------------- */
+
+function renderChrome() {
+  document.getElementById("week-title").textContent = `Week ${WEEK}`;
+  const kick = document.getElementById("kick");
+  kick.hidden = phase !== "preseason" || !kickoff;
+  document.getElementById("countdown").textContent = countdownText();
+  document.getElementById("hero-wrap").hidden = phase === "preseason";
+  const sub = document.getElementById("subhead");
+  sub.hidden = phase === "preseason";
+  sub.innerHTML = `Updated ${esc(UPDATED)}`;
+  document.getElementById("franchise-count").textContent = `${n} franchises`;
+}
 
 /* ---------------- render ----------------
    `changed` holds the team ids and `${teamId}:${starterIndex}` keys that
@@ -94,6 +141,9 @@ const rowsEl = document.getElementById("rows");
 const fl = (changed, key) => (changed.has(key) ? " flash" : "");
 
 function renderCapsules() {
+  const caps = document.getElementById("capsules");
+  caps.hidden = phase === "preseason";
+  if (caps.hidden) return;
   const within = new Set(gaps.flatMap((g, i) => (g < WITHIN ? [i, i + 1] : []))).size;
   const atStake = gaps.filter((g) => g < WITHIN).length;
   const startersLeft = teams.reduce((s, t) => s + t.toPlay, 0);
@@ -104,6 +154,7 @@ function renderCapsules() {
 }
 
 function renderHero(changed, takeover) {
+  if (phase === "preseason") return;   // hidden by renderChrome; the countdown pill stands in
   const lead = teams[0], chaser = teams[1], lt = tier(gaps[0]);
   heroBody.innerHTML =
     `<div class="hero-top">` +
@@ -112,7 +163,7 @@ function renderHero(changed, takeover) {
     `</div>` +
     `<div class="hero-mid">` +
       `<div class="hero-id">` +
-        `<span class="hero-name">${esc(lead.team)}</span>` +
+        `<span class="hero-name">${franchiseIcon(lead, "hero-icon")}${esc(lead.team)}</span>` +
         `<span class="hero-rec">${lead.record} all-play</span>` +
       `</div>` +
       `<span class="hero-pts${fl(changed, lead.id)}" data-tween="pts:${lead.id}" data-delta>${fmt(lead.live)}</span>` +
@@ -143,6 +194,20 @@ function renderRows(changed) {
     before.set(el.dataset.id, el.getBoundingClientRect().top);
   }
 
+  // Pre-season: every franchise, alphabetical, no ranks, gaps or points.
+  if (phase === "preseason") {
+    rowsEl.innerHTML = teams.map((t) =>
+      `<button class="row pre" type="button" data-id="${t.id}"` +
+      ` aria-label="${esc(t.team)}. Open roster.">` +
+        `<span class="rank${t.icon ? " has-icon" : ""}">${t.icon ? franchiseIcon(t, "rank-icon") : esc(t.team.trim()[0] || "?")}</span>` +
+        `<span class="who"><span class="name">${esc(t.team)}</span></span>` +
+        `<span class="pts">&mdash;</span>` +
+        `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
+      `</button>`).join("");
+    markActive();
+    return;
+  }
+
   // The leader lives in the hero, which already shows its lead over #2, so
   // the list starts at rank 2. The first listed row never fuses upward:
   // there is no card above it to fuse with, even when that gap is hot (the
@@ -163,7 +228,7 @@ function renderRows(changed) {
     const row =
       `<button class="${rowCls}" type="button" data-id="${t.id}"` +
       ` aria-label="Rank ${t.rank}, ${esc(t.team)}, ${t.record}, ${fmt(t.live)} points. Open lineup.">` +
-        `<span class="rank ${rankTier}">${t.rank}</span>` +
+        `<span class="rank ${rankTier}">${t.rank}${franchiseIcon(t, "rank-badge")}</span>` +
         `<span class="who">` +
           `<span class="name">${esc(t.team)}</span>` +
           `<span class="sub">` +
@@ -274,6 +339,7 @@ function rollNumbers(shown) {
 }
 
 function render(changed = new Set()) {
+  renderChrome();
   const shown = snapshotShown();
   const takeover = leaderId !== null && teams[0].id !== leaderId;
   leaderId = teams[0].id;
@@ -283,7 +349,7 @@ function render(changed = new Set()) {
   renderSpotlight();
   if (open !== null) renderTeam(changed);
   rollNumbers(shown);
-  document.getElementById("brand-live").classList.toggle("final", weekIsFinal());
+  document.getElementById("brand-live").classList.toggle("final", weekIsFinal() || phase === "preseason");
 }
 
 /* ---------------- stat lines ----------------
@@ -305,8 +371,26 @@ const LIVE_NFL = new Map([
   ["JAC", "Q3 8:12"], ["KCC", "Q3 8:12"],   // Jaguars at Chiefs
   ["CHI", "Q4 2:31"], ["MIN", "Q4 2:31"],   // Bears at Vikings
 ]);
-const isLive = (p) => !slate.sunFinal && LIVE_NFL.has(p.tm);
-const clockFor = (p) => LIVE_NFL.get(p.tm);
+// Live source: a player's game clock comes from liveScoring (per player) or,
+// failing that, the schedule (per NFL team). 3600 = not started, 0 = final.
+const secsOf = (p) => (p.secs ?? games.get(p.tm)?.secs ?? null);
+const clockText = (secs) => {
+  const q = 4 - Math.floor((secs - 1) / 900), left = ((secs - 1) % 900) + 1;
+  return `Q${q} ${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
+};
+const isLive = (p) => !slate.sunFinal && (FIXTURE
+  ? LIVE_NFL.has(p.tm)
+  : (secsOf(p) != null && secsOf(p) > 0 && secsOf(p) < 3600));
+const clockFor = (p) => (FIXTURE ? LIVE_NFL.get(p.tm) : clockText(secsOf(p)));
+// What a row shows when the player is not on the field.
+const gameLabel = (p) => {
+  if (FIXTURE) return "Final";
+  const secs = secsOf(p);
+  if (secs == null) return "\u2014";
+  if (secs <= 0) return "Final";
+  const g = games.get(p.tm);
+  return g ? `${g.kickoff.toLocaleDateString([], { weekday: "short" })} ${fmtTime(g.kickoff)}` : "Not started";
+};
 
 const liveStats = {};   // `${teamId}:${index}` (bench: `b${index}`) -> mutated copy of st
 const slotKey = (t, k, bench) => `${t.id}:${bench ? "b" : ""}${k}`;
@@ -378,7 +462,8 @@ function statLine(pos, st) {
    card. Which day a player's game belongs to is staged here; with the
    feed it comes from the schedule. */
 
-const THU_NFL = new Set(["DET", "CLE"]);   // Thursday night: Browns at Lions
+const THU_NFL = new Set(["DET", "CLE"]);   // fixture: Thursday night, Browns at Lions
+const isEarlyDay = (p) => (FIXTURE ? THU_NFL : dayTeams.early).has(p.tm);
 const spotEl = document.getElementById("spot");
 let lastSpotKey = null;
 
@@ -387,7 +472,7 @@ function spotlightPick() {
   let pool, label, when;
   if (slate.nextWeek) return { top: null, key: "none" };            // new week, nothing final yet
   if (slate.weekFinal) { pool = all; label = "\u2605 MVP of the week"; when = `Week ${WEEK} final`; }
-  else if (slate.sunFinal) { pool = all.filter((p) => !THU_NFL.has(p.tm)); label = "Top scorer"; when = "Sunday"; }
+  else if (slate.sunFinal) { pool = all.filter((p) => !isEarlyDay(p)); label = "Top scorer"; when = "Sunday"; }
   else return { top: null, key: "none" };                             // Sunday is in progress
   const top = pool.reduce((a, p) => (p.pts > a.pts ? p : a), pool[0]);
   return { top, label, when, mvp: slate.weekFinal, key: `${when}:${top?.key}` };
@@ -401,7 +486,7 @@ function renderSpotlight() {
   const phaseChanged = changed && key.split(":")[0] !== lastSpotKey.split(":")[0];
   lastSpotKey = key;
   spotEl.classList.toggle("mvp", mvp);
-  const logo = LOGOS[top.tm] ? `<span class="logo"><img src="${LOGOS[top.tm]}" alt=""></span>` : `<span class="logo">${esc(top.tm)}</span>`;
+  const logo = logoSrc(top.tm) ? `<span class="logo"><img src="${logoSrc(top.tm)}" alt=""></span>` : `<span class="logo">${esc(top.tm)}</span>`;
   spotEl.innerHTML =
     (phaseChanged && mvp && !reducedMotion.matches ? `<span class="spot-flash" aria-hidden="true"></span>` : "") +
     `<div class="spot-top"><span class="micro spot-label">${label}</span><span class="spot-when">${esc(when)}</span></div>` +
@@ -430,13 +515,14 @@ const byLineup = (a, b) =>
 const initials = (name) => name.split(/[\s-]+/).filter(Boolean)
   .map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 
+// A CDN headshot that fails (403 for an unknown id) swaps to the initials.
 const avatar = (p) => {
-  const src = p.sid && HEADSHOTS[p.sid];
-  if (src) return `<img class="avatar" src="${src}" alt="" decoding="async">`;
+  const src = headshotSrc(p);
+  if (src) return `<img class="avatar" src="${src}" alt="" decoding="async" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className: 'avatar-fb', textContent: this.dataset.fb }))" data-fb="${esc(initials(p.n))}">`;
   return `<span class="avatar-fb" aria-hidden="true">${esc(initials(p.n))}</span>`;
 };
 
-const logoBadge = (tm) => LOGOS[tm] ? `<span class="plogo"><img src="${LOGOS[tm]}" alt=""></span>` : "";
+const logoBadge = (tm) => logoSrc(tm) ? `<span class="plogo"><img src="${logoSrc(tm)}" alt="" loading="lazy"></span>` : "";
 
 // Touchdowns from the stat line (all kinds), so a simulated score adds the
 // chip live. IDP scores use the mockup's own idp_td key.
@@ -444,18 +530,20 @@ const tdCount = (st) => (st ? (st.pass_td || 0) + (st.rush_td || 0) + (st.rec_td
 const tdBadge = (st) => { const n = tdCount(st); return n ? `<span class="ptd">${n > 1 ? n + " " : ""}TD</span>` : ""; };
 
 // top: the team's highest-scoring starter gets a gold ring (MVP echo).
-const playerRow = (p, bench, top = false) =>
-  `<div class="prow${bench ? " bench" : ""}${p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${top ? " top" : ""}">` +
+const playerRow = (p, bench, top = false) => {
+  const dim = bench && phase !== "preseason";   // pre-season the roster is nobody's bench
+  return `<div class="prow${dim ? " bench" : ""}${dim && p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${top ? " top" : ""}">` +
     `<span class="pface">${avatar(p)}${logoBadge(p.tm)}${tdBadge(p.st)}</span>` +
     `<span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span>` +
     `<span class="pname"><b>${esc(p.n)}</b>` +
       `<span class="pmeta">${esc(p.tm)}<span aria-hidden="true">·</span>` +
-        (isLive(p) ? `<span class="clock"><span class="dot"></span>${clockFor(p)}</span>` : `<span>Final</span>`) +
+        (isLive(p) ? `<span class="clock"><span class="dot"></span>${clockFor(p)}</span>` : `<span>${esc(gameLabel(p))}</span>`) +
       `</span>` +
       `<span class="pstat">${esc(statLine(p.pos, p.st))}</span>` +
     `</span>` +
-    `<span class="ppts${p.pts === 0 ? " zero" : ""}${p.flash ? " flash" : ""}"${p.key ? ` data-tween="p:${p.key}" data-delta` : ""}>${fmt(p.pts)}</span>` +
+    `<span class="ppts${p.pts === 0 ? " zero" : ""}${p.flash ? " flash" : ""}"${p.key ? ` data-tween="p:${p.key}" data-delta` : ""}>${phase === "preseason" ? "&mdash;" : fmt(p.pts)}</span>` +
   `</div>`;
+};
 
 const page = document.getElementById("team");
 const rosterEl = document.getElementById("roster");
@@ -480,20 +568,33 @@ function renderTeam(changed = new Set()) {
   const starters = liveStarters(t, changed);
   const bench = liveBench(t, changed);
 
-  document.getElementById("team-rank").textContent = t.rank;
+  const pre = phase === "preseason";
+  document.getElementById("team-rank").textContent = pre ? t.team.trim()[0] || "?" : t.rank;
   document.getElementById("team-week").textContent = `Week ${WEEK}`;
-  document.getElementById("team-status").innerHTML = statusOf(t);
-  document.getElementById("team-name").textContent = t.team;
-  document.getElementById("team-rec").textContent = `${t.record} all-play`;
+  const statusEl = document.getElementById("team-status");
+  statusEl.hidden = pre;
+  statusEl.innerHTML = statusOf(t);
+  document.getElementById("team-name").innerHTML = `${franchiseIcon(t, "hero-icon")}${esc(t.team)}`;
+  document.getElementById("team-rec").textContent = pre
+    ? (starters.length ? `pre-season \u00b7 ${starters.length} starters set` : "pre-season \u00b7 lineup due at kickoff")
+    : `${t.record} all-play`;
   const ptsEl = document.getElementById("team-pts");
-  ptsEl.textContent = fmt(t.live);
+  ptsEl.textContent = pre ? "\u2014" : fmt(t.live);
   ptsEl.dataset.tween = `pts:${t.id}`;
   ptsEl.dataset.delta = "";
   ptsEl.classList.toggle("flash", changed.has(t.id));
   const stEl = document.getElementById("tab-starters-n");
-  stEl.textContent = fmt(sum(starters));
+  stEl.textContent = pre ? String(starters.length) : fmt(sum(starters));   // counts, not points, before the season
   stEl.dataset.tween = `starters:${t.id}`;
-  document.getElementById("tab-bench-n").textContent = `${fmt(sum(bench))} behind`;
+
+  // No lineup yet (pre-season, or before a franchise submits one): a single
+  // Roster tab lists everyone instead of an empty Starters tab.
+  const noLineup = starters.length === 0;
+  document.querySelector('.tab[data-tab="starters"]').hidden = noLineup;
+  const benchTab = document.querySelector('.tab[data-tab="bench"]');
+  benchTab.firstChild.nodeValue = noLineup ? "Roster " : "Bench ";
+  document.getElementById("tab-bench-n").textContent = noLineup ? `${bench.length} players` : pre ? String(bench.length) : `${fmt(sum(bench))} behind`;
+  if (noLineup) tab = "bench";
 
   const list = tab === "bench" ? bench : starters;
   const topPts = Math.max(0, ...starters.map((p) => p.pts));
@@ -586,12 +687,12 @@ const tdQueue = [];
 let tdTimer = null;
 let tdShowing = false;
 
-const teamLogo = (tm) => LOGOS[tm]
-  ? `<span class="td-logo"><img src="${LOGOS[tm]}" alt=""></span>`
+const teamLogo = (tm) => logoSrc(tm)
+  ? `<span class="td-logo"><img src="${logoSrc(tm)}" alt=""></span>`
   : `<span class="td-logo">${esc(tm)}</span>`;
 
-const bigShot = (p) => (p.sid && HEADSHOTS[p.sid])
-  ? `<img class="td-shot" src="${HEADSHOTS[p.sid]}" alt="">`
+const bigShot = (p) => headshotSrc(p)
+  ? `<img class="td-shot" src="${headshotSrc(p)}" alt="">`
   : `<span class="td-shot">${esc(initials(p.n))}</span>`;
 
 // One span per letter so each can stomp in on its own beat.
@@ -651,154 +752,6 @@ function announceTouchdown(ev) {
 
 document.getElementById("td-scrim").addEventListener("click", dismissTouchdown);
 
-/* ---------------- simulation (mockup only) ----------------
-   Bumps one starter on a team that still has players to play, every few
-   seconds, to exercise the live transitions: value flashes, rows sliding
-   when ranks swap, clusters re-fusing. Not a feed. */
-
-const simBtn = document.getElementById("sim");
-let simTimer = null;
-
-// Only players whose game is on the field can score. Kickers never
-// score touchdowns, so they are left out of the TD pool.
-const randomStarter = (forTd = false) => {
-  const pool = teams.flatMap((t) => t.starters
-    .map((p, k) => ({ t, k, p }))
-    .filter(({ p }) => isLive(p) && !(forTd && p.pos === "K")));
-  return pool[Math.floor(Math.random() * pool.length)];
-};
-
-// Six for the score plus a little yardage, announced as a touchdown.
-function scoreTouchdown(t, k, changed) {
-  const pts = r2(6 + Math.random() * 4);
-  bump(t, k, pts);
-  bumpStats(t, k, pts, true);
-  announceTouchdown({ player: t.starters[k], franchise: t.team, pts, starter: true });
-  changed.add(t.id).add(`${t.id}:${k}`);
-}
-
-// A bench touchdown: the row in the Bench tab moves, the total does not,
-// and the announcement is refused by the rule above.
-function scoreBenchTouchdown(t, k, changed) {
-  const pts = r2(6 + Math.random() * 4);
-  const key = `${t.id}:b${k}`;
-  benchBump[key] = r2((benchBump[key] || 0) + pts);
-  bumpStats(t, k, pts, true, true);
-  announceTouchdown({ player: t.bench[k], franchise: t.team, pts, starter: false });
-  changed.add(key);
-}
-
-const randomBench = () => {
-  const pool = teams.flatMap((t) => t.bench.map((p, k) => ({ t, k, p })).filter(({ p }) => isLive(p) && p.pos !== "K"));
-  return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
-};
-
-function stopSim() {
-  if (simTimer) { clearInterval(simTimer); simTimer = null; }
-  simBtn.setAttribute("aria-pressed", "false");
-}
-
-function simTick() {
-  if (slate.sunFinal) { stopSim(); return; }   // nothing is on the field
-  const changed = new Set();
-  const benchPick = Math.random() < 0.12 ? randomBench() : null;
-  if (benchPick) {
-    scoreBenchTouchdown(benchPick.t, benchPick.k, changed);
-  } else if (Math.random() < 0.25) {
-    const { t, k } = randomStarter(true);
-    scoreTouchdown(t, k, changed);
-    // Now and then two land in the same poll, to exercise the queue.
-    if (Math.random() < 0.3) { const o = randomStarter(true); scoreTouchdown(o.t, o.k, changed); }
-  } else {
-    const { t, k } = randomStarter();
-    const pts = r2(0.3 + Math.random() * 2.7);
-    bump(t, k, pts);
-    bumpStats(t, k, pts, false);
-    changed.add(t.id).add(`${t.id}:${k}`);
-  }
-  derive();
-  render(changed);
-}
-
-document.getElementById("end-day").addEventListener("click", () => {
-  slate.sunFinal = true;
-  stopSim();
-  derive();
-  render();
-});
-// Only the card lifecycle: the MVP card and the winner treatment go;
-// scores stay as they are (a full rollover to a new week is not mocked).
-document.getElementById("next-week").addEventListener("click", () => {
-  slate.sunFinal = true;
-  slate.weekFinal = true;
-  slate.nextWeek = true;
-  stopSim();
-  derive();
-  render();
-});
-
-document.getElementById("end-week").addEventListener("click", () => {
-  slate.sunFinal = true;
-  slate.weekFinal = true;
-  stopSim();
-  derive();
-  render();
-});
-
-document.getElementById("td-chi").addEventListener("click", () => {
-  if (slate.sunFinal) return;
-  const bears = teams.flatMap((t) => t.starters.map((p, k) => ({ t, k, p })))
-    .filter(({ p }) => p.tm === "CHI" && isLive(p) && p.pos !== "K");
-  const pick = bears.length ? bears[Math.floor(Math.random() * bears.length)] : randomStarter(true);
-  const changed = new Set();
-  scoreTouchdown(pick.t, pick.k, changed);
-  derive();
-  render(changed);
-});
-
-document.getElementById("td").addEventListener("click", () => {
-  if (slate.sunFinal) return;
-  const changed = new Set();
-  const { t, k } = randomStarter(true);
-  scoreTouchdown(t, k, changed);
-  derive();
-  render(changed);
-});
-
-// Hands #2 exactly enough (plus a little) to pass #1, on one starter.
-document.getElementById("flip").addEventListener("click", () => {
-  const chaser = teams[1];
-  const live = chaser.starters.map((p, k) => (isLive(p) ? k : -1)).filter((k) => k >= 0);
-  const k = live.length ? live[Math.floor(Math.random() * live.length)] : Math.floor(Math.random() * chaser.starters.length);
-  const pts = r2(gaps[0] + 0.5 + Math.random() * 2.5);
-  bump(chaser, k, pts);
-  bumpStats(chaser, k, pts, pts >= 6);
-  derive();
-  render(new Set([chaser.id, `${chaser.id}:${k}`]));
-});
-
-simBtn.addEventListener("click", () => {
-  if (simTimer) { clearInterval(simTimer); simTimer = null; }
-  else { simTick(); simTimer = setInterval(simTick, 2500); }
-  simBtn.setAttribute("aria-pressed", String(!!simTimer));
-});
-
-/* ---------------- demo bar toggle ----------------
-   Hidden by default so a shared page opens clean; the choice is remembered
-   per browser. */
-
-const demoBar = document.getElementById("devbar");
-const demoBtn = document.getElementById("demo-toggle");
-const DEMO_KEY = "mfl-live-demo";
-
-function showDemo(on) {
-  demoBar.hidden = !on;
-  demoBtn.setAttribute("aria-pressed", String(on));
-  try { localStorage.setItem(DEMO_KEY, on ? "1" : "0"); } catch {}
-}
-demoBtn.addEventListener("click", () => showDemo(demoBar.hidden));
-try { if (localStorage.getItem(DEMO_KEY) === "1") showDemo(true); } catch {}
-
 /* ---------------- theme ----------------
    Dark-first: no stamp means dark, and the light palette is an explicit
    opt-in via data-theme on the root. The choice is remembered per browser
@@ -821,9 +774,208 @@ segBtns.forEach((b) => b.addEventListener("click", () => {
 }));
 syncTheme();
 
-derive();
-render();
-if (desktop.matches) openTeam(teams[0].id);
+/* ---------------- loading the data ---------------- */
+
+const toArray = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);
+const SLEEPER_TEAM = { SFO: "sf", NEP: "ne", GBP: "gb", KCC: "kc", TBB: "tb", NOS: "no", LVR: "lv", JAC: "jax" };
+const sleeperTeam = (tm) => SLEEPER_TEAM[tm] || String(tm).toLowerCase();
+
+async function api(type, params = {}) {
+  const u = new URL("api/mfl", location.href);
+  u.searchParams.set("type", type);
+  for (const [k, v] of Object.entries(params)) if (v !== "" && v != null) u.searchParams.set(k, v);
+  const res = await fetch(u, { cache: "no-store" });
+  if (!res.ok) throw new Error(`${type}: HTTP ${res.status}`);
+  return res.json();   // { ok: true, data } | { ok: false, error }
+}
+
+// The fixture: data.js is loaded only when needed (it is 2.2MB of base64).
+// In the bundle it is inlined ahead of this script and MFL_FIXTURE is set.
+function loadFixture() {
+  FIXTURE = true;
+  const apply = () => {
+    rosters = ROSTERS;
+    headshotSrc = (p) => (p.sid && HEADSHOTS[p.sid]) || null;
+    logoSrc = (tm) => LOGOS[tm] || null;
+    WEEK = 12; UPDATED = "4:12 PM"; phase = "live";
+  };
+  if (typeof ROSTERS !== "undefined") { apply(); return Promise.resolve(); }
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "data.js";
+    s.onload = () => { apply(); resolve(); };
+    s.onerror = () => reject(new Error("data.js failed to load"));
+    document.head.append(s);
+  });
+}
+
+let playerInfo = {};          // MFL player id -> { n, pos, tm, sid }
+let names = new Map();        // franchise id -> name (trimmed by the server)
+let icons = new Map();        // franchise id -> icon URL, when one is set in MFL
+let opener = "";              // "NEP at SEA", the week's first game (live source)
+let rosterIds = new Map();    // franchise id -> [player ids]
+let lastScores = new Map();   // `${franchise}:${player}` -> score at the previous poll
+let scheduleAt = 0;           // when the NFL schedule was last fetched
+const SCHEDULE_EVERY = 5 * 60e3;
+
+const mkPlayer = (id, pts = 0, secs = null) => {
+  const i = playerInfo[id] || {};
+  // MFL spells kickers "PK"; the page's positions (and the league's lineup
+  // rule) say K. Every defensive position maps to the one IDP colour later.
+  const pos = i.pos === "PK" ? "K" : (i.pos || "?");
+  return { id, n: i.n || `#${id}`, pos, tm: i.tm || "", pts, sid: i.sid || null, st: {}, secs };
+};
+
+async function ensurePlayers(ids) {
+  const missing = [...new Set(ids)].filter((id) => !playerInfo[id]);
+  if (!missing.length) return;
+  const pm = await api("playersMap", { PLAYERS: missing.join(",") });
+  if (pm.ok) Object.assign(playerInfo, pm.data.players);
+}
+
+async function loadLeague() {
+  showLoading("Connecting to the league\u2026");
+  const [lg, rs] = await Promise.all([api("league"), api("rosters")]);
+  for (const r of [lg, rs]) if (!r.ok) throw new Error(`${r.type}: ${r.error}`);
+  const fr = toArray(lg.data.league?.franchises?.franchise);
+  names = new Map(fr.map((f) => [f.id, f.name]));
+  icons = new Map(fr.filter((f) => f.icon || f.logo).map((f) => [f.id, f.icon || f.logo]));
+  rosterIds = new Map(toArray(rs.data.rosters?.franchise).map((f) => [f.id, toArray(f.player).map((p) => p.id)]));
+  headshotSrc = (p) => (p.sid ? `https://sleepercdn.com/content/nfl/players/thumb/${p.sid}.jpg` : null);
+  logoSrc = (tm) => (tm ? `https://sleepercdn.com/images/team_logos/nfl/${sleeperTeam(tm)}.png` : null);
+  showLoading("Pulling the live feed\u2026");
+  await refreshLive(true);
+}
+
+// One poll: schedule + liveScoring for the week. Returns the set of changed
+// keys for the renderer (team ids and `${teamId}:${starterIndex}`), and
+// announces any starter whose score jumped by a touchdown's worth.
+async function refreshLive(first = false) {
+  const w = QUERY.get("w") || "";
+  // The schedule is fetched every few minutes, not every poll: kickoffs do
+  // not move, and in season each player's own clock comes with liveScoring.
+  const wantSchedule = first || !games.size || Date.now() - scheduleAt > SCHEDULE_EVERY;
+  const [ls, sch] = await Promise.all([api("liveScoring", { W: w, DETAILS: "1" }), wantSchedule ? api("nflSchedule", { W: w }) : null]);
+
+  if (sch) {
+  scheduleAt = Date.now();
+  games = new Map();
+  let firstKick = null;
+  for (const m of toArray(sch.ok ? sch.data.nflSchedule?.matchup : [])) {
+    const k = new Date(Number(m.kickoff) * 1000);
+    const secs = Number(m.gameSecondsRemaining);
+    if (!firstKick || k < firstKick) {
+      firstKick = k;
+      const [a, b] = toArray(m.team);
+      const away = a?.isHome === "1" ? b : a, home = a?.isHome === "1" ? a : b;
+      opener = away && home ? `${away.id} at ${home.id}` : "";
+    }
+    for (const t of toArray(m.team)) games.set(t.id, { kickoff: k, secs: Number.isFinite(secs) ? secs : 3600 });
+  }
+  kickoff = firstKick;
+  // The week's first game day (Thursday, usually) is its own spotlight day.
+  const days = [...new Set([...games.values()].map((g) => g.kickoff.toDateString()))].sort((a, b) => new Date(a) - new Date(b));
+  dayTeams.early = new Set(days.length > 1 ? [...games].filter(([, g]) => g.kickoff.toDateString() === days[0]).map(([tm]) => tm) : []);
+  }
+
+  const changed = new Set();
+  if (!ls.ok) {
+    // "Live scoring not available until the season starts" is a state, not
+    // a failure. Anything else mid-season is transient: keep what we have.
+    if (!/not available/i.test(ls.error)) { if (first) throw new Error(`liveScoring: ${ls.error}`); return changed; }
+    phase = "preseason";
+    WEEK = Number(w) || 1;
+    // Lineups exist before live scoring does: weeklyResults carries each
+    // franchise's submitted (or default) starters for the week.
+    // Lineups are a nice-to-have on top of the league: never let them sink the load.
+    const wr = await api("weeklyResults", { W: w || String(WEEK) }).catch((e) => ({ ok: false, error: String(e) }));
+    const lineup = new Map(toArray(wr.ok ? wr.data.weeklyResults?.franchise : []).map((f) =>
+      [f.id, new Set(toArray(f.player).filter((p) => p.status === "starter").map((p) => p.id))]));
+    await ensurePlayers([...rosterIds.values()].flat());
+    rosters = [...names].map(([id, team]) => {
+      const ids = rosterIds.get(id) || [], st = lineup.get(id) || new Set();
+      return {
+        id, team, icon: icons.get(id) || null, pts: 0, toPlay: 0,
+        starters: ids.filter((pid) => st.has(pid)).map((pid) => mkPlayer(pid)),
+        bench: ids.filter((pid) => !st.has(pid)).map((pid) => mkPlayer(pid)),
+      };
+    });
+    slate.sunFinal = false;
+    return changed;
+  }
+
+  phase = "live";
+  const L = ls.data.liveScoring;
+  WEEK = Number(L.week) || WEEK;
+  const franchises = toArray(L.franchise);
+  await ensurePlayers([...rosterIds.values()].flat().concat(franchises.flatMap((f) => toArray(f.players?.player).map((p) => p.id))));
+
+  const next = new Map();
+  rosters = franchises.map((f) => {
+    const ps = toArray(f.players?.player);
+    const started = ps.filter((p) => p.status === "starter");
+    const startedIds = new Set(started.map((p) => p.id));
+    const row = (p) => mkPlayer(p.id, Number(p.score) || 0, Number.isFinite(Number(p.gameSecondsRemaining)) ? Number(p.gameSecondsRemaining) : null);
+    const byId = new Map(ps.map((p) => [p.id, p]));
+    const benchIds = [...new Set([...(rosterIds.get(f.id) || []), ...ps.map((p) => p.id)])].filter((id) => !startedIds.has(id));
+    const team = {
+      id: f.id, team: names.get(f.id) || f.id, icon: icons.get(f.id) || null,
+      pts: Number(f.score) || 0, toPlay: Number(f.playersYetToPlay) || 0,
+      starters: started.map(row),
+      bench: benchIds.map((id) => (byId.get(id) ? row(byId.get(id)) : mkPlayer(id))),
+    };
+    team.starters.forEach((p, k) => {
+      const key = `${f.id}:${p.id}`;
+      const prev = lastScores.get(key);
+      next.set(key, p.pts);
+      if (prev != null && p.pts !== prev) {
+        changed.add(f.id).add(`${f.id}:${k}`);
+        // MFL gives points only, so a touchdown is a starter jumping by at
+        // least six between polls (CLAUDE.md).
+        if (p.pts - prev >= 6) announceTouchdown({ player: p, franchise: team.team, pts: r2(p.pts - prev), starter: true });
+      }
+    });
+    return team;
+  });
+  lastScores = next;
+  slate.sunFinal = games.size > 0 && [...games.values()].every((g) => g.secs <= 0);
+  UPDATED = fmtTime(new Date());
+  return changed;
+}
+
+/* Polling budget. MFL rate-limits and asks clients to back off, so:
+   - in season, liveScoring every 30s (the proxy holds it 15s, so several
+     open pages still cost MFL at most four calls a minute);
+   - before the season, everything every 5 minutes -- the countdown ticks
+     locally and lineups do not change by the second;
+   - nothing at all while the tab is hidden; a poll runs as soon as it is
+     shown again. */
+const POLL_LIVE_MS = 30e3, POLL_PRESEASON_MS = 5 * 60e3;
+let pollTimer = null, polling = false;
+
+function schedulePoll() {
+  clearTimeout(pollTimer);
+  pollTimer = setTimeout(pollLive, phase === "live" ? POLL_LIVE_MS : POLL_PRESEASON_MS);
+}
+
+async function pollLive() {
+  if (polling) return;
+  if (document.hidden) { clearTimeout(pollTimer); return; }   // resumes on visibilitychange
+  polling = true;
+  try {
+    const changed = await refreshLive();
+    derive();
+    render(changed);
+  } catch (err) {
+    console.warn("poll failed, keeping the last board:", err);
+  } finally {
+    polling = false;
+    schedulePoll();
+  }
+}
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && !FIXTURE) pollLive();
+});
 
 /* ---------------- loading + first-load cascade ----------------
    The mockup has nothing to fetch: the interstitial holds for a beat (fonts,
@@ -863,10 +1015,24 @@ function cascadeIn() {
 }
 
 const loadStart = performance.now();
-document.fonts.ready.then(() => {
+
+async function boot() {
+  try {
+    if (FIXTURE) await loadFixture(); else await loadLeague();
+  } catch (err) {
+    // No proxy (the artifact, offline, a bad deploy): the POC's fixture.
+    console.warn("Live league unavailable, showing the fixture:", err);
+    showLoading("Loading the fixture\u2026");
+    await loadFixture();
+  }
+  derive();
+  render();
+  if (desktop.matches) openTeam(teams[0].id);
+  await document.fonts.ready;
   const wait = Math.max(0, MIN_LOAD_MS - (performance.now() - loadStart));
   setTimeout(() => { cascadeIn(); hideLoading(); }, wait);
-});
+  if (!FIXTURE) schedulePoll();
+}
 
 // Crossing the breakpoint: the panel needs a team when it appears, and
 // the overlay must not be left open when it goes back to being one.
@@ -877,3 +1043,5 @@ desktop.addEventListener("change", (e) => {
   else open = null;
   markActive();
 });
+
+boot();

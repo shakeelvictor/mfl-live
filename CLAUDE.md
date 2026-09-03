@@ -14,6 +14,57 @@ Build the leaderboard. Source it from **MFL's own `liveScoring`**, not a
 third-party feed. The roster stat-line view and the Sleeper dependency are cut
 from the POC.
 
+## The app on `main` (started 2026-09-02)
+
+`app/` is the app. It is the POC's page with a data layer in front of it:
+
+- **`server/mfl.mjs`** is the only code that talks to MFL. It sends the
+  registered User-Agent, follows `api.myfantasyleague.com`'s redirect to the
+  season host, treats MFL's HTTP-200 error bodies as states (`{ ok: false,
+  error }`), trims franchise names, and builds `playersMap` (every rostered
+  player -> name, position, NFL team, Sleeper id via `rotowire_id`; Sleeper's
+  5MB player list is cached server-side for an hour, never sent down). A proxy
+  is required: MFL only allows browser calls from its own origin.
+- **`netlify/functions/mfl.mjs`** exposes it as `GET /api/mfl?type=...` in
+  production (`netlify.toml`: publish `app/`); **`dev.mjs`** serves `app/`
+  and the same handler locally (`node dev.mjs`, port 8770; reads `.env`).
+- **Polling budget (MFL rate-limits; an older POC got throttled).** The
+  proxy keeps a per-instance response cache by (type, params) with each
+  type's max-age (liveScoring 15s, schedule/lineups 5m, rosters 10m, league
+  15m, players 1h), coalesces identical in-flight requests, serves stale on
+  MFL errors, and on a 429 stops calling MFL for 5 minutes (stale answers
+  meanwhile, 503 + Retry-After otherwise). So N open pages cost one MFL
+  call per window per type. The page polls liveScoring every 30s in season
+  (schedule only every 5m), everything every 5m before the season, and
+  nothing while the tab is hidden (a poll fires when it is shown again).
+- **`app/app.js`** boots by loading league + rosters, then polls
+  `liveScoring` (and, less often, `nflSchedule`) on that budget. Before the season, liveScoring's
+  "not available until the season starts" puts the page in the
+  **pre-season phase**: alphabetical franchises with roster counts, a
+  countdown hero to the week's first kickoff, a single Roster tab. In season
+  it builds franchises from liveScoring (score, `playersYetToPlay`, starters
+  by `status`, per-player `gameSecondsRemaining` for the clock) and
+  announces a touchdown when a starter jumps >= 6 between polls.
+- **The fixture is the fallback.** `data.js` (2025 Week 12) loads only when
+  the proxy is unreachable or `?source=fixture` is set; the artifact bundle
+  inlines it and sets `window.MFL_FIXTURE`. (The simulator that drove it on
+  the POC is gone from `main`; `poc` keeps it.)
+- **Pre-season**: no hero, subtitle or capsules; a countdown pill beside
+  the WEEK title ticks to the first kickoff. Rows are name-only and
+  alphabetical. Lineups come from `weeklyResults` (`status: "starter"`),
+  which MFL fills before liveScoring exists, so team pages show Starters and
+  Bench (points as a dash) as soon as a lineup is set. The page flips to
+  the live board on the first poll after MFL turns liveScoring on for the
+  season, not when lineups are set.
+- **Franchise icons**: MFL's league export carries `icon`/`logo` URLs for
+  franchises that set one (3 of 11 today). They show by the name in the hero
+  and team page and badged on the rank circle in the list (in its place
+  pre-season). Plain `<img>` from MFL's host; a failed load removes itself.
+- **`MFL_FAKE_LIVE=<liveScoring json>`** on the dev server serves a file as
+  the live feed, so the in-season path can be exercised before kickoff
+  (`.claude/launch.json` has an `app-fake-live` entry using the 2025 W12
+  fixture). Never set it in production.
+
 ## What is already settled — do not re-litigate
 
 Each of these was verified against real 2025 data, not inferred:
@@ -40,7 +91,7 @@ Each of these was verified against real 2025 data, not inferred:
 ## Visual design
 
 The mockup implements the **FFLR Live v2** redesign. The handoff's token
-layer lives at the top of `mockup/styles.css` (ported verbatim). The handoff
+layer lives at the top of `app/styles.css` (ported verbatim). The handoff
 files themselves (spec, prototype and its runtime, mock data, screenshots,
 `tokens.css`) have all been removed; the mockup is the reference now. Design premise: in all-play
 the **gap between adjacent ranks is worth a full win**, so gaps are the loudest
@@ -160,26 +211,24 @@ element and scores are second.
   first two stop the simulator, zero the to-play counts and flip the header
   to Final, the last only clears the card and the winner treatment (a full
   rollover to a new week is not mocked).
-- The **Demo bar** (Simulate live scoring / Flip the lead / Score a TD /
-  Bears TD / End the day / End the week / Start next week)
-  sits under the masthead, hidden by default behind the **Demo** toggle
-  next to the theme control (remembered in localStorage), so a shared page
-  opens clean. It is mockup-only and will be removed.
+- The **Demo bar** and simulator, the legend and the footnotes exist only
+  on the `poc` branch. On `main` they are removed, along with the subtitle
+  line; in season the subtitle slot shows only "Updated <time>".
 
 Thresholds (`CRITICAL`, `LIVE`, `WITHIN`) live in one place in the script and
 the legend and capsules read them. The headline stats and the hero are derived
 from the rows.
 
-**Mockup layout.** `mockup/index.html` is the markup; it links `styles.css`,
+**Mockup layout.** `app/index.html` is the markup; it links `styles.css`,
 `app.js` and the generated `data.js` (ROSTERS, HEADSHOTS, LOGOS -- 2.2MB of
 base64, and the only reason the page is big). That is what the preview server
-serves. The Artifact needs one self-contained file, so `mockup/bundle.mjs`
-inlines the four into `mockup/dist/leaderboard.html` (gitignored) -- publish
+serves. The Artifact needs one self-contained file, so `app/bundle.mjs`
+inlines the four into `app/dist/leaderboard.html` (gitignored) -- publish
 that, never `index.html`.
 
-`mockup/build-data.mjs` regenerates `data.js` from the committed fixture and
-then rebundles (`MFL_UA='imp19716' node mockup/build-data.mjs`; plain
-`node mockup/bundle.mjs` when only code changed). It asserts each team has 12
+`app/build-data.mjs` regenerates `data.js` from the committed fixture and
+then rebundles (`MFL_UA='imp19716' node app/build-data.mjs`; plain
+`node app/bundle.mjs` when only code changed). It asserts each team has 12
 starters whose points sum to the team total, so a bad join fails loudly rather
 than shipping. Do not hand-edit `data.js`.
 
@@ -315,15 +364,15 @@ then it still carries the mockup too.
 
 ## What is deliberately absent
 
-- **No application code.** Not until the Week 1 cadence run returns GO. A
-  leaderboard built before that measurement is the sunk cost this whole
-  evaluation exists to avoid.
+- **No live-scoring dependence before the cadence run.** The app on `main`
+  connects to the league (franchises, rosters, schedule) now; whether a
+  30s poll of liveScoring holds is still what the Week 1 run decides.
 - **This does not share the FFLR records GitHub Actions pipeline.** Different
   cadence (30s vs weekly), different blast radius (that job commits records
   that settle payouts), and a wrong storage model (it commits data to git).
   Copy `src/mfl/client.mjs` if useful; do not couple the deployments.
 - **`spike/data/` is gitignored.** Those logs are measurements, not source.
-- **`mockup/.cache/` is gitignored** (23MB of refetchable MFL and Sleeper
-  data plus raw headshots) and so is `mockup/dist/` (the bundle); the split
+- **`app/.cache/` is gitignored** (23MB of refetchable MFL and Sleeper
+  data plus raw headshots) and so is `app/dist/` (the bundle); the split
   mockup sources including `data.js` are committed. `.claude/launch.json` (a
   static server for previewing the mockup) stays untracked.

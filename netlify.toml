@@ -1,0 +1,9 @@
+[build]
+  publish = "app"
+  functions = "netlify/functions"
+
+# The single-file bundle is for the Claude artifact only; never serve it.
+[[headers]]
+  for = "/dist/*"
+  [headers.values]
+    X-Robots-Tag = "noindex"

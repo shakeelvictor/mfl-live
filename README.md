@@ -12,11 +12,9 @@ all-play picture live, and nothing makes the gaps loud. This app does.
 
 ## Status
 
-**Not built yet, on purpose.** The whole build is gated on one measurement
-that cannot be taken out of season: how often MFL's live feed actually changes
-while games are running, and whether it serves a 30-second poll without
-throttling. That is measured by the spike in [`spike/`](spike/README.md) during
-NFL Week 1 (September 2026). Until it returns GO, there is no application code.
+The app is connected to the league. Whether a 30-second poll of MFL's live
+feed holds up during games is still the open question, measured by the spike
+in [`spike/`](spike/README.md) during NFL Week 1 (September 2026).
 
 What exists today:
 
@@ -24,10 +22,13 @@ What exists today:
 > branch as the proof of concept, so it can always be run and referred to.
 > `main` is where the real app goes once the cadence measurement returns GO.
 
-- **`mockup/`** — a working, fully interactive mockup of the finished app,
-  built on real 2025 Week 12 data (franchises, scores, lineups, per-player
-  points and stat lines). Nothing in it is invented except the mid-slate
-  framing (clock, games in progress) used to show the board live.
+- **`app/`** — the app: the page, plus a data layer that loads the league
+  (franchises, rosters, schedule) through a small proxy and polls live scoring
+  once the season starts. Before kickoff it shows a pre-season board. Its
+  fallback is the embedded 2025 Week 12 fixture, which is also the POC.
+- **`server/`, `netlify/`, `dev.mjs`** — the proxy that talks to MFL with the
+  league's registered client, as a Netlify function in production and a local
+  server in development.
 - **`spike/`** — the cadence measurement: scripts, fixtures, and the write-up
   of everything already verified against real data.
 
@@ -56,23 +57,28 @@ What exists today:
   the left and the selected team in a panel on the right, with the selected
   row drawn as a tab into it.
 
-A **Demo** toggle in the header reveals a bar that drives all of this:
-simulate live scoring, flip the lead, score a touchdown (or a Bears one), end
-the day, end the week, start the next week. It is mockup-only and will be
-removed.
+The simulator that drives all of this on demand (score a touchdown, flip the
+lead, end the day or week) lives on the `poc` branch; `main` runs on the live
+league instead.
 
-## Running the mockup
-
-The mockup is static files; any web server pointed at `mockup/` works.
+## Running it
 
 ```bash
-python3 -m http.server 8770 --directory mockup
+node dev.mjs
 ```
 
-Then open <http://localhost:8770/>.
+Then open <http://localhost:8770/>. That serves `app/` and answers `/api/mfl`
+against the real league. `?source=fixture` shows the embedded 2025 Week 12
+fixture instead. To exercise the in-season path before kickoff:
+
+```bash
+MFL_FAKE_LIVE=spike/fixtures/liveScoring-2025-w12.json node dev.mjs
+```
+
+Deploys to Netlify as-is (`netlify.toml`); set `MFL_UA` in the site settings.
 
 ```
-mockup/
+app/
   index.html      markup; links the three files below
   styles.css      the design's token layer and all styling
   app.js          all behaviour
@@ -82,16 +88,16 @@ mockup/
 ```
 
 Regenerate the data (needs the registered MFL user-agent, see the spike README;
-fetched files are cached under `mockup/.cache/`):
+fetched files are cached under `app/.cache/`):
 
 ```bash
-MFL_UA='imp19716' node mockup/build-data.mjs
+MFL_UA='imp19716' node app/build-data.mjs
 ```
 
 Rebuild only the single-file bundle after a code change:
 
 ```bash
-node mockup/bundle.mjs
+node app/bundle.mjs
 ```
 
 The bundle exists because the mockup is also published as a Claude artifact,

@@ -1,6 +1,6 @@
 // Assembles the single-file build the Artifact needs.
 //
-//   node mockup/bundle.mjs            -> mockup/dist/leaderboard.html
+//   node app/bundle.mjs            -> app/dist/leaderboard.html
 //
 // The Artifact CSP admits no local files, so styles.css, data.js and app.js
 // are inlined back into index.html. Locally, index.html loads them by
@@ -19,8 +19,9 @@ export function bundle() {
 
   const swaps = [
     ['<link rel="stylesheet" href="styles.css">', () => `<style>\n${read('styles.css')}</style>`],
-    ['<script src="data.js"></script>', () => `<script>\n${read('data.js')}</script>`],
-    ['<script src="app.js"></script>', () => `<script>\n${read('app.js')}</script>`],
+    // The artifact has no proxy, so it is always the fixture: inline data.js
+    // ahead of the script and say so.
+    ['<script src="app.js"></script>', () => `<script>window.MFL_FIXTURE = true;\n${read('data.js')}</script>\n<script>\n${read('app.js')}</script>`],
   ];
   for (const [tag, inline] of swaps) {
     // Fail loudly if index.html stops referencing a file; a bundle that
