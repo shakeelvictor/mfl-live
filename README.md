@@ -75,7 +75,13 @@ fixture instead. To exercise the in-season path before kickoff:
 MFL_FAKE_LIVE=spike/fixtures/liveScoring-2025-w12.json node dev.mjs
 ```
 
-Deploys to Netlify as-is (`netlify.toml`); set `MFL_UA` in the site settings.
+Production is <https://mfllive.netlify.app> (Netlify site `mfllive`, with
+`MFL_UA` set in the site environment). It is deployed from the working tree
+with the CLI, not from GitHub:
+
+```bash
+netlify deploy --no-build --prod
+```
 
 ```
 app/

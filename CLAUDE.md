@@ -28,6 +28,13 @@ from the POC.
 - **`netlify/functions/mfl.mjs`** exposes it as `GET /api/mfl?type=...` in
   production (`netlify.toml`: publish `app/`); **`dev.mjs`** serves `app/`
   and the same handler locally (`node dev.mjs`, port 8770; reads `.env`).
+- **Production is <https://mfllive.netlify.app>** (site `mfllive`, created
+  2026-09-03; `mfl-live` was taken). `MFL_UA` is set in the site
+  environment. Deploys are manual from the working tree
+  (`netlify deploy --no-build --prod`); the repo is not connected to
+  Netlify's Git integration. The CLI skips `app/.cache` (hidden dir) and
+  uploads 8 files. The function's response cache is per warm instance, so
+  a cold start or a second instance costs one extra MFL call per type.
 - **Polling budget (MFL rate-limits; an older POC got throttled).** The
   proxy keeps a per-instance response cache by (type, params) with each
   type's max-age (liveScoring 15s, schedule/lineups 5m, rosters 10m, league
