@@ -512,7 +512,7 @@ function renderTeam(changed = new Set()) {
   const isTop = (p) => !bench.includes(p) && topPts > 0 && p.pts === topPts;
   tabs.forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
   rosterEl.innerHTML = list.length
-    ? rosterHtml(list, view === "bench", isTop)
+    ? rosterHtml(list, tab === "bench", isTop)
     : `<p class="empty">No ${view} on this roster.</p>`;
 }
 
