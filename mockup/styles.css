@@ -189,12 +189,10 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .masthead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .brandwrap { display: flex; align-items: center; gap: 10px; }
 
-.brand-mark {
-  width: 40px; height: 40px; border-radius: 50%;
-  background: var(--accent); color: var(--accent-ink);
-  display: grid; place-items: center;
-}
-.brand-mark svg { width: 24px; height: 24px; display: block; }
+/* The league's mark, cut to transparency (see design/cutout.py) so the
+   hands and ball sit on the header; the icons keep the white disc. */
+.brand-mark { width: 40px; height: 40px; display: grid; place-items: center; }
+.brand-mark img { width: 40px; height: 40px; display: block; }
 
 .brand {
   font: italic 900 18px/1 var(--font-display);
