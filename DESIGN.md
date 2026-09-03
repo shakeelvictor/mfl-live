@@ -109,9 +109,10 @@ Teams without a roster in mock data show a `--surface` card with a centered mute
 None bundled. Fonts from Google Fonts. Headshots/team logos per `CLAUDE.md` (Sleeper CDN, `rotowire_id` join). Logo mark is a typographic "FL" circle.
 
 ## Screenshots
-`screenshots/` — 01 leaderboard dark, 02 leaderboard light, 03 team page starters (light), 04 team page bench (light), 05 team page starters (dark). Reference renders of the HTML at desktop width; the layout is identical at 390px minus horizontal room.
+`01`–`05` PNGs beside this file — 01 leaderboard dark, 02 leaderboard light, 03 team page starters (light), 04 team page bench (light), 05 team page starters (dark). Reference renders of the HTML at desktop width; the layout is identical at 390px minus horizontal room.
 
 ## Files
+All at the repo root, beside this file.
 - `FFLR Live v2.dc.html` — the design reference (open in a browser alongside `support.js`).
 - `tokens.css` — token layer to port.
 - `mock-data.js` — `MOCK_DATA`.

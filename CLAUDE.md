@@ -39,10 +39,11 @@ Each of these was verified against real 2025 data, not inferred:
 
 ## Visual design
 
-The mockup implements the **FFLR Live v2** redesign in
-`design_handoff_fflr_live/` (README, `tokens.css`, a prototype `.dc.html`,
-reference screenshots). Read that README before touching the UI; it is the
-spec, and the mockup is a pixel-close port of it. Design premise: in all-play
+The mockup implements the **FFLR Live v2** redesign. The handoff sits at the
+repo root: `DESIGN.md` (the spec), `tokens.css`, the prototype
+`FFLR Live v2.dc.html` with its `support.js` runtime, `mock-data.js`, and the
+five `0N-*.png` reference screenshots. Read `DESIGN.md` before touching the
+UI; the mockup is a pixel-close port of it. Design premise: in all-play
 the **gap between adjacent ranks is worth a full win**, so gaps are the loudest
 element and scores are second.
 
@@ -207,5 +208,5 @@ deliberately; before that, `git rev-parse --show-toplevel` returned
 - **`spike/data/` is gitignored.** Those logs are measurements, not source.
 - **`mockup/.cache/` is gitignored** (23MB of refetchable MFL and Sleeper
   data plus raw headshots); `mockup/leaderboard.html` and the design handoff
-  in `design_handoff_fflr_live/` are committed. `.claude/launch.json` (a
+  files at the repo root are committed. `.claude/launch.json` (a
   static server for previewing the mockup) stays untracked.
