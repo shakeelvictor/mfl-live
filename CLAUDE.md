@@ -79,7 +79,11 @@ element and scores are second.
 - **Touchdowns** raise a celebration card over everything: headshot with
   the NFL team logo badged on it, TOUCHDOWN slam, franchise, points. It
   stays 4s; further scores queue in arrival order ("+N more") and each gets
-  its own card. Tap the scrim or Escape to skip. A Bears scorer adds
+  its own card. Tap the scrim or Escape to skip. **Starters only:** a
+  bench touchdown moves the row in the Bench tab and the "behind" total,
+  never the franchise total, and gets no card (the gate is liveScoring's
+  per-player `status: "starter"`; the simulator scores bench TDs now and
+  then to exercise it). A Bears scorer adds
   "BEAR DOWN!" stomping in letter by letter in Bears orange with a navy
   trim, and the whole card goes Bears: navy ground, orange glow, flash and
   rays, orange-and-white portrait ring. Literal team colours on purpose,

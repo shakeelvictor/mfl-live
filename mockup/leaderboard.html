@@ -958,6 +958,7 @@
 
   const teamBump = {};    // team id -> points added
   const playerBump = {};  // `${teamId}:${starterIndex}` -> points added
+  const benchBump = {};   // `${teamId}:b${benchIndex}` -> points added; never reaches the team total
 
   function bump(t, k, pts) {
     teamBump[t.id] = r2((teamBump[t.id] || 0) + pts);
@@ -1221,18 +1222,20 @@
   const isLive = (p) => LIVE_NFL.has(p.tm);
   const clockFor = (p) => LIVE_NFL.get(p.tm);
 
-  const liveStats = {};   // `${teamId}:${starterIndex}` -> mutated copy of st
-  const statsFor = (t, k) => liveStats[`${t.id}:${k}`] || t.starters[k].st || {};
+  const liveStats = {};   // `${teamId}:${index}` (bench: `b${index}`) -> mutated copy of st
+  const slotKey = (t, k, bench) => `${t.id}:${bench ? "b" : ""}${k}`;
+  const slotPlayer = (t, k, bench) => (bench ? t.bench : t.starters)[k];
+  const statsFor = (t, k, bench = false) => liveStats[slotKey(t, k, bench)] || slotPlayer(t, k, bench).st || {};
 
   const ri = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
   const inc = (st, key, by = 1) => { st[key] = (st[key] || 0) + by; };
 
   // Keep the line consistent with the bump: a TD adds the score and a
   // plausible play; a small bump adds yardage (or a tackle) in proportion.
-  function bumpStats(t, k, pts, td) {
-    const key = `${t.id}:${k}`;
-    const st = liveStats[key] || (liveStats[key] = { ...(t.starters[k].st || {}) });
-    const pos = t.starters[k].pos;
+  function bumpStats(t, k, pts, td, bench = false) {
+    const key = slotKey(t, k, bench);
+    const st = liveStats[key] || (liveStats[key] = { ...(slotPlayer(t, k, bench).st || {}) });
+    const pos = slotPlayer(t, k, bench).pos;
     if (pos === "QB") {
       inc(st, "pass_cmp"); inc(st, "pass_att"); inc(st, "pass_yd", td ? ri(8, 35) : Math.round(pts * 25));
       if (td) inc(st, "pass_td");
@@ -1325,9 +1328,15 @@
     return { ...p, key, pts: r2(p.pts + (playerBump[key] || 0)), flash: changed.has(key), st: statsFor(t, k) };
   });
 
+  const liveBench = (t, changed) => t.bench.map((p, k) => {
+    const key = `${t.id}:b${k}`;
+    return { ...p, key, pts: r2(p.pts + (benchBump[key] || 0)), flash: changed.has(key), st: statsFor(t, k, true) };
+  });
+
   function renderTeam(changed = new Set()) {
     const t = byId(open);
     const starters = liveStarters(t, changed);
+    const bench = liveBench(t, changed);
 
     document.getElementById("team-rank").textContent = t.rank;
     document.getElementById("team-week").textContent = `Week ${WEEK}`;
@@ -1342,9 +1351,9 @@
     const stEl = document.getElementById("tab-starters-n");
     stEl.textContent = fmt(sum(starters));
     stEl.dataset.tween = `starters:${t.id}`;
-    document.getElementById("tab-bench-n").textContent = `${fmt(sum(t.bench))} behind`;
+    document.getElementById("tab-bench-n").textContent = `${fmt(sum(bench))} behind`;
 
-    const list = tab === "bench" ? t.bench : starters;
+    const list = tab === "bench" ? bench : starters;
     tabs.forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
     rosterEl.innerHTML = list.length
       ? [...list].sort(byLineup).map((p) => playerRow(p, tab === "bench")).join("")
@@ -1463,7 +1472,11 @@
     setTimeout(showNextTouchdown, 240);
   }
 
+  // Rule: only a starter's touchdown gets a card. Bench points never reach
+  // the franchise total, so a bench score is just a row in the Bench tab.
+  // With the feed, this is liveScoring's per-player `status: "starter"`.
   function announceTouchdown(ev) {
+    if (!ev.starter) return;
     tdQueue.push(ev);
     if (tdShowing) renderTdMore(); else showNextTouchdown();
   }
@@ -1492,13 +1505,32 @@
     const pts = r2(6 + Math.random() * 4);
     bump(t, k, pts);
     bumpStats(t, k, pts, true);
-    announceTouchdown({ player: t.starters[k], franchise: t.team, pts });
+    announceTouchdown({ player: t.starters[k], franchise: t.team, pts, starter: true });
     changed.add(t.id).add(`${t.id}:${k}`);
   }
 
+  // A bench touchdown: the row in the Bench tab moves, the total does not,
+  // and the announcement is refused by the rule above.
+  function scoreBenchTouchdown(t, k, changed) {
+    const pts = r2(6 + Math.random() * 4);
+    const key = `${t.id}:b${k}`;
+    benchBump[key] = r2((benchBump[key] || 0) + pts);
+    bumpStats(t, k, pts, true, true);
+    announceTouchdown({ player: t.bench[k], franchise: t.team, pts, starter: false });
+    changed.add(key);
+  }
+
+  const randomBench = () => {
+    const pool = teams.flatMap((t) => t.bench.map((p, k) => ({ t, k, p })).filter(({ p }) => isLive(p) && p.pos !== "K"));
+    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+  };
+
   function simTick() {
     const changed = new Set();
-    if (Math.random() < 0.25) {
+    const benchPick = Math.random() < 0.12 ? randomBench() : null;
+    if (benchPick) {
+      scoreBenchTouchdown(benchPick.t, benchPick.k, changed);
+    } else if (Math.random() < 0.25) {
       const { t, k } = randomStarter(true);
       scoreTouchdown(t, k, changed);
       // Now and then two land in the same poll, to exercise the queue.
