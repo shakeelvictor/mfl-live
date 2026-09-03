@@ -39,11 +39,10 @@ Each of these was verified against real 2025 data, not inferred:
 
 ## Visual design
 
-The mockup implements the **FFLR Live v2** redesign. What remains of the
-handoff at the repo root is `tokens.css` (the token layer, ported as-is),
-`mock-data.js` (the shape the prototype used) and `support.js` (the
-prototype's runtime; the prototype page and spec were removed, so the mockup
-itself is now the reference). Design premise: in all-play
+The mockup implements the **FFLR Live v2** redesign. The handoff's token
+layer lives at the top of `mockup/styles.css` (ported verbatim). The handoff
+files themselves (spec, prototype and its runtime, mock data, screenshots,
+`tokens.css`) have all been removed; the mockup is the reference now. Design premise: in all-play
 the **gap between adjacent ranks is worth a full win**, so gaps are the loudest
 element and scores are second.
 
@@ -264,6 +263,5 @@ deliberately; before that, `git rev-parse --show-toplevel` returned
 - **`spike/data/` is gitignored.** Those logs are measurements, not source.
 - **`mockup/.cache/` is gitignored** (23MB of refetchable MFL and Sleeper
   data plus raw headshots) and so is `mockup/dist/` (the bundle); the split
-  mockup sources including `data.js`, and the remaining handoff files at the
-  repo root, are committed. `.claude/launch.json` (a
+  mockup sources including `data.js` are committed. `.claude/launch.json` (a
   static server for previewing the mockup) stays untracked.
