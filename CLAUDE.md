@@ -245,6 +245,24 @@ element and scores are second.
   first two stop the simulator, zero the to-play counts and flip the header
   to Final, the last only clears the card and the winner treatment (a full
   rollover to a new week is not mocked).
+- **The Witching Hour**: NFL RedZone's 2:30 PM Central moment, Scott
+  Hanson's call, recreated as a ten-second full-screen takeover in the
+  original's three cuts: a tilted close-up of the clock with both hands
+  racing; a hard cut to the clock upright and centred as the hands slow
+  onto 2:30; then the card, WITCHING in backlit red over HOUR in white
+  (letters stomping in, a red strobe) stacked above a white-faced clock
+  with a glowing red rim, on a charcoal wall lit by flickering red neon
+  bars, the second hand ticking; then an 800ms fade back to the board.
+  Cuts are `data-shot` on the overlay, so each shot's animations start
+  when it is displayed. Every size is `min()` of a vw and a vh value so
+  the stack fits phones (width-bound) and short laptops (height-bound).
+  Fires every Sunday at 2:30 PM in `America/Chicago` (the instant is
+  resolved through Intl so DST is right; once per Sunday per browser,
+  remembered in localStorage `mfl-live-witch`; a hidden tab plays it
+  when shown again within the hour). On `main` `?witch=1` plays it on
+  load for checking; on `poc` the demo bar has a button. Click or Escape
+  skips it. Literal red in both themes; reduced motion holds the card
+  alone for 3.5s.
 - The **Demo bar** and simulator, the legend and the footnotes exist only
   on the `poc` branch. On `main` they are removed, along with the subtitle
   line; in season the subtitle slot shows only "Updated <time>".
