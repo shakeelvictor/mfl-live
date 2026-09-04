@@ -781,6 +781,7 @@ document.getElementById("td-scrim").addEventListener("click", dismissTouchdown);
 
 const WITCH_MS = 10000;
 const WITCH_CUTS = [2500, 5000];   // when cuts 2 and 3 begin
+const WITCH_EXIT_MS = 1100;        // the exit: title flies at the camera, halves sweep open
 const WITCH_TZ = "America/Chicago", WITCH_HOUR = 14, WITCH_MINUTE = 30;
 const witch = document.getElementById("witch");
 const witchScene = document.getElementById("witch-scene");
@@ -819,13 +820,16 @@ function witchMarkup() {
     ["right:0;width:9%;top:26%", -0.9, "h"], ["right:0;width:9%;top:64%", -0.2, "h"],
   ].map(([pos, d, h]) => `<span class="w-neon${h ? " h" : ""}" style="${pos};animation-delay:${d}s"></span>`).join("");
   const wall = `<span class="w-wall"></span>${neon}`;
+  const film = `<span class="w-scan"></span><span class="w-grain"></span><span class="w-vignette"></span>`;
   // Letters stomp in one by one, WITCHING then HOUR.
   const word = (w, cls) => `<span class="${cls}">${[...w].map((c, i) => `<span style="--i:${i}">${c}</span>`).join("")}</span>`;
-  return `<div class="w-shot w-shot-1">${wall}<div class="w-cam">${witchClock(1)}</div></div>` +
-    `<div class="w-shot w-shot-2">${wall}<div class="w-cam">${witchClock(2)}</div></div>` +
-    `<div class="w-shot w-shot-3">${wall}<span class="w-flash"></span><div class="w-stage">` +
-      `<div class="w-title">${word("Witching", "w-l1")}${word("Hour", "w-l2")}</div>${witchClock(3)}</div></div>` +
-    `<span class="w-scan"></span><span class="w-grain"></span><span class="w-vignette"></span>`;
+  // Cut 3 is drawn twice, clipped to the top and bottom halves of the
+  // screen, so the exit can sweep the two halves apart.
+  const card = (k) => `${wall}<span class="w-flash"></span><div class="w-stage">` +
+    `<div class="w-title">${word("Witching", "w-l1")}${word("Hour", "w-l2")}</div>${witchClock(k)}</div>${film}`;
+  return `<div class="w-shot w-shot-1">${wall}<div class="w-cam">${witchClock(1)}</div>${film}</div>` +
+    `<div class="w-shot w-shot-2">${wall}<div class="w-cam">${witchClock(2)}</div>${film}</div>` +
+    `<div class="w-shot w-shot-3"><div class="w-half w-top">${card(3)}</div><div class="w-half w-bot">${card(4)}</div></div>`;
 }
 
 function playWitchingHour() {
@@ -840,13 +844,13 @@ function playWitchingHour() {
     witchTimers.push(setTimeout(() => { witch.dataset.shot = "2"; }, WITCH_CUTS[0]));
     witchTimers.push(setTimeout(() => { witch.dataset.shot = "3"; }, WITCH_CUTS[1]));
   }
-  witchTimers.push(setTimeout(endWitchingHour, ms - 800));   // the fade-out is the last 800ms
+  witchTimers.push(setTimeout(endWitchingHour, ms - WITCH_EXIT_MS));   // the exit is the last stretch
 }
 function endWitchingHour() {
   witchTimers.forEach(clearTimeout); witchTimers.length = 0;
   if (witch.dataset.open !== "true") return;
   witch.dataset.open = "closing";
-  setTimeout(() => { witch.dataset.open = "false"; witchScene.innerHTML = ""; }, 800);
+  setTimeout(() => { witch.dataset.open = "false"; witchScene.innerHTML = ""; }, WITCH_EXIT_MS);
 }
 witch.addEventListener("click", endWitchingHour);
 // No demo bar on main: ?witch=1 plays it once the board is up, for checking.
