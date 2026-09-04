@@ -732,6 +732,7 @@ button.hero { cursor: pointer; }
   66% { transform: rotateX(.5deg); }
   84% { transform: rotateX(-.2deg); }
   100% { transform: none; }
+}
 .prow.top:hover { background-color: var(--surface-raised); }
 .prow.top .avatar, .prow.top .avatar-fb { border: 2px solid var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
 .prow.bench { opacity: .75; }
