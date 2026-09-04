@@ -19,10 +19,11 @@ export function bundle() {
 
   // Images too: the header mark and the favicon become data: URIs, and the
   // larger icons (only a home-screen install would use them) are dropped.
-  const dataUri = (f) => `data:image/png;base64,${fs.readFileSync(path.join(HERE, f)).toString('base64')}`;
+  const dataUri = (f, type = 'image/png') => `data:${type};base64,${fs.readFileSync(path.join(HERE, f)).toString('base64')}`;
   const swaps = [
     ['<link rel="stylesheet" href="styles.css">', () => `<style>\n${read('styles.css')}</style>`],
     ['src="logo.png"', () => `src="${dataUri('logo.png')}"`],
+    ['src="loader.webp"', () => `src="${dataUri('loader.webp', 'image/webp')}"`],
     ['href="favicon-32.png?v=2"', () => `href="${dataUri('favicon-32.png')}"`],
     ['<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2">\n', () => ''],
     ['<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2">\n', () => ''],

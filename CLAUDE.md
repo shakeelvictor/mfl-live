@@ -55,11 +55,17 @@ element and scores are second.
 - **Archivo** for display (900 italic uppercase headers, 700 roman for names
   in lists), **Nunito** for body and every number, `tabular-nums` on the root.
 - **Loading interstitial** (`#loader`, shown by default in the markup so
-  nothing paints before it): the football mark thrown as a spiral, the
-  wordmark, a yard-marked field track with a mint marker driving back and
-  forth, and a status line. `showLoading(msg)` / `hideLoading()`. The
-  mockup holds it ~1.1s (fonts ready) and hands off; the real app holds it
-  until the first liveScoring poll lands.
+  nothing paints before it): a looping cartoon of three players behind a
+  field strip, the leader in the middle raising a finger, in navy and
+  orange. The source is `design/loader-source.gif` (Shakeel's own
+  Midjourney animation, 320px, 5.2s); `design/loader.py` (Pillow +
+  numpy) clears the white background to alpha on every frame, crops the
+  baked-in wordmark off the bottom, keeps every second frame (12fps) and
+  writes `loader.webp` (~750KB, alpha) next to the page. The image rises
+  in, and the page's own **MFL LIVE** wipes in left to right under it
+  (clip-path); a status line sits below. `showLoading(msg)` /
+  `hideLoading()`. The mockup holds it ~1.1s (fonts ready) and hands
+  off; the real app holds it until the first liveScoring poll lands.
 - **First-load cascade**: once the loader lifts, `cascadeIn()` gives every
   board block, then each standings row and divider, then the laptop pane an
   index (`--i`) and the `.intro` class reveals them top to bottom (55ms
