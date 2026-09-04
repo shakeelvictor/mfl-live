@@ -35,6 +35,13 @@ from the POC.
   Netlify's Git integration. The CLI skips `app/.cache` (hidden dir) and
   uploads 8 files. The function's response cache is per warm instance, so
   a cold start or a second instance costs one extra MFL call per type.
+- **The mockup is at <https://mfllive-poc.netlify.app>** (site
+  `mfllive-poc`, created 2026-09-03) so the `poc` branch can be demoed on
+  a phone. It is static (no function; the fixture and images are in
+  `data.js`), deployed from a `poc` checkout with
+  `netlify deploy --no-build --prod --dir mockup --site mfllive-poc`.
+  The folder stays linked to `mfllive`; the `--site` flag is what keeps
+  the two apart, so never deploy `poc` without it.
 - **Polling budget (MFL rate-limits; an older POC got throttled).** The
   proxy keeps a per-instance response cache by (type, params) with each
   type's max-age (liveScoring 15s, schedule/lineups 5m, rosters 10m, league
