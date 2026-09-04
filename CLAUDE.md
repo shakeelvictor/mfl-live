@@ -136,6 +136,12 @@ element and scores are second.
   there is no flash. Nothing stored means dark.
 - **Archivo** for display (900 italic uppercase headers, 700 roman for names
   in lists), **Nunito** for body and every number, `tabular-nums` on the root.
+  The **WEEK title** wears a slow colour drift: a gradient of the text
+  colour with a band of the accent gliding through it, painted through
+  the glyphs (`background-clip: text`, the spotlight's `fflr-wave`, 12s
+  alternate). Both stops are tokens, so dark gets white with mint and
+  light gets near-black with deep teal, each at its own contrast. Held
+  static mid-title under reduced motion.
 - **Loading interstitial** (`#loader`, shown by default in the markup so
   nothing paints before it): a looping cartoon of three players behind a
   field strip, the leader in the middle raising a finger, in navy and
@@ -190,8 +196,13 @@ element and scores are second.
   **swing in** like a sign hung from its top edge caught by a breeze:
   back and forth about that hinge (away from the viewer, then toward),
   each swing shorter, a trace of side-to-side, settling in .85s, 28ms
-  after the row above (9° away at most: a breath, not a gust) (`.prow.enter`, `--i`; the
-  roster supplies the perspective). A poll's re-render leaves them still.
+  after the row above (9° away at most: a breath, not a gust)
+  (`.prow.enter`, `--i`; the roster supplies the perspective). Entering
+  rows carry `will-change: transform, opacity` and
+  `backface-visibility: hidden` so Safari composites them before the
+  swing instead of repainting each frame (it stuttered without), and the
+  top scorer's gold wave, a per-frame repaint, waits until the swing has
+  settled. A poll's re-render leaves them still.
   Rows carry three small signals: the NFL logo badged on the
   headshot (as on the spotlight and touchdown cards), a mint **TD** chip on
   the headshot's top corner for anyone who has scored (counted from the
