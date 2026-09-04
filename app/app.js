@@ -1132,7 +1132,7 @@ document.addEventListener("visibilitychange", () => {
 
 const loader = document.getElementById("loader");
 const loaderMsg = document.getElementById("loader-msg");
-const MIN_LOAD_MS = 1100;
+const MIN_LOAD_MS = 2800;   // long enough for the scene to play through once
 
 function showLoading(msg) {
   if (msg) loaderMsg.textContent = msg;

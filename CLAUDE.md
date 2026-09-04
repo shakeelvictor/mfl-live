@@ -137,11 +137,22 @@ element and scores are second.
 - **Archivo** for display (900 italic uppercase headers, 700 roman for names
   in lists), **Nunito** for body and every number, `tabular-nums` on the root.
 - **Loading interstitial** (`#loader`, shown by default in the markup so
-  nothing paints before it): the football mark thrown as a spiral, the
-  wordmark, a yard-marked field track with a mint marker driving back and
-  forth, and a status line. `showLoading(msg)` / `hideLoading()`. The
-  mockup holds it ~1.1s (fonts ready) and hands off; the real app holds it
-  until the first liveScoring poll lands.
+  nothing paints before it): a looping cartoon of three players behind a
+  field strip, the leader in the middle raising a finger, in navy and
+  orange. The source is `design/loader-source.mp4` (Shakeel's own
+  Midjourney animation, 624px, 24fps, 5.2s; the GIF export of the same
+  clip was 320px and dithered, and looked soft); `design/loader.py`
+  (Pillow, numpy, scipy, imageio-ffmpeg) decodes it, clears the white
+  background to alpha on every frame (near-white connected to the
+  border), crops the baked-in wordmark off the bottom, keeps every frame
+  (`STEP=2` halves it but reads choppy) and writes `loader.webp` (620px,
+  which is the 2x a Retina screen wants at the 340 CSS px display size;
+  ~2.6MB with lossy alpha) next to the page. The image rises
+  in, and the page's own **MFL LIVE** wipes in left to right under it
+  (clip-path); a status line sits below. `showLoading(msg)` /
+  `hideLoading()`. It holds at least 2.8s (`MIN_LOAD_MS`), long enough
+  for the scene to play through once, and on `main` longer if the first
+  liveScoring poll takes longer.
 - **First-load cascade**: once the loader lifts, `cascadeIn()` gives every
   board block, then each standings row and divider, then the laptop pane an
   index (`--i`) and the `.intro` class reveals them top to bottom (55ms

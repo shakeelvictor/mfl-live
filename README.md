@@ -53,9 +53,10 @@ What exists today:
 - **Spotlight.** After a day's games are final, the day's top-scoring starter
   gets a card; once the week is official it becomes the MVP of the week, and
   the leader's hero becomes the Week winner.
-- **Loading and reveal.** A football-themed loading interstitial (spiral,
-  yard-marked field, status line) holds until the data is ready, then the
-  page cascades in top to bottom.
+- **Loading and reveal.** A looping cartoon of three players behind a field
+  strip, the leader raising a finger, with the wordmark wiping in under
+  it, holds until the data is ready; then the page cascades in top to
+  bottom.
 - **Dark and light themes.** Phone-first; from 1024px up the board sits on
   the left and the selected team in a panel on the right, with the selected
   row drawn as a tab into it.

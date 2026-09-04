@@ -120,14 +120,11 @@
 <div class="loader" id="loader" role="status" aria-live="polite">
   <div class="wash"></div>
   <div class="loader-inner">
-    <div class="loader-ball" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-        <ellipse cx="12" cy="12" rx="10.2" ry="6.1" transform="rotate(-45 12 12)"/>
-        <path d="M8.8 15.2l6.4-6.4M9.85 12.85l1.3 1.3M11.35 11.35l1.3 1.3M12.85 9.85l1.3 1.3"/>
-      </svg>
-    </div>
-    <div class="loader-brand">MFL <span>Live</span></div>
-    <div class="loader-field" aria-hidden="true"><span class="loader-marker"></span></div>
+    <!-- The scene: three players behind a field strip, the leader in the
+         middle (design/loader-source.mp4, cut to alpha by design/loader.py).
+         It rises in, then loops; the wordmark wipes in under it. -->
+    <img class="loader-scene" src="loader.webp" alt="" width="620" height="288" decoding="async">
+    <div class="loader-brand" aria-label="MFL Live"><span style="--i:0">M</span><span style="--i:1">F</span><span style="--i:2">L</span><span class="sp" aria-hidden="true"></span><span class="live" style="--i:3">L</span><span class="live" style="--i:4">I</span><span class="live" style="--i:5">V</span><span class="live" style="--i:6">E</span></div>
     <div class="loader-msg" id="loader-msg">Pulling the live feed&hellip;</div>
   </div>
 </div>
