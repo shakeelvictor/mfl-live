@@ -429,13 +429,17 @@ const byLineup = (a, b) =>
 // Position groups in the Team view, in lineup order: one labelled hairline
 // opens each. Every defender is IDP, the league's one defensive slot type.
 const posGroup = (pos) => (POS_CLASS[pos] ? pos : "IDP");
+// Rows sway in (a 3D tilt that settles, staggered down the list) when the
+// pane's contents change: a team selected or a tab switched. A poll's
+// re-render keeps them still, so the board never twitches every 30s.
+let rosterEnter = false;
 const rosterHtml = (list, bench, isTop) => {
   let last = null;
-  return [...list].sort(byLineup).map((p) => {
+  return [...list].sort(byLineup).map((p, i) => {
     const g = posGroup(p.pos);
     const sep = g === last ? "" : `<div class="pgroup" data-g="${g}" role="presentation"><span>${g}</span></div>`;
     last = g;
-    return sep + playerRow(p, bench, !bench && isTop(p));
+    return sep + playerRow(p, bench, !bench && isTop(p), rosterEnter ? i : -1);
   }).join("");
 };
 
@@ -456,8 +460,8 @@ const tdCount = (st) => (st ? (st.pass_td || 0) + (st.rush_td || 0) + (st.rec_td
 const tdBadge = (st) => { const n = tdCount(st); return n ? `<span class="ptd">${n > 1 ? n + " " : ""}TD</span>` : ""; };
 
 // top: the team's highest-scoring starter gets a gold ring (MVP echo).
-const playerRow = (p, bench, top = false) =>
-  `<div class="prow${bench ? " bench" : ""}${p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${top ? " top" : ""}">` +
+const playerRow = (p, bench, top = false, enter = -1) =>
+  `<div class="prow${bench ? " bench" : ""}${p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${top ? " top" : ""}${enter >= 0 ? " enter" : ""}"${enter >= 0 ? ` style="--i:${enter}"` : ""}>` +
     `<span class="pface">${avatar(p)}${logoBadge(p.tm)}${tdBadge(p.st)}</span>` +
     `<span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span>` +
     `<span class="pname"><b>${esc(p.n)}</b>` +
@@ -514,6 +518,7 @@ function renderTeam(changed = new Set()) {
   rosterEl.innerHTML = list.length
     ? rosterHtml(list, tab === "bench", isTop)
     : `<p class="empty">No ${tab} on this roster.</p>`;
+  rosterEnter = false;
 }
 
 // Laptop and up: the team panel is always in view, so "opening" a team is
@@ -539,6 +544,7 @@ addEventListener("resize", () => { if (desktop.matches) markActive(); });
 
 function openTeam(id) {
   open = id; tab = "starters";
+  rosterEnter = true;
   renderTeam();
   markActive();
   if (desktop.matches) return;   // the panel is already showing it
@@ -577,7 +583,7 @@ rowsEl.addEventListener("click", (e) => {
 });
 hero.addEventListener("click", () => openTeam(teams[0].id));
 document.getElementById("back").addEventListener("click", closeTeam);
-tabs.forEach((b) => b.addEventListener("click", () => { tab = b.dataset.tab; renderTeam(); }));
+tabs.forEach((b) => b.addEventListener("click", () => { tab = b.dataset.tab; rosterEnter = true; renderTeam(); }));
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
   if (witch.dataset.open === "true") endWitchingHour();
