@@ -66,6 +66,10 @@ removed.
 
 ## Running the mockup
 
+It is published at <https://mfllive-poc.netlify.app>: every push to the
+`poc` branch deploys `mockup/` there (Netlify site `mfllive-poc`, locked to
+this branch, no build step, deploy previews off).
+
 The mockup is static files; any web server pointed at `mockup/` works.
 
 ```bash
