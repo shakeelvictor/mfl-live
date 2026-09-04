@@ -79,12 +79,11 @@ MFL_FAKE_LIVE=spike/fixtures/liveScoring-2025-w12.json node dev.mjs
 ```
 
 Production is <https://mfllive.netlify.app> (Netlify site `mfllive`, with
-`MFL_UA` set in the site environment). It is deployed from the working tree
-with the CLI, not from GitHub:
-
-```bash
-netlify deploy --no-build --prod
-```
+`MFL_UA` set in the site environment). It deploys from GitHub: every push
+to `main` publishes `app/` and the function, with no build step. The
+mockup on the `poc` branch deploys the same way to
+<https://mfllive-poc.netlify.app> (site `mfllive-poc`, publishing
+`mockup/`). Each site is locked to its branch and deploy previews are off.
 
 ```
 app/

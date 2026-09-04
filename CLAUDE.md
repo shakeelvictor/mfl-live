@@ -30,18 +30,21 @@ from the POC.
   and the same handler locally (`node dev.mjs`, port 8770; reads `.env`).
 - **Production is <https://mfllive.netlify.app>** (site `mfllive`, created
   2026-09-03; `mfl-live` was taken). `MFL_UA` is set in the site
-  environment. Deploys are manual from the working tree
-  (`netlify deploy --no-build --prod`); the repo is not connected to
-  Netlify's Git integration. The CLI skips `app/.cache` (hidden dir) and
-  uploads 8 files. The function's response cache is per warm instance, so
-  a cold start or a second instance costs one extra MFL call per type.
+  environment. **Deploys come from GitHub** (linked 2026-09-03 through
+  the Netlify GitHub app): every push to `main` publishes `app/` and
+  `netlify/functions`, no build command, locked to `main`
+  (`allowed_branches`), deploy previews off (`skip_prs`). A failed deploy
+  leaves the previous one live; `netlify rollback` restores the last good
+  one. The function's response cache is per warm instance, so a cold
+  start or a second instance costs one extra MFL call per type.
 - **The mockup is at <https://mfllive-poc.netlify.app>** (site
   `mfllive-poc`, created 2026-09-03) so the `poc` branch can be demoed on
-  a phone. It is static (no function; the fixture and images are in
-  `data.js`), deployed from a `poc` checkout with
-  `netlify deploy --no-build --prod --dir mockup --site mfllive-poc`.
-  The folder stays linked to `mfllive`; the `--site` flag is what keeps
-  the two apart, so never deploy `poc` without it.
+  a phone. Static (no function; the fixture and images are in `data.js`),
+  and deployed the same way: every push to `poc` publishes `mockup/`,
+  locked to `poc`, previews off. The folder's CLI link stays on
+  `mfllive`; a manual `netlify deploy` is no longer needed for either
+  site, and on a `poc` checkout it would push the mockup to production,
+  so don't.
 - **Polling budget (MFL rate-limits; an older POC got throttled).** The
   proxy keeps a per-instance response cache by (type, params) with each
   type's max-age (liveScoring 15s, schedule/lineups 5m, rosters 10m, league
