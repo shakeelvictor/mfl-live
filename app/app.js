@@ -850,7 +850,8 @@ function endWitchingHour() {
   witchTimers.forEach(clearTimeout); witchTimers.length = 0;
   if (witch.dataset.open !== "true") return;
   witch.dataset.open = "closing";
-  setTimeout(() => { witch.dataset.open = "false"; witchScene.innerHTML = ""; }, WITCH_EXIT_MS);
+  // Tracked, so a replay during the exit is not wiped by the old exit's end.
+  witchTimers.push(setTimeout(() => { witch.dataset.open = "false"; witchScene.innerHTML = ""; }, WITCH_EXIT_MS));
 }
 witch.addEventListener("click", endWitchingHour);
 // No demo bar on main: ?witch=1 plays it once the board is up, for checking.

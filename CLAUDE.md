@@ -274,8 +274,8 @@ element and scores are second.
   (letters stomping in, a red strobe) stacked above a white-faced clock
   with a glowing red rim, on a charcoal wall lit by flickering red neon
   bars, the second hand ticking; then the exit, like the original's: the
-  title flies into the camera, growing past the edges as it fades, and
-  the card splits at the middle, the halves (cut 3
+  title flies into the camera, growing past the edges as it fades, the
+  clock fades out, and the card splits at the middle, the halves (cut 3
   is drawn twice, each clipped to one half) sweeping off the top and
   bottom of the screen to open onto the board (1.1s).
   Cuts are `data-shot` on the overlay, so each shot's animations start
