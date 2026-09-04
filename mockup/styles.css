@@ -711,6 +711,27 @@ button.hero { cursor: pointer; }
   background-size: 250% 100%;
   animation: fflr-wave 7s ease-in-out infinite alternate;
 }
+/* Arrival: each row is a sign hung from its top edge, caught by a
+   breeze. It swings back and forth about that hinge, away from the
+   viewer then toward them, every swing shorter than the last, with a
+   trace of side-to-side for life, and settles, 28ms after the row above
+   (the roster supplies the perspective). The top scorer keeps its gold
+   wave alongside. */
+.roster { perspective: 700px; }
+.prow.enter {
+  transform-origin: 50% 0;
+  animation: fflr-sway .85s ease-in-out both;
+  animation-delay: calc(var(--i, 0) * 28ms);
+}
+.prow.top.enter { animation: fflr-sway .85s ease-in-out both, fflr-wave 7s ease-in-out infinite alternate; animation-delay: calc(var(--i, 0) * 28ms), 0s; }
+@keyframes fflr-sway {
+  0% { transform: rotateX(-9deg) rotateZ(-.25deg); opacity: 0; }
+  12% { opacity: 1; }
+  24% { transform: rotateX(3deg) rotateZ(.15deg); }
+  46% { transform: rotateX(-1.3deg); }
+  66% { transform: rotateX(.5deg); }
+  84% { transform: rotateX(-.2deg); }
+  100% { transform: none; }
 .prow.top:hover { background-color: var(--surface-raised); }
 .prow.top .avatar, .prow.top .avatar-fb { border: 2px solid var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
 .prow.bench { opacity: .75; }
@@ -1324,6 +1345,7 @@ button.hero { cursor: pointer; }
   .dot { animation: none; }
   .witch *, .witch { animation: none !important; }   /* a still frame, held briefly (the script shortens it) */
   .td-scrim, .td-card, .td-card * { animation: none !important; }
+  .prow.enter { animation: none; }
   .flash { animation: none; }
   .hero.takeover, .hero.takeover * { animation: none !important; }
   .spot::before, .hero-wave, .hero-money, .prow.top { animation: none; }

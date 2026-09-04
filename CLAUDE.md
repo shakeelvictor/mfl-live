@@ -88,7 +88,15 @@ element and scores are second.
   maps to `--pos-lb`, matching the league's "3 IDP, any combination" rule.
 - **Roster rows** are grouped by position in lineup order (QB, RB, WR,
   TE, K, IDP), each group opened by a shallow separator: a micro label in
-  the position's colour and a hairline to the right. Rows carry three small signals: the NFL logo badged on the
+  the position's colour and a hairline to the right. When the pane's
+  contents change (a team selected, Starters/Bench switched) the rows
+  **swing in** like a sign hung from its top edge caught by a breeze:
+  back and forth about that hinge (away from the viewer, then toward),
+  each swing shorter, a trace of side-to-side, settling in .85s, 28ms
+  after the row above (9° away at most: a breath, not a gust)
+  (`.prow.enter`, `--i`; the
+  roster supplies the perspective). A poll's re-render leaves them still.
+  Rows carry three small signals: the NFL logo badged on the
   headshot (as on the spotlight and touchdown cards), a mint **TD** chip on
   the headshot's top corner for anyone who has scored (counted from the
   stat line, so a simulated touchdown adds it live), a **gold sweep** on
