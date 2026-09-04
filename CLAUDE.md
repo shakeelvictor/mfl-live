@@ -64,8 +64,9 @@ element and scores are second.
   writes `loader.webp` (~750KB, alpha) next to the page. The image rises
   in, and the page's own **MFL LIVE** wipes in left to right under it
   (clip-path); a status line sits below. `showLoading(msg)` /
-  `hideLoading()`. The mockup holds it ~1.1s (fonts ready) and hands
-  off; the real app holds it until the first liveScoring poll lands.
+  `hideLoading()`. It holds at least 2.8s (`MIN_LOAD_MS`), long enough
+  for the scene to play through once; the bundle inlines `loader.webp`
+  as a data: URI for the artifact.
 - **First-load cascade**: once the loader lifts, `cascadeIn()` gives every
   board block, then each standings row and divider, then the laptop pane an
   index (`--i`) and the `.intro` class reveals them top to bottom (55ms
