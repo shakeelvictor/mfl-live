@@ -162,8 +162,25 @@ element and scores are second.
   first two stop the simulator, zero the to-play counts and flip the header
   to Final, the last only clears the card and the winner treatment (a full
   rollover to a new week is not mocked).
+- **The Witching Hour**: NFL RedZone's 2:30 PM Central moment, Scott
+  Hanson's call, recreated as a ten-second full-screen takeover in the
+  original's three cuts: a tilted close-up of the clock with both hands
+  racing; a hard cut to the clock upright and centred as the hands slow
+  onto 2:30; then the card, WITCHING in backlit red over HOUR in white
+  (letters stomping in, a red strobe) stacked above a white-faced clock
+  with a glowing red rim, on a charcoal wall lit by flickering red neon
+  bars, the second hand ticking; then an 800ms fade back to the board.
+  Cuts are `data-shot` on the overlay, so each shot's animations start
+  when it is displayed. Every size is `min()` of a vw and a vh value so
+  the stack fits phones (width-bound) and short laptops (height-bound).
+  Fires every Sunday at 2:30 PM in `America/Chicago` (the instant is
+  resolved through Intl so DST is right; once per Sunday per browser,
+  remembered in localStorage `mfl-live-witch`; a hidden tab plays it
+  when shown again within the hour), or on demand from the demo bar.
+  Click or Escape skips it. Literal red in both themes; reduced motion
+  holds the card alone for 3.5s.
 - The **Demo bar** (Simulate live scoring / Flip the lead / Score a TD /
-  Bears TD / End the day / End the week / Start next week)
+  Bears TD / End the day / End the week / Start next week / Witching hour)
   sits under the masthead, hidden by default behind the **Demo** toggle
   next to the theme control (remembered in localStorage), so a shared page
   opens clean. It is mockup-only and will be removed.

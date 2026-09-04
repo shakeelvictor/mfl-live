@@ -45,6 +45,7 @@
       <button class="sim" id="end-day" type="button">End the day</button>
       <button class="sim" id="end-week" type="button">End the week</button>
       <button class="sim" id="next-week" type="button">Start next week</button>
+      <button class="sim" id="witch-btn" type="button">Witching hour</button>
     </div>
 
     <div class="week">
@@ -136,6 +137,11 @@
 <div class="td" id="td-modal" data-open="false" role="status" aria-live="polite">
   <div class="td-scrim" id="td-scrim"></div>
   <div class="td-card" id="td-card"></div>
+</div>
+
+<!-- The Witching Hour: RedZone's 2:30 PM Central moment, ten seconds, full screen. -->
+<div class="witch" id="witch" data-open="false" role="status" aria-live="polite" aria-label="The Witching Hour">
+  <div class="w-scene" id="witch-scene"></div>
 </div>
 
 <!-- Loading interstitial: shown by default so nothing paints before it. -->

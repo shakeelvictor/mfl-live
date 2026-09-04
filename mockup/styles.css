@@ -1153,8 +1153,139 @@ button.hero { cursor: pointer; }
 }
 @keyframes fflr-cascade { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
+/* ---------------- The Witching Hour ----------------
+   RedZone's 2:30 PM Central graphic in three cuts, like the original:
+   1) a tilted close-up of the clock, hands racing; 2) the clock upright
+   and centred, hands slowing onto 2:30; 3) the card: WITCHING in backlit
+   red over HOUR in white, stacked above a white-faced clock with a
+   glowing red rim, on a charcoal wall lit by red neon, the second hand
+   ticking. Ten seconds above everything, then an 800ms fade back to the
+   board. Literal red in both themes. Every size is the smaller of a
+   width- and a height-based value, so the stack fits a phone (width
+   bound) and a short laptop window (height bound) alike. */
+.witch {
+  position: fixed; inset: 0; z-index: 70;
+  display: none; overflow: hidden;
+  background: #120c0d; color: #fff;
+  --w-red: #ff3b1f;
+  --w-ms: 10000ms;
+}
+.witch[data-open="true"], .witch[data-open="closing"] { display: block; }
+.witch[data-open="true"] { animation: fflr-fade-in .35s ease-out both; }
+.witch[data-open="closing"] { animation: fflr-fade-out .8s ease-in forwards; }
+.w-scene { position: absolute; inset: 0; }
+/* Hard cuts: only the current shot is displayed, so its animations
+   start the moment it appears. */
+.w-shot { position: absolute; inset: 0; display: none; overflow: hidden; }
+.witch[data-shot="1"] .w-shot-1, .witch[data-shot="2"] .w-shot-2, .witch[data-shot="3"] .w-shot-3 { display: block; }
+
+/* The wall: charcoal panels under a red haze, neon bars down both sides. */
+.w-wall {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(70% 60% at 50% 42%, rgba(255, 59, 31, .24), transparent 70%),
+    linear-gradient(90deg, #3b1b1c 0%, #1d1315 16%, #2b181b 50%, #1d1315 84%, #3b1b1c 100%);
+}
+.w-neon {
+  position: absolute; top: -4%; bottom: -4%; width: 3px; border-radius: 2px;
+  background: #ffd9cf;
+  box-shadow: 0 0 6px var(--w-red), 0 0 18px var(--w-red), 0 0 48px rgba(255, 59, 31, .6);
+  animation: fflr-w-neon 1.7s ease-in-out infinite;
+}
+.w-neon.h { top: auto; bottom: auto; height: 3px; width: 9%; }
+
+/* The clock: white face, black hands, a red second hand, red rim aglow. */
+.w-clock { width: var(--size); aspect-ratio: 1; flex: none; }
+.w-clock svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.w-rim { fill: none; stroke: var(--w-red); stroke-width: 9; filter: drop-shadow(0 0 5px var(--w-red)) drop-shadow(0 0 22px rgba(255, 59, 31, .85)); }
+.w-tick { stroke: #3a2c2e; stroke-width: 2; }
+.w-tick.w-major { stroke: #1b1416; stroke-width: 4; }
+.w-num { font: 700 30px var(--font-data); fill: #1b1416; text-anchor: middle; dominant-baseline: central; }
+.w-hand { transform-origin: 200px 200px; }
+.w-hand path { fill: #141012; }
+.w-sec { transform-origin: 200px 200px; stroke: #e5321c; stroke-width: 2.5; stroke-linecap: round; }
+.w-cam { position: absolute; inset: 0; display: grid; place-items: center; }
+
+/* Cut 1 (0-2.5s): close-up, tilted, both hands racing. */
+.w-shot-1 .w-cam { perspective: 800px; animation: fflr-w-cam1 2.5s ease-out both; }
+.w-shot-1 .w-clock { --size: min(150vmin, 1300px); transform: rotateX(52deg) rotateZ(-28deg) translate(6%, -10%); }
+.w-shot-1 .w-hour { animation: fflr-w-spin 2.5s linear both; --turns: 2; }
+.w-shot-1 .w-min { animation: fflr-w-spin 2.5s linear both; --turns: 7; }
+.w-shot-1 .w-sec { animation: fflr-w-spin 2.5s linear both; --turns: 12; }
+/* Cut 2 (2.5-5s): upright and centred, hands slowing onto 2:30. */
+.w-shot-2 .w-cam { animation: fflr-w-cam2 2.5s ease-out both; }
+.w-shot-2 .w-clock { --size: min(80vmin, 78vh, 720px); }
+.w-shot-2 .w-hour { animation: fflr-w-hour 2.4s cubic-bezier(.1, .7, .2, 1) both; }
+.w-shot-2 .w-min { animation: fflr-w-min 2.4s cubic-bezier(.1, .7, .2, 1) both; }
+.w-shot-2 .w-sec { animation: fflr-w-spin 2.4s cubic-bezier(.1, .7, .2, 1) both; --turns: 5; }
+/* Cut 3 (5s on): the card, in slight perspective like the original. */
+.w-stage {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: min(5vh, 44px); padding: 0 16px;
+  perspective: 1100px;
+  animation: fflr-w-cam3 5s ease-out both;
+}
+.w-flash { position: absolute; inset: 0; pointer-events: none; background: var(--w-red); mix-blend-mode: screen; opacity: 0; animation: fflr-strobe .8s ease-out both; }
+.w-title {
+  display: flex; flex-direction: column; align-items: center;
+  font: italic 900 1em/.88 var(--font-display);
+  letter-spacing: -.01em; text-transform: uppercase;
+  transform: rotateX(8deg) rotateY(-7deg);
+  transform-style: preserve-3d;
+}
+.w-l1, .w-l2 { display: flex; white-space: nowrap; }
+/* WITCHING: dark red letters lit from behind, a bright red edge and a
+   deep extrusion. HOUR: white, larger, with a dark extrusion. */
+.w-l1 {
+  font-size: min(15vw, 12.5vh, 150px);
+  letter-spacing: .02em;
+  color: #c4281b;
+  -webkit-text-stroke: 1px #ff7d5f; paint-order: stroke fill;
+  text-shadow: 0 0 10px rgba(255, 59, 31, .95), 0 0 30px rgba(255, 59, 31, .55), 3px 4px 0 #4a0c08, 5px 7px 0 #2a0604;
+}
+.w-l2 {
+  font-size: min(21vw, 17vh, 200px);
+  color: #f4eff1; margin-top: .04em;
+  text-shadow: 3px 4px 0 #4a3336, 6px 8px 0 #1c1012, 0 0 28px rgba(255, 80, 60, .35);
+}
+.w-l1 span, .w-l2 span {
+  display: inline-block;
+  animation: fflr-stomp .4s cubic-bezier(.2, .9, .3, 1.4) both;
+  animation-delay: calc(var(--t0) + var(--i) * 55ms);
+}
+.w-l1 { --t0: .15s; }
+.w-l2 { --t0: .65s; }
+.w-shot-3 .w-clock { --size: min(60vw, 42vh, 480px); animation: fflr-rise .6s cubic-bezier(.2, .9, .3, 1.2) .3s both; }
+.w-shot-3 .w-hour { transform: rotate(75deg); }    /* 2:30 */
+.w-shot-3 .w-min { transform: rotate(180deg); }
+.w-shot-3 .w-sec { animation: fflr-w-sec 60s steps(60, end) infinite; }
+
+/* Film grain, scanlines and a vignette over every cut. */
+.w-scan {
+  position: absolute; inset: 0; pointer-events: none; opacity: .4;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .22) 0 2px, transparent 2px 4px);
+}
+.w-grain {
+  position: absolute; inset: -50%; pointer-events: none; opacity: .14; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: fflr-w-grain .3s steps(2) infinite;
+}
+.w-vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(80% 80% at 50% 50%, transparent 50%, rgba(0, 0, 0, .8) 100%); }
+
+@keyframes fflr-w-neon { 0%, 100% { opacity: 1; } 47% { opacity: .78; } 52% { opacity: 1; } 78% { opacity: .55; } 83% { opacity: .95; } }
+@keyframes fflr-w-grain { 0% { transform: translate(0, 0); } 50% { transform: translate(-3%, 2%); } 100% { transform: translate(2%, -3%); } }
+@keyframes fflr-w-spin { from { transform: rotate(0deg); } to { transform: rotate(calc(var(--turns) * 360deg)); } }
+@keyframes fflr-w-cam1 { from { transform: scale(1.25) translate(4%, 6%); } to { transform: scale(1) translate(0, -2%); } }
+@keyframes fflr-w-cam2 { from { transform: scale(1.18); } to { transform: scale(1); } }
+@keyframes fflr-w-cam3 { from { transform: scale(1.06) translateY(1%); } to { transform: none; } }
+@keyframes fflr-w-hour { from { transform: rotate(-645deg); } to { transform: rotate(75deg); } }
+@keyframes fflr-w-min { from { transform: rotate(-1620deg); } to { transform: rotate(180deg); } }
+@keyframes fflr-w-sec { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
 @media (prefers-reduced-motion: reduce) {
   .dot { animation: none; }
+  .witch *, .witch { animation: none !important; }   /* a still frame, held briefly (the script shortens it) */
   .td-scrim, .td-card, .td-card * { animation: none !important; }
   .flash { animation: none; }
   .hero.takeover, .hero.takeover * { animation: none !important; }

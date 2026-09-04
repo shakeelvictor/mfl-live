@@ -580,7 +580,8 @@ document.getElementById("back").addEventListener("click", closeTeam);
 tabs.forEach((b) => b.addEventListener("click", () => { tab = b.dataset.tab; renderTeam(); }));
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
-  if (tdModal.dataset.open === "true") dismissTouchdown();
+  if (witch.dataset.open === "true") endWitchingHour();
+  else if (tdModal.dataset.open === "true") dismissTouchdown();
   else if (page.dataset.open === "true") closeTeam();
 });
 
@@ -662,6 +663,132 @@ function announceTouchdown(ev) {
 }
 
 document.getElementById("td-scrim").addEventListener("click", dismissTouchdown);
+
+/* ---------------- The Witching Hour ----------------
+   NFL RedZone's 2:30 PM Central moment: the early games reach their
+   fourth quarters at once, and Scott Hanson calls it. Every Sunday at
+   that time the board gives way to a ten-second full-screen take on the
+   RedZone graphic, in three cuts (a tilted close-up with the hands
+   racing, the clock upright as they settle on 2:30, then WITCHING HOUR
+   stacked over the clock on a neon-lit wall), then fades back. The demo bar fires it on demand; a click
+   or Escape skips it. */
+
+const WITCH_MS = 10000;
+const WITCH_CUTS = [2500, 5000];   // when cuts 2 and 3 begin
+const WITCH_TZ = "America/Chicago", WITCH_HOUR = 14, WITCH_MINUTE = 30;
+const witch = document.getElementById("witch");
+const witchScene = document.getElementById("witch-scene");
+const witchTimers = [];
+
+// One clock, drawn three times (one per cut); the gradient id is suffixed
+// because a gradient defined inside a hidden cut does not paint.
+function witchClock(k) {
+  const ticks = Array.from({ length: 60 }, (_, i) => {
+    const major = i % 5 === 0;
+    return `<line x1="200" y1="${major ? 22 : 26}" x2="200" y2="${major ? 42 : 36}" transform="rotate(${i * 6} 200 200)" class="w-tick${major ? " w-major" : ""}"/>`;
+  }).join("");
+  const nums = Array.from({ length: 12 }, (_, i) => {
+    const n = i + 1, a = (n * 30 - 90) * Math.PI / 180, r = 146;
+    return `<text x="${(200 + r * Math.cos(a)).toFixed(1)}" y="${(200 + r * Math.sin(a)).toFixed(1)}" class="w-num">${n}</text>`;
+  }).join("");
+  return `<div class="w-clock"><svg viewBox="0 0 400 400" aria-hidden="true">` +
+    `<defs><radialGradient id="w-face-${k}" cx="40%" cy="34%" r="76%">` +
+      `<stop offset="0" stop-color="#ffffff"/><stop offset=".7" stop-color="#f2eced"/><stop offset="1" stop-color="#d6cbcd"/></radialGradient></defs>` +
+    `<circle class="w-rim" cx="200" cy="200" r="190"/>` +
+    `<circle cx="200" cy="200" r="186" fill="url(#w-face-${k})"/>` +
+    `<g>${ticks}</g>${nums}` +
+    `<g class="w-hand w-hour"><path d="M200 214 L192 200 L200 104 L208 200 Z"/></g>` +
+    `<g class="w-hand w-min"><path d="M200 218 L194 200 L200 44 L206 200 Z"/></g>` +
+    `<line class="w-sec" x1="200" y1="232" x2="200" y2="40"/>` +
+    `<circle cx="200" cy="200" r="7" fill="#141012"/><circle cx="200" cy="200" r="3" fill="#e5321c"/>` +
+    `</svg></div>`;
+}
+
+function witchMarkup() {
+  // The wall behind every cut: neon bars down both sides, a few short
+  // horizontals, each flickering on its own offset.
+  const neon = [
+    ["left:4.5%", -0.3], ["left:8.5%", -1.1], ["right:4.5%", -0.7], ["right:8.5%", -1.5],
+    ["left:0;width:9%;top:32%", -0.5, "h"], ["left:0;width:9%;top:58%", -1.3, "h"],
+    ["right:0;width:9%;top:26%", -0.9, "h"], ["right:0;width:9%;top:64%", -0.2, "h"],
+  ].map(([pos, d, h]) => `<span class="w-neon${h ? " h" : ""}" style="${pos};animation-delay:${d}s"></span>`).join("");
+  const wall = `<span class="w-wall"></span>${neon}`;
+  // Letters stomp in one by one, WITCHING then HOUR.
+  const word = (w, cls) => `<span class="${cls}">${[...w].map((c, i) => `<span style="--i:${i}">${c}</span>`).join("")}</span>`;
+  return `<div class="w-shot w-shot-1">${wall}<div class="w-cam">${witchClock(1)}</div></div>` +
+    `<div class="w-shot w-shot-2">${wall}<div class="w-cam">${witchClock(2)}</div></div>` +
+    `<div class="w-shot w-shot-3">${wall}<span class="w-flash"></span><div class="w-stage">` +
+      `<div class="w-title">${word("Witching", "w-l1")}${word("Hour", "w-l2")}</div>${witchClock(3)}</div></div>` +
+    `<span class="w-scan"></span><span class="w-grain"></span><span class="w-vignette"></span>`;
+}
+
+function playWitchingHour() {
+  if (witch.dataset.open === "true") return;
+  const still = reducedMotion.matches;          // the card alone, held briefly
+  const ms = still ? 3500 : WITCH_MS;
+  witchScene.innerHTML = witchMarkup();
+  witch.dataset.shot = still ? "3" : "1";
+  witch.dataset.open = "true";
+  witchTimers.forEach(clearTimeout); witchTimers.length = 0;
+  if (!still) {
+    witchTimers.push(setTimeout(() => { witch.dataset.shot = "2"; }, WITCH_CUTS[0]));
+    witchTimers.push(setTimeout(() => { witch.dataset.shot = "3"; }, WITCH_CUTS[1]));
+  }
+  witchTimers.push(setTimeout(endWitchingHour, ms - 800));   // the fade-out is the last 800ms
+}
+function endWitchingHour() {
+  witchTimers.forEach(clearTimeout); witchTimers.length = 0;
+  if (witch.dataset.open !== "true") return;
+  witch.dataset.open = "closing";
+  setTimeout(() => { witch.dataset.open = "false"; witchScene.innerHTML = ""; }, 800);
+}
+witch.addEventListener("click", endWitchingHour);
+document.getElementById("witch-btn").addEventListener("click", playWitchingHour);
+
+// Scheduling. Sunday 2:30 PM in Chicago's zone, whatever the viewer's
+// clock says; the instant is found by reading a guess back through
+// Intl and correcting for the offset (twice covers a DST edge). Fires
+// once per Sunday per browser; a hidden tab plays it when shown again,
+// as long as that is within the hour.
+const zoneParts = (d) => Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+  timeZone: WITCH_TZ, hourCycle: "h23", weekday: "short",
+  year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric",
+}).formatToParts(d).map((x) => [x.type, x.value]));
+function zonedInstant(y, m, d, h, mi) {
+  const want = Date.UTC(y, m - 1, d, h, mi);
+  let t = want;
+  for (let k = 0; k < 2; k++) {
+    const p = zoneParts(new Date(t));
+    t += want - Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+  }
+  return t;
+}
+function nextWitchingHour(now = Date.now()) {
+  for (let k = 0; k < 8; k++) {
+    const p = zoneParts(new Date(now + k * 864e5));
+    if (p.weekday !== "Sun") continue;
+    const t = zonedInstant(+p.year, +p.month, +p.day, WITCH_HOUR, WITCH_MINUTE);
+    if (t > now - 90e3) return t;   // a page opened just after 2:30 still gets it
+  }
+  return null;
+}
+function scheduleWitchingHour() {
+  const t = nextWitchingHour();
+  if (t == null) return;
+  const key = "mfl-live-witch", stamp = String(t);
+  const fire = () => {
+    try { if (localStorage.getItem(key) === stamp) return; localStorage.setItem(key, stamp); } catch {}
+    if (!document.hidden) { playWitchingHour(); return; }
+    const onShow = () => {
+      if (document.hidden) return;
+      document.removeEventListener("visibilitychange", onShow);
+      if (Date.now() - t < 3600e3) playWitchingHour();
+    };
+    document.addEventListener("visibilitychange", onShow);
+  };
+  setTimeout(() => { fire(); setTimeout(scheduleWitchingHour, 120e3); }, Math.min(Math.max(0, t - Date.now()), 2 ** 31 - 1));
+}
+scheduleWitchingHour();
 
 /* ---------------- simulation (mockup only) ----------------
    Bumps one starter on a team that still has players to play, every few
