@@ -152,12 +152,7 @@ element and scores are second.
   (clip-path); a status line sits below. `showLoading(msg)` /
   `hideLoading()`. It holds at least 2.8s (`MIN_LOAD_MS`), long enough
   for the scene to play through once, and on `main` longer if the first
-  liveScoring poll takes longer. **First visit only**: the browser is
-  remembered (localStorage `mfl-live-seen`, stamped as `data-return` on
-  the root by the inline script before any paint, so nothing flashes);
-  a returning visitor sees a plain canvas cover only while the data
-  loads, no scene and no hold, and the board cascades in as always.
-  Clear the key to see the scene again.
+  liveScoring poll takes longer.
 - **First-load cascade**: once the loader lifts, `cascadeIn()` gives every
   board block, then each standings row and divider, then the laptop pane an
   index (`--i`) and the `.intro` class reveals them top to bottom (55ms
