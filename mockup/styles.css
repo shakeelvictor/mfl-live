@@ -252,6 +252,15 @@ h1 {
 }
 @media (max-width: 430px) {
   h1 { font-size: 46px; }   /* the WEEK title: 56px from tablet up */
+  /* Phones: the masthead holds the mark, the wordmark, the Demo toggle
+     and the theme control on one line, so each gets a little tighter
+     rather than the theme control clipping at the edge. */
+  .brand { font-size: 16px; }
+  .brandwrap { gap: 8px; min-width: 0; }
+  .controls { gap: 6px; flex-shrink: 0; }
+  .demo-toggle { padding: 0 10px; font-size: 10px; letter-spacing: .06em; }
+  .seg { padding: 3px; }
+  .seg-btn { padding: 0 9px; font-size: 10px; letter-spacing: .06em; }
 }
 .subhead { margin: 0; font-size: 14px; line-height: 1.4; color: var(--text-secondary); text-wrap: pretty; }
 
