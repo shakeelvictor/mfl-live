@@ -48,7 +48,7 @@ What exists today:
   never get one. Bears scorers get "BEAR DOWN!" in team colours.
 - **The Witching Hour.** At 2:30 PM Central on Sundays, RedZone's
   witching hour, a ten-second full-screen clock takes over the board and
-  fades back out. The demo bar fires it on demand.
+  sweeps open again. The demo bar fires it on demand.
 - **Spotlight.** After a day's games are final, the day's top-scoring starter
   gets a card; once the week is official it becomes the MVP of the week, and
   the leader's hero becomes the Week winner.

@@ -1171,8 +1171,9 @@ button.hero { cursor: pointer; }
    and centred, hands slowing onto 2:30; 3) the card: WITCHING in backlit
    red over HOUR in white, stacked above a white-faced clock with a
    glowing red rim, on a charcoal wall lit by red neon, the second hand
-   ticking. Ten seconds above everything, then an 800ms fade back to the
-   board. Literal red in both themes. Every size is the smaller of a
+   ticking. Ten seconds above everything, then the exit: the title flies
+   into the camera and the card splits at the middle, the halves sweeping off the
+   top and bottom of the screen to open onto the board. Literal red in both themes. Every size is the smaller of a
    width- and a height-based value, so the stack fits a phone (width
    bound) and a short laptop window (height bound) alike. */
 .witch {
@@ -1184,7 +1185,18 @@ button.hero { cursor: pointer; }
 }
 .witch[data-open="true"], .witch[data-open="closing"] { display: block; }
 .witch[data-open="true"] { animation: fflr-fade-in .35s ease-out both; }
-.witch[data-open="closing"] { animation: fflr-fade-out .8s ease-in forwards; }
+/* The exit. Cut 3 is drawn twice, each copy clipped to one half of the
+   screen; the title flies into the camera (in both), then the halves
+   sweep apart.
+   Skipped during cuts 1 or 2, the scene just fades. */
+.witch[data-open="closing"] { background: transparent; }
+.witch[data-open="closing"]:not([data-shot="3"]) { animation: fflr-fade-out .5s ease-in forwards; }
+.w-half { position: absolute; inset: 0; }
+.w-top { clip-path: inset(0 0 50% 0); }
+.w-bot { clip-path: inset(50% 0 0 0); }
+.witch[data-open="closing"] .w-title { animation: fflr-w-zoom-in .55s cubic-bezier(.5, 0, .9, .4) forwards; }
+.witch[data-open="closing"] .w-top { animation: fflr-w-sweep-up .7s cubic-bezier(.55, 0, .85, .3) .4s forwards; }
+.witch[data-open="closing"] .w-bot { animation: fflr-w-sweep-down .7s cubic-bezier(.55, 0, .85, .3) .4s forwards; }
 .w-scene { position: absolute; inset: 0; }
 /* Hard cuts: only the current shot is displayed, so its animations
    start the moment it appears. */
@@ -1294,6 +1306,10 @@ button.hero { cursor: pointer; }
 @keyframes fflr-w-hour { from { transform: rotate(-645deg); } to { transform: rotate(75deg); } }
 @keyframes fflr-w-min { from { transform: rotate(-1620deg); } to { transform: rotate(180deg); } }
 @keyframes fflr-w-sec { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+/* The title flies into the camera: scaling up past the screen edges as it fades. */
+@keyframes fflr-w-zoom-in { 60% { opacity: 1; } to { transform: rotateX(8deg) rotateY(-7deg) scale(9); opacity: 0; } }
+@keyframes fflr-w-sweep-up { to { transform: translateY(-101%); } }
+@keyframes fflr-w-sweep-down { to { transform: translateY(101%); } }
 
 @media (prefers-reduced-motion: reduce) {
   .dot { animation: none; }
