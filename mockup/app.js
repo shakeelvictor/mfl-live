@@ -983,10 +983,6 @@ if (desktop.matches) openTeam(teams[0].id);
 const loader = document.getElementById("loader");
 const loaderMsg = document.getElementById("loader-msg");
 const MIN_LOAD_MS = 2800;   // long enough for the scene to play through once
-// The scene is a first-visit welcome. Once seen (remembered per browser),
-// the cover lifts at once and the board cascades as usual.
-const SEEN_KEY = "mfl-live-seen";
-const firstVisit = !document.documentElement.dataset.return;
 
 function showLoading(msg) {
   if (msg) loaderMsg.textContent = msg;
@@ -1018,8 +1014,7 @@ function cascadeIn() {
 
 const loadStart = performance.now();
 document.fonts.ready.then(() => {
-  const wait = firstVisit ? Math.max(0, MIN_LOAD_MS - (performance.now() - loadStart)) : 0;
-  try { localStorage.setItem(SEEN_KEY, "1"); } catch {}
+  const wait = Math.max(0, MIN_LOAD_MS - (performance.now() - loadStart));
   setTimeout(() => { cascadeIn(); hideLoading(); }, wait);
 });
 
