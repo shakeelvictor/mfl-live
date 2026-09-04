@@ -1140,6 +1140,10 @@ document.addEventListener("visibilitychange", () => {
 const loader = document.getElementById("loader");
 const loaderMsg = document.getElementById("loader-msg");
 const MIN_LOAD_MS = 2800;   // long enough for the scene to play through once
+// The scene is a first-visit welcome. Once seen (remembered per browser),
+// the cover lifts the moment the data is in and the board cascades as usual.
+const SEEN_KEY = "mfl-live-seen";
+const firstVisit = !document.documentElement.dataset.return;
 
 function showLoading(msg) {
   if (msg) loaderMsg.textContent = msg;
@@ -1184,7 +1188,8 @@ async function boot() {
   render();
   if (desktop.matches) openTeam(teams[0].id);
   await document.fonts.ready;
-  const wait = Math.max(0, MIN_LOAD_MS - (performance.now() - loadStart));
+  const wait = firstVisit ? Math.max(0, MIN_LOAD_MS - (performance.now() - loadStart)) : 0;
+  try { localStorage.setItem(SEEN_KEY, "1"); } catch {}
   setTimeout(() => { cascadeIn(); hideLoading(); if (QUERY.has("witch")) playWitchingHour(); }, wait);
   if (!FIXTURE) schedulePoll();
 }
