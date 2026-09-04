@@ -66,7 +66,11 @@ element and scores are second.
   (clip-path); a status line sits below. `showLoading(msg)` /
   `hideLoading()`. It holds at least 2.8s (`MIN_LOAD_MS`), long enough
   for the scene to play through once; the bundle inlines `loader.webp`
-  as a data: URI for the artifact.
+  as a data: URI for the artifact. **First visit only**: the browser is
+  remembered (localStorage `mfl-live-seen`, stamped as `data-return` on
+  the root by the inline script before any paint, so nothing flashes);
+  a returning visitor gets no scene and no hold, and the board cascades
+  in as always. Clear the key to see the scene again.
 - **First-load cascade**: once the loader lifts, `cascadeIn()` gives every
   board block, then each standings row and divider, then the laptop pane an
   index (`--i`) and the `.intro` class reveals them top to bottom (55ms

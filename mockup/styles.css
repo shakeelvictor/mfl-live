@@ -1144,6 +1144,11 @@ button.hero { cursor: pointer; }
   position: fixed; inset: 0; z-index: 70;
   background: var(--canvas); color: var(--text-primary);
   display: grid; place-items: center;
+}
+/* First visit only: a returning visitor (data-return on the root) sees a
+   plain canvas cover for an instant, never the scene. */
+:root[data-return] .loader-inner { display: none; }
+.loader {
   transition: opacity .4s ease;
 }
 .loader[hidden] { display: none; }
