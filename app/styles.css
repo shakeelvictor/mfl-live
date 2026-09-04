@@ -1053,6 +1053,20 @@ button.hero { cursor: pointer; }
   }
   .team-page .wash { display: none; }
   .team-page > .shell { position: sticky; top: 16px; max-width: none; padding: 16px 16px 24px; animation: none; }
+  /* The pane never outgrows the window: the shell is capped at the
+     viewport, the tabs stay put, and the roster card scrolls inside itself
+     when the rows do not fit (a tall window never scrolls). A fade over the
+     card's bottom edge says there is more, until the end is reached
+     (data-more, kept by the script). */
+  .team-page > .shell { box-sizing: border-box; max-height: calc(100vh - 32px); }
+  .team-page .roster { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .team-page > .shell::after {
+    content: ""; position: absolute; left: 17px; right: 17px; bottom: 25px; height: 36px;
+    border-radius: 0 0 var(--radius-card) var(--radius-card);
+    background: linear-gradient(transparent, var(--surface));
+    pointer-events: none; opacity: 0; transition: opacity .2s;
+  }
+  .team-page[data-more="1"] > .shell::after { opacity: 1; }
   .team-page .team-head { display: none; }   /* only held the back button */
   /* Compact roster so twelve starters fit the panel without scrolling:
      team, status and stat line share one row under the name. */

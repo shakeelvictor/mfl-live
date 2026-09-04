@@ -235,7 +235,13 @@ element and scores are second.
   for the bridge). The panel hides its own team hero and header, since the tab
   already carries name, record, status and points, and packs the roster
   (team, status and stat line on one row under the name) so twelve
-  starters fit without scrolling. The leader hero gets the same tab
+  starters fit without scrolling on a tall window. On a short one the
+  shell is capped at the viewport (`max-height: calc(100vh - 32px)`),
+  the tabs stay put, and the roster card scrolls inside itself, with a
+  fade over its bottom edge while there is more (`data-more` on the
+  page, kept by `markMore()` on render, scroll and resize). Before this
+  the sticky shell outgrew short windows and the last IDP row needed the
+  whole board scrolled to the end. The leader hero gets the same tab
   treatment when selected, its gradient landing on the panel green. The
   phone layout below 1024px is untouched. Starters/Bench is a segmented
   control; bench rows render at 75% opacity, 42% when scoreless.

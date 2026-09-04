@@ -623,12 +623,23 @@ function renderTeam(changed = new Set()) {
   rosterEl.innerHTML = list.length
     ? rosterHtml(list, view === "bench", isTop)
     : `<p class="empty">No ${view} on this roster.</p>`;
+  if (rosterEnter) rosterEl.scrollTop = 0;   // new contents start at the top
   rosterEnter = false;
+  markMore();
 }
 
 // Laptop and up: the team panel is always in view, so "opening" a team is
 // selecting it. The selected row becomes a tab into the panel.
 const desktop = matchMedia("(min-width: 1024px)");
+
+// The pane is capped at the window and the roster card scrolls inside it;
+// data-more shows a fade over the card's bottom edge while there is more.
+function markMore() {
+  const more = desktop.matches && rosterEl.scrollHeight - rosterEl.scrollTop - rosterEl.clientHeight > 4;
+  page.dataset.more = more ? "1" : "0";
+}
+rosterEl.addEventListener("scroll", markMore, { passive: true });
+addEventListener("resize", markMore);
 
 // The pane's background is a top-to-bottom gradient; the tab needs the
 // pane's colour at its own height, so each active element is told how far
