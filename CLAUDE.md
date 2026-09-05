@@ -223,6 +223,10 @@ files themselves (spec, prototype and its runtime, mock data, screenshots,
 the **gap between adjacent ranks is worth a full win**, so gaps are the loudest
 element and scores are second.
 
+- **In dark the kicker ("Playoffs · Week 15") and the subhead are white**
+  (`--text-primary`), every week: the muted greys were hard to read on
+  the dark canvas, worst under the Bowl's gold clouds (2026-09-05). Light
+  keeps its greys and steps them up a shade in the Bowl.
 - **Dark-first**: bare `:root` is the dark palette and
   `:root[data-theme="light"]` is the override. Do not "fix" it to follow
   `prefers-color-scheme`; the DARK/LIGHT segmented control stamps the root
