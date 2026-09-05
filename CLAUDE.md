@@ -133,7 +133,14 @@ be total.
   theme) with a trophy emoji beside it, kept outside the h1 because the
   gradient is painted through the glyphs and would swallow the emoji's
   colours (on phones under 430px the Bowl title drops to 38px so the
-  trophy stays on its line). The Bowl's
+  trophy stays on its line). Behind the board the Bowl also turns on a
+  **gold flourish** (`#bowl-bg`, a fixed layer under everything, `.on`
+  fades it in over 1.2s): four large soft gold clouds, each a radial
+  gradient fading to nothing (no blur filter, phones would stutter),
+  drifting on their own loose figures over 23-31s, and a slow diagonal
+  wave at page scale; `--bowl-cloud` / `--bowl-wave` tokens per theme,
+  warm and luminous in dark, deep and sheer in light. Still under
+  reduced motion. The Bowl's
   leader is "Fantasy Bowl champion" with the gold and the money bag once
   final; the
   earlier rounds get no gold, they pay nothing. The spotlight's MVP is

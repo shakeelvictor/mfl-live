@@ -1524,3 +1524,54 @@ h1.bowl { background-image: linear-gradient(100deg, var(--title-gold) 0%, var(--
    drops a size to keep the trophy beside it. */
 @media (max-width: 430px) { .trophy { font-size: 34px; } h1.bowl { font-size: 38px; } }
 @media (prefers-reduced-motion: reduce) { .trophy { animation: none; } }
+
+/* ---------- the Fantasy Bowl's flourish ----------
+   A fixed layer under the board, on only for the Bowl: four large, soft
+   gold clouds drifting slowly on their own paths (each a radial gradient
+   fading to nothing, so no blur filter is needed), and a slow diagonal
+   wave across the whole screen, the title's drift at page scale. Kept
+   faint on purpose: it is a mood, not a wallpaper. Gold is warm and
+   luminous in dark, deep and very sheer in light, so both keep their
+   contrast. Fades in and out over a second; still under reduced motion. */
+:root { --bowl-cloud: rgba(242, 201, 76, .30); --bowl-cloud-2: rgba(255, 224, 140, .18); --bowl-wave: rgba(242, 201, 76, .10); }
+:root[data-theme="light"] { --bowl-cloud: rgba(154, 107, 0, .15); --bowl-cloud-2: rgba(226, 181, 58, .13); --bowl-wave: rgba(154, 107, 0, .06); }
+.bowl-bg {
+  position: fixed; inset: 0; z-index: 0;
+  overflow: hidden; pointer-events: none;
+  opacity: 0; transition: opacity 1.2s ease;
+}
+.bowl-bg.on { opacity: 1; }
+.bowl-bg .cloud {
+  position: absolute; width: 72vmax; height: 72vmax; border-radius: 50%;
+  background: radial-gradient(circle, var(--bowl-cloud) 0%, var(--bowl-cloud-2) 28%, transparent 64%);
+  will-change: transform;
+}
+.bowl-bg .c1 { left: -28vmax; top: -30vmax; animation: fflr-cloud-a 26s ease-in-out infinite alternate; }
+.bowl-bg .c2 { right: -34vmax; top: -12vmax; width: 84vmax; height: 84vmax; animation: fflr-cloud-b 31s ease-in-out infinite alternate; }
+.bowl-bg .c3 { left: 6vmax; bottom: -40vmax; animation: fflr-cloud-c 29s ease-in-out infinite alternate; animation-delay: -9s; }
+.bowl-bg .c4 { right: -10vmax; bottom: -34vmax; width: 60vmax; height: 60vmax; animation: fflr-cloud-a 23s ease-in-out infinite alternate-reverse; animation-delay: -14s; }
+.bowl-bg .wave {
+  position: absolute; inset: 0;
+  background: linear-gradient(115deg, transparent 30%, var(--bowl-wave) 50%, transparent 70%);
+  background-size: 250% 100%;
+  animation: fflr-wave 18s ease-in-out infinite alternate;
+}
+/* Each cloud wanders on a loose figure, swelling and shrinking as it goes. */
+@keyframes fflr-cloud-a {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  35%  { transform: translate3d(14vmax, 9vmax, 0) scale(1.12); }
+  70%  { transform: translate3d(4vmax, 20vmax, 0) scale(.94); }
+  100% { transform: translate3d(-8vmax, 6vmax, 0) scale(1.06); }
+}
+@keyframes fflr-cloud-b {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  40%  { transform: translate3d(-16vmax, 12vmax, 0) scale(1.08); }
+  75%  { transform: translate3d(-6vmax, 24vmax, 0) scale(.9); }
+  100% { transform: translate3d(8vmax, 10vmax, 0) scale(1.14); }
+}
+@keyframes fflr-cloud-c {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  45%  { transform: translate3d(18vmax, -14vmax, 0) scale(1.1); }
+  100% { transform: translate3d(-10vmax, -22vmax, 0) scale(.96); }
+}
+@media (prefers-reduced-motion: reduce) { .bowl-bg .cloud, .bowl-bg .wave { animation: none; } }
