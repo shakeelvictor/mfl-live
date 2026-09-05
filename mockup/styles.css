@@ -1614,3 +1614,8 @@ h1.bowl { background-image: linear-gradient(100deg, var(--title-gold) 0%, var(--
 @media (prefers-reduced-motion: reduce) {
   .hero.bowl .duel-side.lead .duel-pts { animation: none; background-position: 50% 50%; }
 }
+
+/* The Bowl's clouds warm the canvas behind the title, so the kicker and the
+   subhead step up a shade to keep their contrast over it. */
+.app.bowl .kicker { color: var(--text-secondary); }
+.app.bowl .subhead { color: var(--text-primary); }
