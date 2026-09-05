@@ -1486,6 +1486,14 @@ a.round.past:hover { color: var(--text-primary); filter: brightness(1.06); }
 .duel-flag { display: block; height: 30px; margin-bottom: 4px; }   /* by height: the two flags have different proportions */
 .duel-flag svg { display: block; height: 100%; width: auto; border-radius: 4px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .18), 0 4px 10px rgba(0, 0, 0, .35); }
 .duel-side:not(.lead) .duel-flag { opacity: .6; }
+/* The Bowl's finalists sit under their franchise icon, or an initial. */
+.duel-icon {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: rgba(255, 255, 255, .12);
+  display: grid; place-items: center;
+  font: italic 900 15px/1 var(--font-display); text-transform: uppercase;
+}
+.duel-icon img { width: 34px; height: 34px; border-radius: 9px; object-fit: contain; display: block; }
 .duel-name { font: italic 900 22px/1 var(--font-display); letter-spacing: -.02em; text-transform: uppercase; text-wrap: balance; }
 .duel-pts { position: relative; font: 800 40px/1 var(--font-data); letter-spacing: -.03em; transition: color .4s; }
 .duel-side:not(.lead) .duel-name, .duel-side:not(.lead) .duel-pts { color: var(--hero-muted); }

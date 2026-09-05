@@ -297,15 +297,23 @@ function renderHero(changed, takeover) {
       : takeover ? "New leader" : `Leading ${post.round.ref}`)
     : weekIsFinal() ? `Week ${WEEK} winner` : takeover ? "New leader" : `Leading Week ${WEEK}`;
   const gold = duel ? roundFinal() : post ? Boolean(post.round.bowl) && roundFinal() : weekIsFinal();   // a real boolean: toggle(x, undefined) flips
-  const mid = duel
+  // Head to head (the Fantasy Bowl, and Pakistan vs. the World): both face
+  // to face, the leader bright. The Pro Bowl's sides sit under their flags,
+  // the Bowl's finalists under an initial (the mockup has no franchise
+  // icons), higher seed on the left.
+  const bowl = post !== null && Boolean(post.round.bowl);
+  const pair = duel ? duel.sides.map((s) => byId(s.id)) : bowl ? [...teams].sort((a, b) => a.seed - b.seed) : [];
+  const crest = (t, i) => duel ? flagOf(duel.sides[i].flag) : `<span class="duel-flag duel-icon" aria-hidden="true">${esc(t.team.trim()[0] || "?")}</span>`;
+  const sub = (t) => (duel ? `${t.members.length} managers` : `#${t.seed} seed &middot; ${t.season}`) + (t.toPlay ? ` &middot; ${t.toPlay} to play` : "");
+  const mid = duel || bowl
     ? `<div class="duel">` +
-        duel.sides.map((s) => { const t = byId(s.id); return (
+        pair.map((t, i) =>
           `<div class="duel-side${t.id === lead.id ? " lead" : ""}">` +
-            flagOf(s.flag) +
+            crest(t, i) +
             `<span class="duel-name">${esc(t.team)}</span>` +
             `<span class="duel-pts${fl(changed, t.id)}" data-tween="pts:${t.id}" data-delta>${fmt(t.live)}</span>` +
-            `<span class="duel-sub">${t.members.length} managers${t.toPlay ? ` &middot; ${t.toPlay} to play` : ""}</span>` +
-          `</div>`); }).join(`<span class="duel-v" aria-hidden="true">v</span>`) +
+            `<span class="duel-sub">${sub(t)}</span>` +
+          `</div>`).join(`<span class="duel-v" aria-hidden="true">v</span>`) +
       `</div>`
     : `<div class="hero-mid">` +
         `<div class="hero-id">` +
@@ -321,7 +329,7 @@ function renderHero(changed, takeover) {
     `</div>` + mid +
     `<div class="hero-strip">` +
       `<span class="tier ${lt}">${TIER_LABEL[lt]}</span>` +
-      (duel
+      (duel || bowl
         ? `<span class="leads"><b>${esc(lead.team)}</b> ${roundFinal() ? "beat" : "leads"} <b>${esc(chaser.team)}</b> by</span>`
         : `<span class="leads">${roundFinal() ? "Beat" : "Leads"} <b>${esc(chaser.team)}</b> by</span>`) +
       `<span class="hero-gap${changed.has(lead.id) || changed.has(chaser.id) ? " flash" : ""}" data-tween="gap:${lead.id}:${chaser.id}">${fmt(gaps[0])}</span>` +
@@ -384,8 +392,11 @@ function renderRows(changed) {
   // the list starts at rank 2. The first listed row never fuses upward:
   // there is no card above it to fuse with, even when that gap is hot (the
   // hero strip carries that tier instead).
+  // The Fantasy Bowl lists both finalists (the hero already faces them
+  // off), with no divider between: the hero strip carries the margin.
+  const bowl = post !== null && Boolean(post.round.bowl);
   rowsEl.innerHTML = teams.map((t, i) => {
-    if (i === 0) return "";
+    if (i === 0 && !bowl) return "";
     const above = gaps[i - 1], below = gaps[i];
     const fuseTop = i > 1 && hot(above), fuseBottom = hot(below);
 
@@ -400,7 +411,7 @@ function renderRows(changed) {
       fuseTop ? "fuse-top" : "", fuseBottom ? "fuse-bottom" : "",
       fuseTop || fuseBottom ? "fused" : "", out ? "out" : ""].filter(Boolean).join(" ");
     const fate = !post ? ""
-      : post.round.bowl ? (roundFinal() && out ? `<span class="fate out">Runner-up</span>` : "")
+      : bowl ? (roundFinal() ? (out ? `<span class="fate out">Runner-up</span>` : `<span class="fate in">Champion</span>`) : "")
       : out ? `<span class="fate out">${roundFinal() ? "Eliminated" : "Out"}</span>`
       : `<span class="fate in">${roundFinal() ? "Advances" : "In"}</span>`;
 
@@ -421,7 +432,7 @@ function renderRows(changed) {
         `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
       `</button>`;
 
-    if (below === undefined) return row;
+    if (below === undefined || bowl) return row;
     const gt = tier(below);
     const cut = i === cutAt;
     // A coin-flip pill flashes when either score beside it moved.
