@@ -341,6 +341,7 @@ function renderHero(changed, takeover) {
       `<span class="hero-gap${changed.has(lead.id) || changed.has(chaser.id) ? " flash" : ""}" data-tween="gap:${lead.id}:${chaser.id}">${fmt(gaps[0])}</span>` +
     `</div>`;
   hero.classList.toggle("winner", gold);
+  hero.classList.toggle("bowl", bowl);   // the leading score's iridescent sweep
   document.getElementById("hero-wrap").classList.toggle("winner", gold);
   hero.setAttribute("aria-label",
     `${lead.team} leads ${duel ? "the Pro Bowl" : post ? post.round.ref : `Week ${WEEK}`} with ${fmt(lead.live)} points, ${fmt(gaps[0])} ahead of ${chaser.team}. Open lineup.`);
