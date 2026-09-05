@@ -1509,9 +1509,13 @@ a.round.past:hover { color: var(--text-primary); filter: brightness(1.06); }
    The WEEK title's drift in gold: gold glyphs with a pale band gliding
    through (deeper gold and a brighter band in light, for contrast on
    white), and a trophy beside the words, outside the gradient. */
-:root { --title-gold: #f2c94c; --title-gold-band: #fff3c2; }
-:root[data-theme="light"] { --title-gold: #9a6b00; --title-gold-band: #e2b53a; }
-h1.bowl { background-image: linear-gradient(100deg, var(--title-gold) 0%, var(--title-gold) 30%, var(--title-gold-band) 50%, var(--title-gold) 70%, var(--title-gold) 100%); }
+/* Not gold: gold glyphs over the green canvas read as Packers colours. The
+   Bowl title takes the leading score's iridescent sweep instead: in dark,
+   white glyphs with a pearl band of pink, cyan, mint and cream; in light,
+   the near-black glyphs with a muted iridescent glint through them. */
+:root { --iri-base: #ffffff; --iri-1: #ffd6ea; --iri-2: #cdefff; --iri-3: #d9ffe6; --iri-4: #fff0c4; }
+:root[data-theme="light"] { --iri-base: #101514; --iri-1: #b8557f; --iri-2: #2f86c2; --iri-3: #2a9c78; --iri-4: #b8891c; }
+h1.bowl { background-image: linear-gradient(100deg, var(--iri-base) 0%, var(--iri-base) 26%, var(--iri-1) 38%, var(--iri-2) 46%, var(--iri-3) 54%, var(--iri-4) 62%, var(--iri-base) 74%, var(--iri-base) 100%); }
 .trophy {
   font-size: 44px; line-height: 1; align-self: center;
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .35));
