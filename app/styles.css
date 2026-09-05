@@ -200,12 +200,11 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   text-transform: uppercase;
   white-space: nowrap;
 }
-/* The LIVE in the wordmark is the live signal: live red with a pulsing dot;
-   once the week is official the dot goes and the word rejoins the name. */
-.brand-live { display: inline-flex; align-items: center; gap: 7px; color: var(--gap-critical); transition: color .3s; }
+/* The LIVE in the wordmark: live red with a pulsing dot, always. It is
+   the app's name, not a status: it stays before the season and after a
+   week is final. */
+.brand-live { display: inline-flex; align-items: center; gap: 7px; color: var(--gap-critical); }
 .brand-live .dot { width: 7px; height: 7px; }
-.brand-live.final { color: inherit; }
-.brand-live.final .dot { display: none; }
 
 .seg {
   display: flex; height: 40px; padding: 4px; gap: 2px;

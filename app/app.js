@@ -599,7 +599,6 @@ function render(changed = new Set()) {
   renderSpotlight();
   if (open !== null) renderTeam(changed);
   rollNumbers(shown);
-  document.getElementById("brand-live").classList.toggle("final", weekIsFinal() || phase === "preseason");
 }
 
 /* ---------------- stat lines ----------------

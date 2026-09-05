@@ -268,8 +268,9 @@ element and scores are second.
   The 686px masters are `design/mfllive-logo-transparent.png` and
   `design/mfllive-logo.png`. The loader still spins the line-art football.
 - The header is the mark and the wordmark: **MFL LIVE**, with LIVE in the live red
-  and a pulsing dot after it; once the week is official the dot goes and
-  LIVE rejoins the name. There is no separate status line.
+  and a pulsing dot after it, always (it is the name, not a status: it
+  used to drop the dot before the season and once a week was official,
+  changed 2026-09-05). There is no separate status line.
 - In dark the hero has **no border and no inset highlight** (`--hero-border`,
   `--hero-shadow`): its gradient fades to near-canvas, so either reads as a
   stray outline. Light keeps both.
