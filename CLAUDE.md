@@ -482,9 +482,14 @@ free, updates during games, ~570KB for every NFL player), cuts them to the
 league's rostered players (Sleeper ids from the playersMap join, remembered
 an hour) and to `STAT_KEYS`, and holds the ~10KB result a minute; the page
 asks once a minute in season and hands each player its line as `st`, so
-rows, the spotlight and the TD chip read real lines. Sleeper down or slow
-means the last lines stay (a warning in the console), never a missing
-score: MFL's points are untouched. The drift finding above is why they
+rows, the spotlight and the TD chip read real lines. The fetch runs
+**beside the poll, never in its path** (`fetchStats`: 5s timeout on the
+proxy's Sleeper call, 8s on the page's, fresh lines applied to the
+current rosters and re-rendered when they land), so Sleeper can never
+delay MFL's numbers. Lines older than five minutes while games are on
+read **"stats delayed"** in the subhead and dim (`body.stats-stale`);
+lines that never arrived read "stats unavailable". Sleeper down means the
+last lines stay, never a missing score: MFL's points are untouched. The drift finding above is why they
 stay context: a line beside MFL's number, never feeding it. Headshots are
 static files off the live path; a headshot cannot contradict a score.
 

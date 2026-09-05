@@ -1612,3 +1612,9 @@ h1.bowl {
 :root[data-theme="light"] .subhead { color: var(--text-secondary); }
 :root[data-theme="light"] .app.bowl .kicker { color: var(--text-secondary); }
 :root[data-theme="light"] .app.bowl .subhead { color: var(--text-primary); }
+
+/* Stat lines running late (or never arrived while games are on): the
+   subhead says so and every line dims, so a frozen line is never taken
+   for a current one. MFL's points are untouched either way. */
+.subhead .stale { color: var(--gap-live); font-weight: 700; }
+.stats-stale .pstat, .stats-stale .spot-stat { opacity: .45; }

@@ -158,7 +158,9 @@ async function stats(params) {
   const week = String(params.W || '').replace(/\D/g, '');
   if (!week) return { error: 'stats needs W' };
   const sids = await rosteredSids();
-  const res = await fetch(`https://api.sleeper.app/v1/stats/nfl/regular/${SEASON}/${week}`, { headers: { 'User-Agent': UA } });
+  // Five seconds, then give up: a hung Sleeper must never hold a poll. The
+  // page keeps its last lines and marks them delayed.
+  const res = await fetch(`https://api.sleeper.app/v1/stats/nfl/regular/${SEASON}/${week}`, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(5000) });
   if (!res.ok) throw new Error(`Sleeper stats: HTTP ${res.status}`);
   const all = await res.json();
   const out = {};

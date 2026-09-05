@@ -225,7 +225,10 @@ function renderChrome() {
   document.getElementById("hero-wrap").hidden = phase === "preseason";
   const sub = document.getElementById("subhead");
   sub.hidden = phase === "preseason";
-  sub.innerHTML = (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head &middot; ` : post ? `${roundBlurb()} &middot; ` : "") + `Updated ${esc(UPDATED)}`;
+  const note = statsNote();
+  sub.innerHTML = (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head &middot; ` : post ? `${roundBlurb()} &middot; ` : "") + `Updated ${esc(UPDATED)}` +
+    (note ? ` &middot; <span class="stale">${note}</span>` : "");
+  document.body.classList.toggle("stats-stale", note !== "");
   const sizes = [...new Set(teams.map((t) => t.starters.length))];
   document.getElementById("franchise-count").textContent = duel ? (sizes.length === 1 ? `${sizes[0]} a side` : teams.map((t) => t.starters.length).join(" v ") + " players")
     : !post ? `${n} franchises`
@@ -1204,11 +1207,11 @@ const toArray = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);
 const SLEEPER_TEAM = { SFO: "sf", NEP: "ne", GBP: "gb", KCC: "kc", TBB: "tb", NOS: "no", LVR: "lv", JAC: "jax" };
 const sleeperTeam = (tm) => SLEEPER_TEAM[tm] || String(tm).toLowerCase();
 
-async function api(type, params = {}) {
+async function api(type, params = {}, timeoutMs = 0) {
   const u = new URL("api/mfl", location.href);
   u.searchParams.set("type", type);
   for (const [k, v] of Object.entries(params)) if (v !== "" && v != null) u.searchParams.set(k, v);
-  const res = await fetch(u, { cache: "no-store" });
+  const res = await fetch(u, { cache: "no-store", signal: timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined });
   if (!res.ok) throw new Error(`${type}: HTTP ${res.status}`);
   return res.json();   // { ok: true, data } | { ok: false, error }
 }
@@ -1243,10 +1246,41 @@ let scheduleAt = 0;           // when the NFL schedule was last fetched
 const SCHEDULE_EVERY = 5 * 60e3;
 // Stat lines: Sleeper's live stats through the proxy, keyed by Sleeper id,
 // refreshed once a minute in season. Context beside MFL's number, never a
-// score; a failed fetch keeps the last lines.
+// score. The fetch runs beside the poll, never in its path: it has its
+// own timeout, a failure keeps the last lines, and when fresh lines land
+// they are applied to the current rosters and the board re-renders. Lines
+// more than five minutes old are marked delayed (and dimmed); lines that
+// never arrived while games are on are marked unavailable.
 let statsBySid = {};
-let statsAt = 0;
-const STATS_EVERY = 60e3;
+let statsAt = 0;           // when lines last arrived
+let statsFailed = false;   // a fetch has failed since the last success
+let statsPending = null;
+const STATS_EVERY = 60e3, STATS_TIMEOUT_MS = 8000, STATS_STALE_MS = 5 * 60e3;
+
+const applyStats = () => {
+  for (const t of rosters) for (const p of [...t.starters, ...t.bench]) p.st = (p.sid && statsBySid[p.sid]) || {};
+};
+function fetchStats(week) {
+  if (statsPending) return;
+  statsPending = api("stats", { W: String(week) }, STATS_TIMEOUT_MS)
+    .then((st) => {
+      if (!st.ok) throw new Error(st.error);
+      statsBySid = st.data.stats || {};
+      statsAt = Date.now();
+      statsFailed = false;
+      applyStats();
+      if (!polling && teams.length) { derive(); render(); }   // a poll in flight picks them up itself
+    })
+    .catch((e) => { statsFailed = true; console.warn("stat lines unavailable, keeping the last ones:", e); })
+    .finally(() => { statsPending = null; });
+}
+// "" while fine; otherwise the word for the subhead. Only while games are
+// on: final lines cannot go stale.
+const statsNote = () => {
+  if (phase !== "live" || slate.sunFinal || FIXTURE) return "";
+  if (statsAt === 0) return statsFailed ? "stats unavailable" : "";
+  return Date.now() - statsAt > STATS_STALE_MS ? "stats delayed" : "";
+};
 
 const mkPlayer = (id, pts = 0, secs = null) => {
   const i = playerInfo[id] || {};
@@ -1338,11 +1372,7 @@ async function refreshLive(first = false) {
   const L = ls.data.liveScoring;
   WEEK = Number(L.week) || WEEK;
   await loadPlayoffs();
-  if (first || Date.now() - statsAt > STATS_EVERY) {
-    const st = await api("stats", { W: String(WEEK) }).catch((e) => ({ ok: false, error: String(e) }));
-    if (st.ok) { statsBySid = st.data.stats || {}; statsAt = Date.now(); }
-    else console.warn("stat lines unavailable, keeping the last ones:", st.error);
-  }
+  if (first || Date.now() - statsAt > STATS_EVERY) fetchStats(WEEK);   // beside the poll, not in it
   const franchises = toArray(L.franchise);
   await ensurePlayers([...rosterIds.values()].flat().concat(franchises.flatMap((f) => toArray(f.players?.player).map((p) => p.id))));
 
