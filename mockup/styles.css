@@ -1615,7 +1615,11 @@ h1.bowl { background-image: linear-gradient(100deg, var(--title-gold) 0%, var(--
   .hero.bowl .duel-side.lead .duel-pts { animation: none; background-position: 50% 50%; }
 }
 
-/* The Bowl's clouds warm the canvas behind the title, so the kicker and the
-   subhead step up a shade to keep their contrast over it. */
-.app.bowl .kicker { color: var(--text-secondary); }
-.app.bowl .subhead { color: var(--text-primary); }
+/* Dark: the kicker and the subhead are white, every week (the muted greys
+   were hard to read on the dark canvas, worst under the Bowl's clouds).
+   Light keeps its greys and steps them up a shade under the Bowl's clouds. */
+.kicker, .subhead { color: var(--text-primary); }
+:root[data-theme="light"] .kicker { color: var(--text-muted); }
+:root[data-theme="light"] .subhead { color: var(--text-secondary); }
+:root[data-theme="light"] .app.bowl .kicker { color: var(--text-secondary); }
+:root[data-theme="light"] .app.bowl .subhead { color: var(--text-primary); }
