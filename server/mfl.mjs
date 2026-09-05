@@ -37,6 +37,7 @@ const TYPES = {
   weeklyResults: { params: ['W'], maxAge: 300 },   // lineups (status: starter) exist before liveScoring does
   nflSchedule:   { params: ['W'], maxAge: 300, noLeague: true },
   playersMap:    { params: ['PLAYERS'], maxAge: 3600 },   // built here, see below
+  seasonScores:  { params: [], maxAge: 600 },             // built here: every week's franchise scores, for the playoffs
 };
 
 // MFL asks clients to cache and back off, not retry. A 429 puts the whole
@@ -113,6 +114,22 @@ async function playersMap(params = {}) {
   return { data: { players: map, count: ids.length } };
 }
 
+/* ---------------- season scores ----------------
+   Every finished week's franchise scores, for seeding and folding the
+   playoffs (app/playoffs.js). MFL's year-to-date weeklyResults carries every
+   player of every franchise of every week (a quarter megabyte by December);
+   only the franchise totals go down: ~5KB. */
+
+async function seasonScores() {
+  const r = await mfl('weeklyResults', { W: 'YTD' });
+  if (r.error) return r;
+  const weeks = toArray(r.data?.allWeeklyResults?.weeklyResults).map((wk) => ({
+    week: Number(wk.week),
+    franchise: toArray(wk.franchise).map((f) => ({ id: f.id, score: Number(f.score) || 0 })),
+  }));
+  return { data: { weeks } };
+}
+
 /* ---------------- request handler ---------------- */
 
 const json = (status, body, maxAge = 0, extra = {}) => ({
@@ -187,9 +204,24 @@ async function fetchFresh(type, spec, params) {
     const body = JSON.parse(fs.readFileSync(process.env.MFL_FAKE_LIVE, 'utf8'));
     return json(200, { ok: true, type, season: SEASON, league: LEAGUE, fake: process.env.MFL_FAKE_LIVE, data: body });
   }
+  // Dev only, likewise: MFL_FAKE_DIR=<dir> serves <type>-w<W>.json or
+  // <type>.json from there when the file exists (the body is what `data`
+  // would hold), and MFL for everything else. spike/fake-round.mjs writes
+  // an in-progress playoff week this way. Never set in production.
+  if (process.env.MFL_FAKE_DIR) {
+    const fs = await import('node:fs'), path = await import('node:path');
+    for (const name of [params.W ? `${type}-w${params.W}.json` : null, `${type}.json`].filter(Boolean)) {
+      const file = path.join(process.env.MFL_FAKE_DIR, name);
+      if (fs.existsSync(file)) {
+        return json(200, { ok: true, type, season: SEASON, league: LEAGUE, fake: file, data: JSON.parse(fs.readFileSync(file, 'utf8')) });
+      }
+    }
+  }
 
   try {
-    const r = type === 'playersMap' ? await playersMap(params) : await mfl(type, params, { noLeague: spec.noLeague });
+    const r = type === 'playersMap' ? await playersMap(params)
+      : type === 'seasonScores' ? await seasonScores()
+      : await mfl(type, params, { noLeague: spec.noLeague });
     if (r.error) return json(200, { ok: false, type, error: r.error }, Math.min(spec.maxAge, 60));
 
     // Trim names at the boundary, once, so nothing downstream has to.

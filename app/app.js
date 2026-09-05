@@ -19,6 +19,48 @@ let kickoff = null;            // Date of the week's first game (live source)
 let games = new Map();         // NFL team -> { kickoff: Date, secs } from nflSchedule (live source)
 let dayTeams = { early: new Set() };   // NFL teams whose game is on the week's first day
 
+// Playoffs (Weeks 15-17): the round's field, folded from the season's
+// scores by app/playoffs.js. null in the regular season, before the season,
+// and whenever the fold cannot complete (an earlier round's scores are
+// missing), in which case the board falls back to every franchise as usual.
+let post = null;
+let seasonScores = null;   // [{ week, franchise: [{ id, score }] }] from the proxy
+let byeTeams = [];         // resting this round (Round 1: the No. 1 seed)
+let cutAt = -1;            // gaps[cutAt] is the cut line, under the last advancing rank
+const ROUNDS = Playoffs.PLAYOFFS.rounds;
+const nextRound = () => (post ? ROUNDS[ROUNDS.indexOf(post.round) + 1] || null : null);
+// Week 18, Pakistan vs. the World: two sides, each the accumulation of its
+// managers' contributions to one super lineup. null in every other week.
+let duel = null;          // { sides: [{ id, name, franchises }], sideOf: franchise id -> side }
+let duelMembers = [];     // the contributing franchises, with live totals, for their own pages
+const EXHIBITION = Playoffs.EXHIBITION;
+const STRIP = [...ROUNDS, { week: EXHIBITION.week, name: EXHIBITION.name }];   // the postseason, in order
+// The sides' flags, drawn inline (emoji flags are letters on Windows).
+// Pakistan: white hoist, green field, crescent and star. The World: the
+// Stars and Stripes, thirteen stripes and fifty stars in nine rows.
+const star = (cx, cy, r, extra = "") => {
+  const pts = Array.from({ length: 10 }, (_, i) => {
+    const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.382 : r;
+    return `${(cx + rr * Math.cos(a)).toFixed(1)},${(cy + rr * Math.sin(a)).toFixed(1)}`;
+  }).join(" ");
+  return `<polygon points="${pts}" fill="#fff"${extra}/>`;
+};
+const FLAGS = {
+  pk: () => `<svg viewBox="0 0 900 600" aria-hidden="true"><rect width="900" height="600" fill="#01411c"/><rect width="225" height="600" fill="#fff"/>` +
+    `<circle cx="562" cy="300" r="150" fill="#fff"/><circle cx="602" cy="270" r="135" fill="#01411c"/>` +
+    star(690, 195, 62, ` transform="rotate(-27 690 195)"`) + `</svg>`,
+  us: () => {
+    const stripes = Array.from({ length: 13 }, (_, i) => `<rect y="${i * 50}" width="1235" height="50" fill="${i % 2 ? "#fff" : "#b22234"}"/>`).join("");
+    const stars = Array.from({ length: 9 }, (_, row) => Array.from({ length: row % 2 ? 5 : 6 }, (_, col) =>
+      star(row % 2 ? 82 + col * 82 : 41 + col * 82, 35 + row * 35, 18)).join("")).join("");
+    return `<svg viewBox="0 0 1235 650" aria-hidden="true">${stripes}<rect width="494" height="350" fill="#3c3b6e"/>${stars}</svg>`;
+  },
+};
+const flagOf = (code) => (FLAGS[code] ? `<span class="duel-flag" aria-hidden="true">${FLAGS[code]()}</span>` : "");
+// A round is decided once every game of its week is final. (MFL's own
+// "official" mark comes later, after stat corrections; see CLAUDE.md.)
+const roundFinal = () => (post !== null || duel !== null) && slate.sunFinal;
+
 // Illustrative mid-slate framing for the FIXTURE: it is a finished week, so
 // the clock, starters yet to play and "on now" are staged to show the board
 // in progress. The live source has the real values.
@@ -64,29 +106,73 @@ let gaps = [];    // gaps[i] is the gap below row i (between rank i+1 and rank i
 // All-play record is pure arithmetic on the sorted list. Everything the
 // page shows -- ranks, records, gaps, tiers, headline stats -- comes from
 // ROSTERS, never from a constant that could disagree with its own rows.
+// In a playoff round only the franchises playing it are ranked; the seed
+// chip replaces the week's record, and a tie goes to the higher seed (the
+// same order app/playoffs.js folds by, so the cut line is the fold's).
 function derive() {
-  teams = rosters
-    .map((t) => ({
-      ...t,
-      live: r2(t.pts + (teamBump[t.id] || 0)),
-      toPlay: slate.sunFinal ? 0 : (FIXTURE ? (YET_TO_PLAY[t.team] ?? 0) : (t.toPlay ?? 0)),
-      onNow: t.starters.some(isLive),
-    }))
+  const withLive = (t) => ({
+    ...t,
+    live: r2(t.pts + (teamBump[t.id] || 0)),
+    toPlay: slate.sunFinal ? 0 : (FIXTURE ? (YET_TO_PLAY[t.team] ?? 0) : (t.toPlay ?? 0)),
+    onNow: t.starters.some(isLive),
+    seed: post ? post.seedOf.get(t.id) : null,
+    season: post ? post.recordOf.get(t.id) : null,   // regular-season all-play record
+  });
+  // Pakistan vs. the World: the two sides are the teams. Each is the sum of
+  // its members (score, starters left, on now) and its super lineup is every
+  // starter they contributed, keyed as on the franchise's own page so a
+  // score rolls on both.
+  if (duel) {
+    duelMembers = rosters.filter((t) => duel.sideOf.has(t.id)).map(withLive)
+      .map((t) => ({ ...t, side: duel.sideOf.get(t.id) }));
+    teams = duel.sides.map((s) => {
+      const members = duelMembers.filter((t) => t.side === s).sort((a, b) => b.live - a.live || a.team.localeCompare(b.team));
+      return {
+        id: s.id, team: s.name, icon: null, isSide: true, members,
+        pts: r2(members.reduce((a, t) => a + t.pts, 0)),
+        live: r2(members.reduce((a, t) => a + t.live, 0)),
+        toPlay: members.reduce((a, t) => a + t.toPlay, 0),
+        onNow: members.some((t) => t.onNow),
+        starters: members.flatMap((t) => t.starters.map((p, k) => ({ ...p, key: `${t.id}:${k}`, from: t.team }))),
+        bench: [],
+        record: `${members.length} managers`,
+      };
+    }).sort((a, b) => b.live - a.live || a.team.localeCompare(b.team))
+      .map((t, i) => ({ ...t, rank: i + 1, through: null }));
+    gaps = teams.slice(0, -1).map((t, i) => r2(t.live - teams[i + 1].live));
+    n = teams.length; cutAt = -1; byeTeams = [];
+    return;
+  }
+  duelMembers = [];
+  teams = (post ? rosters.filter((t) => post.alive.includes(t.id)) : rosters)
+    .map(withLive)
     // Pre-season nobody has a score, so the list is alphabetical, not ranked.
-    .sort((a, b) => (phase === "preseason" ? a.team.localeCompare(b.team) : b.live - a.live))
-    .map((t, i, arr) => ({ ...t, rank: i + 1, record: `${arr.length - 1 - i}-${i}` }));
+    .sort((a, b) => phase === "preseason" ? a.team.localeCompare(b.team)
+      : post ? (b.live - a.live || a.seed - b.seed)
+      : b.live - a.live)
+    .map((t, i, arr) => ({
+      ...t, rank: i + 1,
+      record: post ? `#${t.seed} seed` : `${arr.length - 1 - i}-${i}`,
+      through: post ? i < arr.length - post.round.drop : null,
+    }));
   gaps = teams.slice(0, -1).map((t, i) => r2(t.live - teams[i + 1].live));
   n = teams.length;
+  cutAt = post ? n - post.round.drop - 1 : -1;
+  byeTeams = post ? rosters.filter((t) => post.bye.includes(t.id)).map(withLive).map((t) => ({ ...t, bye: true, record: `#${t.seed} seed` })) : [];
 }
 
 let n = 0;
-const byId = (id) => teams.find((t) => t.id === id);
+const byId = (id) => teams.find((t) => t.id === id) || byeTeams.find((t) => t.id === id) || duelMembers.find((t) => t.id === id);
 const tier = (g) => (g < CRITICAL ? "critical" : g < LIVE ? "live" : "settled");
 const hot = (g) => g !== undefined && tier(g) !== "settled";
 const TIER_LABEL = { critical: "Coin flip", live: "Live", settled: "Settled" };
 
 const statusOf = (t) => phase === "preseason"
   ? `${t.bench.length} on roster`
+  : t.bye
+    ? `Bye &middot; plays ${nextRound()?.ref || "next week"}`
+  : t.side && t.starters.length === 0
+    ? "none in the lineup"
   : t.toPlay === 0
     ? "all played"
     : `${t.toPlay} to play${t.onNow ? " &middot; on now" : ""}`;
@@ -116,15 +202,52 @@ const franchiseIcon = (t, cls = "ficon") => t.icon ? `<img class="${cls}" src="$
 /* ---------------- chrome ---------------- */
 
 function renderChrome() {
-  document.getElementById("week-title").textContent = `Week ${WEEK}`;
+  // Playoffs: the round's name is the title, "Playoffs · Week 15" above it.
+  const kicker = document.getElementById("kicker");
+  kicker.hidden = !post && !duel;
+  if (post || duel) {
+    kicker.innerHTML = (duel ? `Week ${WEEK} &middot; Pakistan vs. the World` : `Playoffs &middot; Week ${WEEK}`) +
+      // Looking back at a finished round (?w=15): a way back to the live one.
+      (QUERY.has("w") ? ` &middot; <a href="${location.pathname}">Back to now</a>` : "");
+  }
+  document.getElementById("week-title").textContent = duel ? EXHIBITION.name : post ? post.round.name : `Week ${WEEK}`;
+  document.querySelector(".standings-head h2").textContent = duel ? "Sides" : "Standings";
   const kick = document.getElementById("kick");
   kick.hidden = phase !== "preseason" || !kickoff;
   document.getElementById("countdown").textContent = countdownText();
   document.getElementById("hero-wrap").hidden = phase === "preseason";
   const sub = document.getElementById("subhead");
   sub.hidden = phase === "preseason";
-  sub.innerHTML = `Updated ${esc(UPDATED)}`;
-  document.getElementById("franchise-count").textContent = `${n} franchises`;
+  sub.innerHTML = (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head &middot; ` : post ? `${roundBlurb()} &middot; ` : "") + `Updated ${esc(UPDATED)}`;
+  const sizes = [...new Set(teams.map((t) => t.starters.length))];
+  document.getElementById("franchise-count").textContent = duel ? (sizes.length === 1 ? `${sizes[0]} a side` : teams.map((t) => t.starters.length).join(" v ") + " players")
+    : !post ? `${n} franchises`
+    : post.round.bowl ? `${n} play, 1 wins it`
+    : `${n} play, ${n - post.round.drop} advance`;
+  renderRounds();
+}
+
+// "Seeds 2–6 play, top 3 advance" / "4 play, top 2 advance" / the Bowl.
+function roundBlurb() {
+  if (post.round.bowl) return "Higher score takes the title";
+  const seeds = teams.map((t) => t.seed);
+  const who = byeTeams.length && seeds.length ? `Seeds ${Math.min(...seeds)}&ndash;${Math.max(...seeds)} play` : `${n} play`;
+  return `${who}, top ${n - post.round.drop} advance`;
+}
+
+// The three rounds in a strip: the one on show is marked, finished ones
+// link to their board (?w=), later ones wait.
+function renderRounds() {
+  const el = document.getElementById("rounds");
+  el.hidden = !post && !duel;
+  if (el.hidden) return;
+  el.innerHTML = STRIP.map((r) => {
+    const state = r.week === WEEK ? "now" : r.week < WEEK ? "past" : "next";
+    const inner = `<span class="rname">${esc(r.name)}</span><span class="rweek">Week ${r.week}</span>`;
+    return state === "past"
+      ? `<a class="round past" href="?w=${r.week}">${inner}</a>`
+      : `<span class="round ${state}"${state === "now" ? ' aria-current="page"' : ""}>${inner}</span>`;
+  }).join(`<span class="rarrow" aria-hidden="true">&rsaquo;</span>`);
 }
 
 /* ---------------- render ----------------
@@ -147,36 +270,96 @@ function renderCapsules() {
   const within = new Set(gaps.flatMap((g, i) => (g < WITHIN ? [i, i + 1] : []))).size;
   const atStake = gaps.filter((g) => g < WITHIN).length;
   const startersLeft = teams.reduce((s, t) => s + t.toPlay, 0);
-  document.getElementById("capsules").innerHTML =
+  const left = `<span class="capsule"><b class="accent">${startersLeft}</b>starters left</span>`;
+  // Pakistan vs. the World: the margin, in the gap's tier.
+  if (duel) {
+    caps.innerHTML =
+      `<span class="capsule"><b class="${tier(gaps[0])}">${fmt(gaps[0])}</b>margin</span>` + left +
+      `<span class="capsule"><b class="gold">$${EXHIBITION.perHead}</b>a head</span>`;
+    return;
+  }
+  // Playoffs: what the round is worth. The Bowl is the only round that pays.
+  if (post && post.round.bowl) {
+    const { champion, runnerUp } = Playoffs.PLAYOFFS.purse;
+    caps.innerHTML =
+      `<span class="capsule"><b class="gold">$${champion}</b>to the champion</span>` +
+      `<span class="capsule"><b class="gold">$${runnerUp}</b>runner-up</span>` + left;
+    return;
+  }
+  if (post) {
+    const cut = gaps[cutAt];
+    caps.innerHTML =
+      `<span class="capsule"><b class="accent">${n - post.round.drop}</b>of ${n} advance</span>` +
+      (cut === undefined ? "" : `<span class="capsule"><b class="${tier(cut)}">${fmt(cut)}</b>cut line</span>`) + left;
+    return;
+  }
+  caps.innerHTML =
     `<span class="capsule"><b>${within}</b>within ${WITHIN.toFixed(1)}</span>` +
-    `<span class="capsule"><b>${atStake}</b>wins at stake</span>` +
-    `<span class="capsule"><b class="accent">${startersLeft}</b>starters left</span>`;
+    `<span class="capsule"><b>${atStake}</b>wins at stake</span>` + left;
 }
 
 function renderHero(changed, takeover) {
   if (phase === "preseason") return;   // hidden by renderChrome; the countdown pill stands in
   const lead = teams[0], chaser = teams[1], lt = tier(gaps[0]);
-  heroBody.innerHTML =
+  // Playoffs: the round's leader; the Bowl's leader is the champion once
+  // the games are done, and only the Bowl gets the gold (the rounds before
+  // it pay nothing).
+  const label = post
+    ? (roundFinal() ? (post.round.bowl ? "Fantasy Bowl champion" : `${post.round.name} &middot; advances`)
+      : takeover ? "New leader" : `Leading ${post.round.ref}`)
+    : duel ? (roundFinal() ? "Wins the Pro Bowl" : takeover ? "New leader" : "Leading the Pro Bowl")
+    : weekIsFinal() ? `Week ${WEEK} winner` : takeover ? "New leader" : `Leading Week ${WEEK}`;
+  const gold = post ? Boolean(post.round.bowl) && roundFinal() : weekIsFinal();   // a real boolean: toggle(x, undefined) flips
+  // Head to head (the Fantasy Bowl, and Pakistan vs. the World): both
+  // face to face, the leader bright. The Pro Bowl's sides sit under their
+  // flags, the Bowl's finalists under their franchise icons (an initial
+  // when none is set), higher seed on the left.
+  const bowl = post !== null && Boolean(post.round.bowl);
+  if (duel || bowl) {
+    const pair = duel ? duel.sides.map((s) => byId(s.id)) : [...teams].sort((a, b) => a.seed - b.seed);
+    const crest = (t, i) => duel ? flagOf(duel.sides[i].flag)
+      : `<span class="duel-flag duel-icon" aria-hidden="true">${t.icon ? franchiseIcon(t, "") : esc(t.team.trim()[0] || "?")}</span>`;
+    const sub = (t) => (duel ? `${t.members.length} managers` : `#${t.seed} seed &middot; ${t.season}`) + (t.toPlay ? ` &middot; ${t.toPlay} to play` : "");
+    heroBody.innerHTML =
+      `<div class="hero-top">` +
+        `<span class="micro hero-label"><span class="badge">1</span>${label}</span>` +
+        `<span class="hero-status">${statusOf(lead)}</span>` +
+      `</div>` +
+      `<div class="duel">` +
+        pair.map((t, i) =>
+          `<div class="duel-side${t.id === lead.id ? " lead" : ""}">` +
+            crest(t, i) +
+            `<span class="duel-name">${esc(t.team)}</span>` +
+            `<span class="duel-pts${fl(changed, t.id)}" data-tween="pts:${t.id}" data-delta>${fmt(t.live)}</span>` +
+            `<span class="duel-sub">${sub(t)}</span>` +
+          `</div>`).join(`<span class="duel-v" aria-hidden="true">v</span>`) +
+      `</div>` +
+      `<div class="hero-strip">` +
+        `<span class="tier ${lt}">${TIER_LABEL[lt]}</span>` +
+        `<span class="leads"><b>${esc(lead.team)}</b> ${roundFinal() ? "beat" : "leads"} <b>${esc(chaser.team)}</b> by</span>` +
+        `<span class="hero-gap${changed.has(lead.id) || changed.has(chaser.id) ? " flash" : ""}" data-tween="gap:${lead.id}:${chaser.id}">${fmt(gaps[0])}</span>` +
+      `</div>`;
+  } else heroBody.innerHTML =
     `<div class="hero-top">` +
-      `<span class="micro hero-label"><span class="badge">1</span>${weekIsFinal() ? `Week ${WEEK} winner` : takeover ? "New leader" : `Leading Week ${WEEK}`}</span>` +
+      `<span class="micro hero-label"><span class="badge">1</span>${label}</span>` +
       `<span class="hero-status">${statusOf(lead)}</span>` +
     `</div>` +
     `<div class="hero-mid">` +
       `<div class="hero-id">` +
         `<span class="hero-name">${franchiseIcon(lead, "hero-icon")}${esc(lead.team)}</span>` +
-        `<span class="hero-rec">${lead.record} all-play</span>` +
+        `<span class="hero-rec">${post ? `#${lead.seed} seed &middot; ${lead.season}` : `${lead.record} all-play`}</span>` +
       `</div>` +
       `<span class="hero-pts${fl(changed, lead.id)}" data-tween="pts:${lead.id}" data-delta>${fmt(lead.live)}</span>` +
     `</div>` +
     `<div class="hero-strip">` +
       `<span class="tier ${lt}">${TIER_LABEL[lt]}</span>` +
-      `<span class="leads">Leads <b>${esc(chaser.team)}</b> by</span>` +
+      `<span class="leads">${roundFinal() ? "Beat" : "Leads"} <b>${esc(chaser.team)}</b> by</span>` +
       `<span class="hero-gap${changed.has(lead.id) || changed.has(chaser.id) ? " flash" : ""}" data-tween="gap:${lead.id}:${chaser.id}">${fmt(gaps[0])}</span>` +
     `</div>`;
-  hero.classList.toggle("winner", weekIsFinal());
-  document.getElementById("hero-wrap").classList.toggle("winner", weekIsFinal());
+  hero.classList.toggle("winner", duel ? roundFinal() : gold);
+  document.getElementById("hero-wrap").classList.toggle("winner", duel ? roundFinal() : gold);
   hero.setAttribute("aria-label",
-    `${lead.team} leads Week ${WEEK} with ${fmt(lead.live)} points, ${fmt(gaps[0])} ahead of ${chaser.team}. Open lineup.`);
+    `${lead.team} leads ${duel ? "the Pro Bowl" : post ? post.round.ref : `Week ${WEEK}`} with ${fmt(lead.live)} points, ${fmt(gaps[0])} ahead of ${chaser.team}. Open lineup.`);
 
   if (takeover && !reducedMotion.matches) {
     hero.classList.remove("takeover");
@@ -208,12 +391,49 @@ function renderRows(changed) {
     return;
   }
 
+  // Pakistan vs. the World: each side, then the managers who filled its
+  // lineup and what each contributed, fused under it. The hero already
+  // carries the margin, so no divider between the sides.
+  if (duel) {
+    const dot = (t) => (t.onNow ? `<span class="dot"></span>` : "");
+    rowsEl.innerHTML = teams.map((t) =>
+      `<button class="row side fuse-bottom" type="button" data-id="${t.id}"` +
+      ` aria-label="${esc(t.team)}, ${fmt(t.live)} points, ${t.members.length} managers. Open lineup.">` +
+        `<span class="rank">${t.rank}</span>` +
+        `<span class="who">` +
+          `<span class="name">${esc(t.team)}</span>` +
+          `<span class="sub"><span class="rec">${t.record}</span><span class="rec">${t.starters.length} players</span>` +
+            `<span class="status${t.onNow ? " on" : ""}">${dot(t)}${statusOf(t)}</span></span>` +
+        `</span>` +
+        `<span class="pts${fl(changed, t.id)}" data-tween="pts:${t.id}" data-delta>${fmt(t.live)}</span>` +
+        `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
+      `</button>` +
+      t.members.map((m, j, arr) =>
+        `<button class="row contrib fuse-top${j < arr.length - 1 ? " fuse-bottom" : ""}" type="button" data-id="${m.id}"` +
+        ` aria-label="${esc(m.team)}, ${m.starters.length} in the ${esc(t.team)} lineup, ${fmt(m.live)} points. Open lineup.">` +
+          `<span class="rank${m.icon ? " has-icon" : ""}">${m.icon ? franchiseIcon(m, "rank-icon") : esc(m.team.trim()[0] || "?")}</span>` +
+          `<span class="who">` +
+            `<span class="name">${esc(m.team)}</span>` +
+            `<span class="sub"><span class="rec">${m.starters.length} ${m.starters.length === 1 ? "player" : "players"}</span>` +
+              `<span class="status${m.onNow ? " on" : ""}">${dot(m)}${statusOf(m)}</span></span>` +
+          `</span>` +
+          `<span class="pts${fl(changed, m.id)}" data-tween="pts:${m.id}" data-delta>${fmt(m.live)}</span>` +
+          `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
+        `</button>`).join("")
+    ).join(`<div class="board-sep board-v" role="presentation"><span>v</span></div>`);
+    markActive();
+    return;
+  }
+
   // The leader lives in the hero, which already shows its lead over #2, so
   // the list starts at rank 2. The first listed row never fuses upward:
   // there is no card above it to fuse with, even when that gap is hot (the
   // hero strip carries that tier instead).
+  // The Fantasy Bowl lists both finalists (the hero already faces them
+  // off), with no divider between: the hero strip carries the margin.
+  const bowl = post !== null && Boolean(post.round.bowl);
   rowsEl.innerHTML = teams.map((t, i) => {
-    if (i === 0) return "";
+    if (i === 0 && !bowl) return "";
     const above = gaps[i - 1], below = gaps[i];
     const fuseTop = i > 1 && hot(above), fuseBottom = hot(below);
 
@@ -221,9 +441,16 @@ function renderRows(changed) {
     const tiers = [above, below].filter((g) => g !== undefined).map(tier);
     const rankTier = tiers.includes("critical") ? "critical" : tiers.includes("live") ? "live" : "";
 
+    // Playoffs: rows under the cut line are "out" (still playing, but not
+    // through as things stand), and each row says which side it is on.
+    const out = post !== null && !t.through;
     const rowCls = ["row",
       fuseTop ? "fuse-top" : "", fuseBottom ? "fuse-bottom" : "",
-      fuseTop || fuseBottom ? "fused" : ""].filter(Boolean).join(" ");
+      fuseTop || fuseBottom ? "fused" : "", out ? "out" : ""].filter(Boolean).join(" ");
+    const fate = !post ? ""
+      : bowl ? (roundFinal() ? (out ? `<span class="fate out">Runner-up</span>` : `<span class="fate in">Champion</span>`) : "")
+      : out ? `<span class="fate out">${roundFinal() ? "Eliminated" : "Out"}</span>`
+      : `<span class="fate in">${roundFinal() ? "Advances" : "In"}</span>`;
 
     const row =
       `<button class="${rowCls}" type="button" data-id="${t.id}"` +
@@ -232,7 +459,7 @@ function renderRows(changed) {
         `<span class="who">` +
           `<span class="name">${esc(t.team)}</span>` +
           `<span class="sub">` +
-            `<span class="rec">${t.record}</span>` +
+            `<span class="rec">${t.record}</span>` + fate +
             `<span class="status${t.onNow ? " on" : ""}">` +
               (t.onNow ? `<span class="dot"></span>` : "") + statusOf(t) +
             `</span>` +
@@ -242,19 +469,34 @@ function renderRows(changed) {
         `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
       `</button>`;
 
-    if (below === undefined) return row;
+    if (below === undefined || bowl) return row;
     const gt = tier(below);
+    const cut = i === cutAt;
     // A coin-flip pill flashes when either score beside it moved.
     const pillFlash = gt === "critical" && (changed.has(t.id) || changed.has(teams[i + 1].id));
     return row +
-      `<div class="gap ${gt}" aria-label="Gap ${fmt(below)}${gt === "critical" ? ", coin flip" : ""}">` +
+      `<div class="gap ${gt}${cut ? " cut" : ""}" aria-label="${cut ? "Cut line, " : ""}Gap ${fmt(below)}${gt === "critical" ? ", coin flip" : ""}">` +
         `<span class="line"></span>` +
         `<span class="pill${pillFlash ? " flash" : ""}"><span data-tween="gap:${t.id}:${teams[i + 1].id}">${fmt(below)}</span>` +
-          (gt === "critical" ? `<span class="flip">Coin flip</span>` : "") +
+          (cut ? `<span class="flip">${gt === "critical" ? "Cut &middot; coin flip" : "Cut line"}</span>`
+            : gt === "critical" ? `<span class="flip">Coin flip</span>` : "") +
         `</span>` +
         `<span class="line"></span>` +
       `</div>`;
-  }).join("");
+  }).join("") +
+  // Round 1: whoever is resting sits under the list, unranked.
+  (byeTeams.length ? `<div class="board-sep" role="presentation"><span>Bye week</span></div>` : "") +
+  byeTeams.map((t) =>
+    `<button class="row bye" type="button" data-id="${t.id}"` +
+    ` aria-label="${esc(t.team)}, ${t.record}, bye this week. Open roster.">` +
+      `<span class="rank">Bye${franchiseIcon(t, "rank-badge")}</span>` +
+      `<span class="who">` +
+        `<span class="name">${esc(t.team)}</span>` +
+        `<span class="sub"><span class="rec">${t.record}</span><span class="status">${statusOf(t)}</span></span>` +
+      `</span>` +
+      `<span class="pts">&mdash;</span>` +
+      `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
+    `</button>`).join("");
 
   markActive();
 
@@ -366,8 +608,9 @@ function render(changed = new Set()) {
 // Where the week stands. Ending the day makes every game final; ending
 // the week is MFL marking it official (stats corrections done).
 const slate = { sunFinal: false, weekFinal: false, nextWeek: false };
-// The week's "final" treatment lasts until the next week begins.
-const weekIsFinal = () => slate.weekFinal && !slate.nextWeek;
+// The week's "final" treatment lasts until the next week begins. A playoff
+// round counts as final once its games are (roundFinal).
+const weekIsFinal = () => (slate.weekFinal && !slate.nextWeek) || roundFinal();
 
 const LIVE_NFL = new Map([
   ["JAC", "Q3 8:12"], ["KCC", "Q3 8:12"],   // Jaguars at Chiefs
@@ -470,10 +713,10 @@ const spotEl = document.getElementById("spot");
 let lastSpotKey = null;
 
 function spotlightPick() {
-  const all = teams.flatMap((t) => liveStarters(t, new Set()).map((p) => ({ ...p, franchise: t.team })));
+  const all = teams.flatMap((t) => liveStarters(t, new Set()).map((p) => ({ ...p, franchise: p.from || t.team })));
   let pool, label, when;
   if (slate.nextWeek) return { top: null, key: "none" };            // new week, nothing final yet
-  if (slate.weekFinal) { pool = all; label = "\u2605 MVP of the week"; when = `Week ${WEEK} final`; }
+  if (weekIsFinal()) { pool = all; label = post ? `\u2605 MVP of ${post.round.ref}` : duel ? "\u2605 MVP of the Pro Bowl" : "\u2605 MVP of the week"; when = `${post ? post.round.name : duel ? EXHIBITION.name : `Week ${WEEK}`} final`; }
   else if (slate.sunFinal) { pool = all.filter((p) => !isEarlyDay(p)); label = "Top scorer"; when = "Sunday"; }
   else return { top: null, key: "none" };                             // Sunday is in progress
   const top = pool.reduce((a, p) => (p.pts > a.pts ? p : a), pool[0]);
@@ -556,6 +799,7 @@ const playerRow = (p, bench, top = false, enter = -1) => {
     `<span class="pname"><b>${esc(p.n)}</b>` +
       `<span class="pmeta">${esc(p.tm)}<span aria-hidden="true">·</span>` +
         (isLive(p) ? `<span class="clock"><span class="dot"></span>${clockFor(p)}</span>` : `<span>${esc(gameLabel(p))}</span>`) +
+        (p.from ? `<span aria-hidden="true">·</span><span class="pfrom">${esc(p.from)}</span>` : "") +
       `</span>` +
       `<span class="pstat">${esc(statLine(p.pos, p.st))}</span>` +
     `</span>` +
@@ -572,7 +816,7 @@ let lastFocus = null;
 
 // Starters with any live bumps applied, in fixture order.
 const liveStarters = (t, changed) => t.starters.map((p, k) => {
-  const key = `${t.id}:${k}`;
+  const key = p.key || `${t.id}:${k}`;
   return { ...p, key, pts: r2(p.pts + (playerBump[key] || 0)), flash: changed.has(key), st: statsFor(t, k) };
 });
 
@@ -587,17 +831,20 @@ function renderTeam(changed = new Set()) {
   const bench = liveBench(t, changed);
 
   const pre = phase === "preseason";
-  document.getElementById("team-rank").textContent = pre ? t.team.trim()[0] || "?" : t.rank;
-  document.getElementById("team-week").textContent = `Week ${WEEK}`;
+  document.getElementById("team-rank").textContent = pre ? t.team.trim()[0] || "?" : t.bye ? "Bye" : t.rank ?? t.team.trim()[0];
+  document.getElementById("team-week").textContent = duel ? `${EXHIBITION.name} \u00b7 Week ${WEEK}` : post ? `${post.round.name} \u00b7 Week ${WEEK}` : `Week ${WEEK}`;
   const statusEl = document.getElementById("team-status");
   statusEl.hidden = pre;
   statusEl.innerHTML = statusOf(t);
   document.getElementById("team-name").innerHTML = `${franchiseIcon(t, "hero-icon")}${esc(t.team)}`;
   document.getElementById("team-rec").textContent = pre
     ? (starters.length ? `pre-season \u00b7 ${starters.length} starters set` : "pre-season \u00b7 lineup due at kickoff")
+    : post ? `#${t.seed} seed \u00b7 ${t.season} regular season`
+    : t.isSide ? `${t.members.length} managers \u00b7 one super lineup`
+    : t.side ? `${t.starters.length} in the ${t.side.name} lineup`
     : `${t.record} all-play`;
   const ptsEl = document.getElementById("team-pts");
-  ptsEl.textContent = pre ? "\u2014" : fmt(t.live);
+  ptsEl.textContent = pre || t.bye ? "\u2014" : fmt(t.live);
   ptsEl.dataset.tween = `pts:${t.id}`;
   ptsEl.dataset.delta = "";
   ptsEl.classList.toggle("flash", changed.has(t.id));
@@ -610,11 +857,12 @@ function renderTeam(changed = new Set()) {
   const noLineup = starters.length === 0;
   document.querySelector('.tab[data-tab="starters"]').hidden = noLineup;
   const benchTab = document.querySelector('.tab[data-tab="bench"]');
+  benchTab.hidden = Boolean(t.isSide);   // a side has no bench, only the lineup
   benchTab.firstChild.nodeValue = noLineup ? "Roster " : "Bench ";
   document.getElementById("tab-bench-n").textContent = noLineup ? `${bench.length} players` : pre ? String(bench.length) : `${fmt(sum(bench))} behind`;
   // Shown, not stored: the chosen tab survives until a lineup exists, so
   // the pane lands on Starters when the board goes live (or a lineup is set).
-  const view = noLineup ? "bench" : tab;
+  const view = noLineup ? "bench" : t.isSide ? "starters" : tab;
 
   const list = view === "bench" ? bench : starters;
   const topPts = Math.max(0, ...starters.map((p) => p.pts));
@@ -1073,6 +1321,7 @@ async function refreshLive(first = false) {
   phase = "live";
   const L = ls.data.liveScoring;
   WEEK = Number(L.week) || WEEK;
+  await loadPlayoffs();
   const franchises = toArray(L.franchise);
   await ensurePlayers([...rosterIds.values()].flat().concat(franchises.flatMap((f) => toArray(f.players?.player).map((p) => p.id))));
 
@@ -1104,9 +1353,33 @@ async function refreshLive(first = false) {
     return team;
   });
   lastScores = next;
+  if (duel) for (const id of [...changed]) if (duel.sideOf.has(id)) changed.add(duel.sideOf.get(id).id);
   slate.sunFinal = games.size > 0 && [...games.values()].every((g) => g.secs <= 0);
   UPDATED = fmtTime(new Date());
   return changed;
+}
+
+// Playoff weeks: seed and fold the field from the season's franchise
+// scores (one small call, held ten minutes by the proxy). The scores are
+// refetched when the fold cannot complete, e.g. a page left open from Round
+// 1 into the Semifinal has no Week 15 scores yet. If it still cannot, `post`
+// stays null and the board shows every franchise, as in the regular season.
+async function loadPlayoffs() {
+  post = null; duel = null;
+  if (WEEK === EXHIBITION.week) { duel = Playoffs.exhibition(); return; }
+  if (!Playoffs.round(WEEK)) return;
+  let f = seasonScores && Playoffs.field(seasonScores, WEEK);
+  if (!f?.complete) {
+    const ss = await api("seasonScores").catch((e) => ({ ok: false, error: String(e) }));
+    if (ss.ok) { seasonScores = ss.data.weeks; f = Playoffs.field(seasonScores, WEEK); }
+    else console.warn("seasonScores:", ss.error);
+  }
+  if (f?.complete) {
+    f.recordOf = new Map(f.seeds.map((s) => [s.id, s.record]));
+    post = f;
+  } else {
+    console.warn(`Week ${WEEK} is a playoff week but an earlier round's scores are missing; showing every franchise`);
+  }
 }
 
 /* Polling budget. MFL rate-limits and asks clients to back off, so:

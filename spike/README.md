@@ -20,7 +20,13 @@ So this spike measures cadence and nothing else.
 
 ```bash
 node spike/verify-canonical.mjs
+node spike/verify-playoffs.mjs
 ```
+
+The second replays the 2025 postseason from `fixtures/` and confirms that
+`app/playoffs.js` (seeding on the Week 1–14 all-play record, then the
+5 → 3 → 4 → 2 fold) names exactly the franchises MFL scored in Weeks 15,
+16 and 17. Also offline.
 
 Offline, no network. Proves change detection works — which the live dry run
 below **cannot** do, because a completed week never changes.

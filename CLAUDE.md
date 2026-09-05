@@ -87,6 +87,85 @@ from the POC.
   (`.claude/launch.json` has an `app-fake-live` entry using the 2025 W12
   fixture). Never set it in production.
 
+## Playoffs (Weeks 15–17)
+
+The league's postseason is a **scoring fold, not a bracket** (rules:
+<https://fflr.netlify.app/rules>, Playoffs): six qualify on the all-play
+record through Week 14 (win pct, then points for); Week 15 seeds 2–6
+play and the bottom two are out; Week 16 the three survivors and the
+No. 1 seed off its bye play and the bottom two are out; Week 17 is the
+Fantasy Bowl, higher score takes it. **MFL cannot represent a five-team
+round**: its `playoffBrackets` export is empty for this league, and in
+those weeks `liveScoring` lists every franchise, with the ones not in
+the round at `0.00` and no starters. So the fold lives in
+**`app/playoffs.js`** (pure, a classic script defining `Playoffs`,
+mirroring `fantasy-football-records/src/derive.mjs`) and
+`spike/verify-playoffs.mjs` replays 2025 offline: the fold names exactly
+the franchises MFL scored in each of the three weeks (fixtures
+`seasonScores-2025.json`, `liveScoring-2025-w15/16/17.json`). A tie
+within a round goes to the higher seed: never observed, but the sort must
+be total.
+
+- The proxy's **`seasonScores`** type is MFL's year-to-date
+  `weeklyResults` reduced to franchise totals per week (~5KB, held 10m).
+  `app.js` fetches it in a playoff week (`loadPlayoffs`, refetched when
+  the fold cannot complete) and sets `post`; if it still cannot, `post`
+  stays null and the board shows every franchise as in the regular season.
+- **The round view**: "Playoffs · Week 15" kicker, the round's name as
+  the title, a strip of the three rounds (finished ones link to `?w=`,
+  "Back to now" in the kicker when looking back), capsules for "3 of 5
+  advance", the cut gap (in its tier colour) and starters left; the Bowl's
+  capsules are the purse ($275 / $105, from the rules' payouts table, in
+  `Playoffs.PLAYOFFS.purse`). Only the round's franchises are ranked; the
+  seed chip replaces the week's record (hero and team page add the
+  regular-season record). The **cut line** is the divider under the last
+  advancing rank (dashed while settled; live/coin-flip treatments take it
+  over as it tightens). Rows under it are `.out` (hollow rank) and carry
+  In/Out, which become Advances/Eliminated (Runner-up in the Bowl) once the
+  week's games are all final (`roundFinal`: `slate.sunFinal`, since MFL's
+  "official" mark is not read yet). Round 1 lists the resting No. 1 seed
+  under the board as a bye row (opens its roster). The Bowl is head to head,
+  so its hero is the Pro Bowl's face-off (both finalists, higher seed on
+  the left, under their franchise icon or an initial, the leader bright,
+  the margin in the strip) and the board lists both finalists with no
+  divider between them (Champion / Runner-up once final). The Bowl's
+  leader is "Fantasy Bowl champion" with the gold and the money bag once
+  final; the
+  earlier rounds get no gold, they pay nothing. The spotlight's MVP is
+  "MVP of Round 1" and so on. Week 18 (Pakistan vs. the World) is not a
+  round; see the Pro Bowl item below.
+- **Rehearsing it**: `.claude/launch.json` has `app-2025`
+  (`MFL_SEASON=2025 node dev.mjs`, then `?w=15`, `?w=16`, `?w=17` against
+  the archive: every round in its final state) and `app-2025-w15-live`
+  (`MFL_FAKE_DIR=spike/data/fake-w15`, written by
+  `node spike/fake-round.mjs 15`: the same week with its two latest games
+  put back on the field, so the cut line, In/Out and starters left show
+  mid-round). `MFL_FAKE_DIR` serves `<type>-w<W>.json` or `<type>.json`
+  from a directory when the file exists, MFL otherwise; dev only.
+- **Week 18, Pakistan vs. the World** (the rules' Pro Bowl, $20 a head):
+  each side fields one super lineup of its managers' players, and in MFL
+  each manager starts only the players he contributes, so a side's score
+  is the **accumulation of its franchises' scores** (2025: 124.31 v 147.63,
+  the records site's numbers to the cent; `verify-playoffs.mjs` checks it
+  from `liveScoring-2025-w18.json`). The split lives in
+  `Playoffs.EXHIBITION` by franchise id (Pakistan 0001/0002/0003/0004/
+  0005/0007, the World 0006/0008/0009/0010/0011, the records repo's
+  standing split in `data/exhibition.json`; ids are stable, names are
+  not) and carries forward until the league re-picks sides. In that week
+  `duel` is set instead of `post`: the two sides are the ranked teams
+  (hero faces them off under their flags, Pakistan's and the Stars and
+  Stripes for the World, drawn as inline SVG in `app.js` since emoji flags
+  are plain letters on Windows, the leader bright, the margin in the strip; the
+  board lists each side with the contributing managers fused under it and
+  what each put in; a side's page is its super lineup, every row naming
+  the franchise the player came from, no Bench tab). Players keep their
+  franchise's tween key, so a score rolls on both pages. `app-2025` with
+  `?w=18` shows it finished; `app-2025-w18-live` (`spike/fake-round.mjs
+  18`) mid-week. The strip's fourth chip is the Pro Bowl.
+- `classList.toggle(name, force)` with an `undefined` force **flips** the
+  class. Pass real booleans (the Bowl-only gold once toggled on in Round 1
+  this way).
+
 ## What is already settled — do not re-litigate
 
 Each of these was verified against real 2025 data, not inferred:
@@ -313,7 +392,11 @@ element and scores are second.
   skips it. Literal red in both themes; reduced motion holds the card
   alone for 3.5s.
 - The **Demo bar** and simulator, the legend and the footnotes exist only
-  on the `poc` branch. On `main` they are removed, along with the subtitle
+  on the `poc` branch. Its "View" tags (added 2026-09-05) switch the
+  mockup into the postseason views described above (`mockup/playoffs.js`
+  is a copy of `app/playoffs.js`; keep them the same), seeded from the
+  real 2025 season and folded from the board's own points; see the `poc`
+  branch's CLAUDE.md. On `main` they are removed, along with the subtitle
   line; in season the subtitle slot shows only "Updated <time>".
 
 Thresholds (`CRITICAL`, `LIVE`, `WITHIN`) live in one place in the script and

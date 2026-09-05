@@ -53,6 +53,21 @@ What exists today:
 - **Spotlight.** After a day's games are final, the day's top-scoring starter
   gets a card; once the week is official it becomes the MVP of the week, and
   the leader's hero becomes the Week winner.
+- **Playoff rounds.** Weeks 15–17 are the league's scoring fold (six
+  qualify on the Week 1–14 all-play record; seeds 2–6 play Round 1 and the
+  bottom two go out; the No. 1 seed joins a four-team Semifinal; the
+  Fantasy Bowl is Week 17). Each round is its own view: the round's name
+  as the title, a strip of the three rounds, only the franchises playing
+  ranked with their seed, a cut line under the last advancing rank,
+  In/Out on every row (Advances/Eliminated once the games are done), the
+  resting No. 1 seed under the board in Round 1, and the Bowl's purse and
+  champion treatment in Week 17. `app/playoffs.js` holds the fold;
+  `spike/verify-playoffs.mjs` replays 2025 against MFL's own scoring.
+- **Pakistan vs. the World.** Week 18 is the league's Pro Bowl: each side
+  fields one super lineup from its managers' rosters, so the page scores
+  the two sides as the accumulation of their managers' contributions,
+  faces them off in the hero with the margin, lists each manager's share
+  under his side, and opens a side's page as its twelve-man lineup.
 - **Loading and reveal.** A looping cartoon of three players behind a field
   strip, the leader raising a finger, with the wordmark wiping in under
   it, holds until the data is ready; then the page cascades in top to

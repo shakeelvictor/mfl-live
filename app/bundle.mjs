@@ -19,6 +19,7 @@ export function bundle() {
 
   const swaps = [
     ['<link rel="stylesheet" href="styles.css">', () => `<style>\n${read('styles.css')}</style>`],
+    ['<script src="playoffs.js"></script>', () => `<script>\n${read('playoffs.js')}</script>`],
     // The artifact has no proxy, so it is always the fixture: inline data.js
     // ahead of the script and say so.
     ['<script src="app.js"></script>', () => `<script>window.MFL_FIXTURE = true;\n${read('data.js')}</script>\n<script>\n${read('app.js')}</script>`],

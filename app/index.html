@@ -32,11 +32,15 @@
     </header>
 
     <div class="week">
+      <!-- Playoffs: "Playoffs · Week 15" over the round's name as the title. -->
+      <div class="micro kicker" id="kicker" hidden></div>
       <div class="week-row">
         <h1 id="week-title">Week</h1>
         <span class="kick" id="kick" hidden><span class="dot" aria-hidden="true"></span>Kicks off in <b id="countdown"></b></span>
       </div>
       <p class="subhead" id="subhead">All-play &middot; every team plays every other team</p>
+      <!-- Playoffs: the three rounds, the one on show marked, finished ones linked. -->
+      <nav class="rounds" id="rounds" hidden aria-label="Playoff rounds"></nav>
     </div>
 
     <div class="capsules" id="capsules"></div>
@@ -130,4 +134,5 @@
 </div>
 
 <!-- data.js (the embedded fixture) is loaded by app.js only as a fallback. -->
+<script src="playoffs.js"></script>
 <script src="app.js"></script>
