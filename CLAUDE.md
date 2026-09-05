@@ -141,8 +141,12 @@ be total.
   wave at page scale; `--bowl-cloud` / `--bowl-wave` tokens per theme,
   warm and luminous in dark, deep and sheer in light. Still under
   reduced motion. The Bowl's
-  leader is "Fantasy Bowl champion" with the gold and the money bag once
-  final; the
+  leading score is not gold but an **iridescent sweep** (`.hero.bowl
+  .duel-side.lead .duel-pts`: white glyphs with a pearl band of pink,
+  cyan, mint and cream gliding through, painted through the text), live
+  and once final. The Bowl's
+  leader is "Fantasy Bowl champion" with the gold badge and the money bag
+  once final; the
   earlier rounds get no gold, they pay nothing. The spotlight's MVP is
   "MVP of Round 1" and so on. Week 18 (Pakistan vs. the World) is not a
   round; see the Pro Bowl item below.

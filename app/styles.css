@@ -1574,3 +1574,20 @@ h1.bowl { background-image: linear-gradient(100deg, var(--title-gold) 0%, var(--
   100% { transform: translate3d(-10vmax, -22vmax, 0) scale(.96); }
 }
 @media (prefers-reduced-motion: reduce) { .bowl-bg .cloud, .bowl-bg .wave { animation: none; } }
+
+/* ---------- the Bowl's leading score ----------
+   Not gold: an iridescent sweep. The glyphs are white with a soft pearl
+   band (pink, cyan, mint, cream) gliding through them, painted through
+   the text like the WEEK title's drift. The hero is dark green in both
+   themes, so the white base reads in both. Held mid-sweep under reduced
+   motion. Declared after the winner gold so it wins in the Bowl. */
+.hero.bowl .duel-side.lead .duel-pts {
+  background-image: linear-gradient(100deg, #fff 0%, #fff 26%, #ffd6ea 38%, #cdefff 46%, #d9ffe6 54%, #fff0c4 62%, #fff 74%, #fff 100%);
+  background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  animation: fflr-wave 7s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero.bowl .duel-side.lead .duel-pts { animation: none; background-position: 50% 50%; }
+}
