@@ -132,7 +132,10 @@ be total.
   title wears the drift as an **iridescent sweep, not gold** (`h1.bowl`,
   `--iri-*` tokens per theme: white glyphs with a pearl band in dark,
   near-black with a muted glint in light; gold glyphs over the green
-  canvas read as Packers colours) with a trophy emoji beside it, kept outside the h1 because the
+  canvas read as Packers colours; a narrower, paler band than the score's
+  on a 22s drift, with a glow from a `drop-shadow` filter, since
+  `text-shadow` paints over gradient-clipped glyphs) with a trophy emoji
+  beside it, kept outside the h1 because the
   gradient is painted through the glyphs and would swallow the emoji's
   colours (on phones under 430px the Bowl title drops to 38px so the
   trophy stays on its line). Behind the board the Bowl also turns on a
