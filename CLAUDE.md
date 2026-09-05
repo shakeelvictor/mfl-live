@@ -214,6 +214,28 @@ element and scores are second.
   when shown again within the hour), or on demand from the demo bar.
   Click or Escape skips it. Literal red in both themes; reduced motion
   holds the card alone for 3.5s.
+- **The postseason on the demo bar.** A "View" row of tags (Week 12 /
+  Round 1 / Semifinal / Fantasy Bowl / Pro Bowl) switches the board into
+  each week of the postseason, the same views as the app on `main`:
+  `mockup/playoffs.js` is a copy of `app/playoffs.js` (seeds on the
+  Week 1-14 all-play record, the 5 -> 3 -> 4 -> 2 fold, the Pakistan /
+  World split by franchise id, the purse), and `mockup/season.js` is the
+  real 2025 season's weekly franchise scores for the seeding. Each earlier
+  round is folded from THIS board's live points, so whoever is above the
+  cut line in Round 1 is exactly who plays the Semifinal; the fixture's
+  Week 12 points stand in for every round's scores. The Pro Bowl has no
+  declared super lineups in the fixture, so `pickLineup` takes each side's
+  best twelve from its managers' starters under the lineup rules (greedy,
+  a showcase not a solver); a manager's unpicked starters join his bench,
+  and every player keeps its franchise key (`k` / `bk`), so the simulator,
+  the touchdown cards and the tweens address it exactly as on the
+  franchise's own page (`slotPlayer` always reads the franchise). A view
+  switch is a debut: rows do not slide, numbers do not roll (`silent`),
+  no takeover. "End the day" turns In/Out into Advances/Eliminated and
+  crowns the Bowl and Pro Bowl winners; the simulator, Flip the lead and
+  the TD buttons work inside every view (in Week 18 the points land on a
+  side's managers). Cut line, seed chips, bye row, the sides' flags and
+  the rest are described under the app on `main`'s CLAUDE.md.
 - The **Demo bar** (Simulate live scoring / Flip the lead / Score a TD /
   Bears TD / End the day / End the week / Start next week / Witching hour)
   sits under the masthead, hidden by default behind the **Demo** toggle

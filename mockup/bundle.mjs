@@ -28,6 +28,8 @@ export function bundle() {
     ['<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2">\n', () => ''],
     ['<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2">\n', () => ''],
     ['<script src="data.js"></script>', () => `<script>\n${read('data.js')}</script>`],
+    ['<script src="playoffs.js"></script>', () => `<script>\n${read('playoffs.js')}</script>`],
+    ['<script src="season.js"></script>', () => `<script>\n${read('season.js')}</script>`],
     ['<script src="app.js"></script>', () => `<script>\n${read('app.js')}</script>`],
   ];
   for (const [tag, inline] of swaps) {

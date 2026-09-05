@@ -49,6 +49,15 @@ What exists today:
 - **The Witching Hour.** At 2:30 PM Central on Sundays, RedZone's
   witching hour, a ten-second full-screen clock takes over the board and
   sweeps open again. The demo bar fires it on demand.
+- **The postseason.** The demo bar's View tags switch the board into Round
+  1, the Semifinal, the Fantasy Bowl and the Week 18 Pro Bowl (Pakistan
+  vs. the World): the round's name as the title, a strip of the rounds,
+  only the teams playing ranked with their seed, a cut line under the last
+  advancing rank with In/Out on every row, the resting No. 1 seed under
+  the board, the Bowl's purse, and for the Pro Bowl the two sides face to
+  face under their flags with each manager's contribution listed under
+  his side. The simulator and the other demo buttons keep working inside
+  every view.
 - **Spotlight.** After a day's games are final, the day's top-scoring starter
   gets a card; once the week is official it becomes the MVP of the week, and
   the leader's hero becomes the Week winner.

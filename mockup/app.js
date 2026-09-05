@@ -2,7 +2,7 @@
 // clock, starters yet to play and "on now" are staged to show the board
 // in progress. liveScoring supplies the real values (playersYetToPlay,
 // gameSecondsRemaining) once the feed is wired.
-const WEEK = 12;
+let WEEK = 12;   // the demo bar's view tags move it into the postseason
 const UPDATED = "4:12 PM";
 const YET_TO_PLAY = {
   "I'm Just Here to Network": 0, "Reggaeton Forever": 1, "Ryaan": 2,
@@ -43,38 +43,197 @@ function bump(t, k, pts) {
 let teams = [];   // sorted, with rank/record/live
 let gaps = [];    // gaps[i] is the gap below row i (between rank i+1 and rank i+2)
 
+/* ---------------- postseason (the demo bar's view tags) ----------------
+   The same model as the app on main. In a playoff week `post` holds the
+   round's field (playoffs.js: seeds on the Week 1-14 all-play record, then
+   the 5 -> 3 -> 4 -> 2 fold); in Week 18 `duel` holds the two sides of
+   Pakistan vs. the World. The showcase seeds from the real 2025 season
+   (season.js) and folds each earlier round from THIS board's live points,
+   so the teams above the cut line in Round 1 are exactly the ones in the
+   Semifinal. The fixture's Week 12 points stand in for every round's
+   scores. */
+let post = null;          // { round, seedOf, recordOf, alive, bye, ... } in Weeks 15-17
+let byeTeams = [];        // resting this round (Round 1: the No. 1 seed)
+let cutAt = -1;           // gaps[cutAt] is the cut line, under the last advancing rank
+let duel = null;          // { sides, sideOf } in Week 18
+let duelMembers = [];     // the contributing franchises, for their own pages and the simulator
+const ROUNDS = Playoffs.PLAYOFFS.rounds;
+const EXHIBITION = Playoffs.EXHIBITION;
+const STRIP = [...ROUNDS, { week: EXHIBITION.week, name: EXHIBITION.name }];
+const nextRound = () => (post ? ROUNDS[ROUNDS.indexOf(post.round) + 1] || null : null);
+// A round is decided once its games are ("End the day" on the demo bar).
+const roundFinal = () => (post !== null || duel !== null) && slate.sunFinal;
+
+// The sides' flags, drawn inline (emoji flags are letters on Windows).
+const star = (cx, cy, r, extra = "") => {
+  const pts = Array.from({ length: 10 }, (_, i) => {
+    const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.382 : r;
+    return `${(cx + rr * Math.cos(a)).toFixed(1)},${(cy + rr * Math.sin(a)).toFixed(1)}`;
+  }).join(" ");
+  return `<polygon points="${pts}" fill="#fff"${extra}/>`;
+};
+const FLAGS = {
+  pk: () => `<svg viewBox="0 0 900 600" aria-hidden="true"><rect width="900" height="600" fill="#01411c"/><rect width="225" height="600" fill="#fff"/>` +
+    `<circle cx="562" cy="300" r="150" fill="#fff"/><circle cx="602" cy="270" r="135" fill="#01411c"/>` +
+    star(690, 195, 62, ` transform="rotate(-27 690 195)"`) + `</svg>`,
+  us: () => {
+    const stripes = Array.from({ length: 13 }, (_, i) => `<rect y="${i * 50}" width="1235" height="50" fill="${i % 2 ? "#fff" : "#b22234"}"/>`).join("");
+    const stars = Array.from({ length: 9 }, (_, row) => Array.from({ length: row % 2 ? 5 : 6 }, (_, col) =>
+      star(row % 2 ? 82 + col * 82 : 41 + col * 82, 35 + row * 35, 18)).join("")).join("");
+    return `<svg viewBox="0 0 1235 650" aria-hidden="true">${stripes}<rect width="494" height="350" fill="#3c3b6e"/>${stars}</svg>`;
+  },
+};
+const flagOf = (code) => (FLAGS[code] ? `<span class="duel-flag" aria-hidden="true">${FLAGS[code]()}</span>` : "");
+
 // All-play record is pure arithmetic on the sorted list. Everything the
 // page shows -- ranks, records, gaps, tiers, headline stats -- comes from
 // ROSTERS, never from a constant that could disagree with its own rows.
+// In a playoff round only the franchises playing it are ranked, the seed
+// chip replaces the week's record, and a tie goes to the higher seed. In
+// Week 18 the two sides are the teams, each the sum of its members.
 function derive() {
-  teams = ROSTERS
-    .map((t) => ({
-      ...t,
-      live: r2(t.pts + (teamBump[t.id] || 0)),
-      toPlay: slate.sunFinal ? 0 : (YET_TO_PLAY[t.team] ?? 0),
-      onNow: t.starters.some(isLive),
-    }))
-    .sort((a, b) => b.live - a.live)
-    .map((t, i, arr) => ({ ...t, rank: i + 1, record: `${arr.length - 1 - i}-${i}` }));
+  const withLive = (t) => ({
+    ...t,
+    live: r2(t.pts + (teamBump[t.id] || 0)),
+    toPlay: slate.sunFinal ? 0 : (YET_TO_PLAY[t.team] ?? 0),
+    onNow: t.starters.some(isLive),
+    seed: post ? post.seedOf.get(t.id) : null,
+    season: post ? post.recordOf.get(t.id) : null,
+  });
+  // The fixture has no declared super lineups (every franchise started
+  // twelve in Week 12), so each side's is picked here: its managers' best
+  // twelve under the lineup rules. A manager's starters become the players
+  // he contributed; the rest of his lineup joins his bench. Players keep
+  // their franchise keys (k: the index on the franchise), so the simulator
+  // and the tweens address them exactly as on the franchise's own page.
+  if (duel) {
+    const pool = (fr) => fr.starters.map((p, k) => {
+      const key = `${fr.id}:${k}`;
+      return { ...p, k, key, from: fr.team, fromId: fr.id, pts: r2(p.pts + (playerBump[key] || 0)), st: liveStats[key] || p.st || {} };
+    });
+    duelMembers = [];
+    teams = duel.sides.map((s) => {
+      const frs = ROSTERS.filter((t) => s.franchises.includes(t.id));
+      const picked = new Set(pickLineup(frs.flatMap(pool)).map((p) => p.key));
+      const members = frs.map((fr) => {
+        const mine = pool(fr);
+        const starters = mine.filter((p) => picked.has(p.key));
+        const bench = mine.filter((p) => !picked.has(p.key))
+          .concat(fr.bench.map((p, k) => ({ ...p, bk: k, key: `${fr.id}:b${k}`, fromId: fr.id })));
+        const base = r2(starters.reduce((a, p) => a + (ROSTERS.find((r) => r.id === fr.id).starters[p.k].pts), 0));
+        return {
+          ...fr, side: s, starters, bench, pts: base,
+          live: r2(starters.reduce((a, p) => a + p.pts, 0)),
+          toPlay: starters.filter(isLive).length, onNow: starters.some(isLive),
+          seed: null, season: null,
+        };
+      }).sort((a, b) => b.live - a.live || a.team.localeCompare(b.team));
+      duelMembers.push(...members);
+      return {
+        id: s.id, team: s.name, isSide: true, members,
+        pts: r2(members.reduce((a, t) => a + t.pts, 0)),
+        live: r2(members.reduce((a, t) => a + t.live, 0)),
+        toPlay: members.reduce((a, t) => a + t.toPlay, 0),
+        onNow: members.some((t) => t.onNow),
+        starters: members.flatMap((t) => t.starters),
+        bench: [],
+        record: `${members.length} managers`,
+      };
+    }).sort((a, b) => b.live - a.live || a.team.localeCompare(b.team))
+      .map((t, i) => ({ ...t, rank: i + 1, through: null }));
+    gaps = teams.slice(0, -1).map((t, i) => r2(t.live - teams[i + 1].live));
+    n = teams.length; cutAt = -1; byeTeams = [];
+    return;
+  }
+  duelMembers = [];
+  teams = (post ? ROSTERS.filter((t) => post.alive.includes(t.id)) : ROSTERS)
+    .map(withLive)
+    .sort((a, b) => (post ? (b.live - a.live || a.seed - b.seed) : b.live - a.live))
+    .map((t, i, arr) => ({
+      ...t, rank: i + 1,
+      record: post ? `#${t.seed} seed` : `${arr.length - 1 - i}-${i}`,
+      through: post ? i < arr.length - post.round.drop : null,
+    }));
   gaps = teams.slice(0, -1).map((t, i) => r2(t.live - teams[i + 1].live));
+  n = teams.length;
+  cutAt = post ? n - post.round.drop - 1 : -1;
+  byeTeams = post ? ROSTERS.filter((t) => post.bye.includes(t.id)).map(withLive).map((t) => ({ ...t, bye: true, record: `#${t.seed} seed` })) : [];
 }
 
-const n = ROSTERS.length;
-const byId = (id) => teams.find((t) => t.id === id);
+// The best twelve from a pool, greedily by points under the league's
+// lineup: QB, 2 RB, 3 WR (a TE may take one), TE, K, 3 IDP and a flex
+// for anyone but a QB. Good enough for a showcase, not a solver.
+function pickLineup(pool) {
+  const slots = { QB: 1, RB: 2, WR: 3, TE: 1, K: 1, IDP: 3, FLEX: 1 };
+  const fits = (p) => {
+    const g = POS_CLASS[p.pos] ? p.pos : "IDP";
+    const tries = g === "QB" ? ["QB"] : g === "TE" ? ["TE", "WR", "FLEX"] : [g, "FLEX"];
+    return tries.find((sl) => slots[sl] > 0);
+  };
+  const out = [];
+  for (const p of [...pool].sort((a, b) => b.pts - a.pts)) {
+    const sl = fits(p);
+    if (sl) { slots[sl]--; out.push(p); }
+  }
+  return out;
+}
+
+let n = ROSTERS.length;
+const byId = (id) => teams.find((t) => t.id === id) || byeTeams.find((t) => t.id === id) || duelMembers.find((t) => t.id === id);
 const tier = (g) => (g < CRITICAL ? "critical" : g < LIVE ? "live" : "settled");
 const hot = (g) => g !== undefined && tier(g) !== "settled";
 const TIER_LABEL = { critical: "Coin flip", live: "Live", settled: "Settled" };
 
-const statusOf = (t) => t.toPlay === 0
-  ? "all played"
-  : `${t.toPlay} to play${t.onNow ? " &middot; on now" : ""}`;
+const statusOf = (t) => t.bye
+  ? `Bye &middot; plays ${nextRound()?.ref || "next week"}`
+  : t.side && t.starters.length === 0
+    ? "none in the lineup"
+  : t.toPlay === 0
+    ? "all played"
+    : `${t.toPlay} to play${t.onNow ? " &middot; on now" : ""}`;
 
-/* ---------------- static chrome ---------------- */
+/* ---------------- chrome ---------------- */
 
-document.getElementById("week-title").textContent = `Week ${WEEK}`;
-document.getElementById("subhead").innerHTML =
-  `All-play &middot; every team plays every other team &middot; updated ${esc(UPDATED)}`;
-document.getElementById("franchise-count").textContent = `${n} franchises`;
+function renderChrome() {
+  // Playoffs: the round's name is the title, "Playoffs · Week 15" above it.
+  const kicker = document.getElementById("kicker");
+  kicker.hidden = !post && !duel;
+  if (post || duel) kicker.innerHTML = duel ? `Week ${WEEK} &middot; Pakistan vs. the World` : `Playoffs &middot; Week ${WEEK}`;
+  document.getElementById("week-title").textContent = duel ? EXHIBITION.name : post ? post.round.name : `Week ${WEEK}`;
+  document.querySelector(".standings-head h2").textContent = duel ? "Sides" : "Standings";
+  document.getElementById("subhead").innerHTML =
+    (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head`
+      : post ? roundBlurb()
+      : "All-play &middot; every team plays every other team") +
+    ` &middot; updated ${esc(UPDATED)}`;
+  const sizes = [...new Set(teams.map((t) => t.starters.length))];
+  document.getElementById("franchise-count").textContent = duel ? (sizes.length === 1 ? `${sizes[0]} a side` : teams.map((t) => t.starters.length).join(" v ") + " players")
+    : !post ? `${n} franchises`
+    : post.round.bowl ? `${n} play, 1 wins it`
+    : `${n} play, ${n - post.round.drop} advance`;
+  renderRounds();
+}
+
+// "Seeds 2–6 play, top 3 advance" / "4 play, top 2 advance" / the Bowl.
+function roundBlurb() {
+  if (post.round.bowl) return "Higher score takes the title";
+  const seeds = teams.map((t) => t.seed);
+  const who = byeTeams.length && seeds.length ? `Seeds ${Math.min(...seeds)}&ndash;${Math.max(...seeds)} play` : `${n} play`;
+  return `${who}, top ${n - post.round.drop} advance`;
+}
+
+// The postseason in a strip: the week on show is marked, finished ones
+// are done, later ones wait. (On main the finished ones link to ?w=.)
+function renderRounds() {
+  const el = document.getElementById("rounds");
+  el.hidden = !post && !duel;
+  if (el.hidden) return;
+  el.innerHTML = STRIP.map((r) => {
+    const state = r.week === WEEK ? "now" : r.week < WEEK ? "past" : "next";
+    return `<span class="round ${state}"${state === "now" ? ' aria-current="page"' : ""}><span class="rname">${esc(r.name)}</span><span class="rweek">Week ${r.week}</span></span>`;
+  }).join(`<span class="rarrow" aria-hidden="true">&rsaquo;</span>`);
+}
+
 document.getElementById("legend").innerHTML =
   `<span class="critical">under ${CRITICAL.toFixed(2)} &mdash; coin flip</span>` +
   `<span class="live">under ${LIVE.toFixed(1)} &mdash; live</span>` +
@@ -94,38 +253,83 @@ const rowsEl = document.getElementById("rows");
 const fl = (changed, key) => (changed.has(key) ? " flash" : "");
 
 function renderCapsules() {
+  const caps = document.getElementById("capsules");
   const within = new Set(gaps.flatMap((g, i) => (g < WITHIN ? [i, i + 1] : []))).size;
   const atStake = gaps.filter((g) => g < WITHIN).length;
   const startersLeft = teams.reduce((s, t) => s + t.toPlay, 0);
-  document.getElementById("capsules").innerHTML =
+  const left = `<span class="capsule"><b class="accent">${startersLeft}</b>starters left</span>`;
+  // Pakistan vs. the World: the margin, in the gap's tier.
+  if (duel) {
+    caps.innerHTML =
+      `<span class="capsule"><b class="${tier(gaps[0])}">${fmt(gaps[0])}</b>margin</span>` + left +
+      `<span class="capsule"><b class="gold">$${EXHIBITION.perHead}</b>a head</span>`;
+    return;
+  }
+  // Playoffs: what the round is worth. The Bowl is the only round that pays.
+  if (post && post.round.bowl) {
+    const { champion, runnerUp } = Playoffs.PLAYOFFS.purse;
+    caps.innerHTML =
+      `<span class="capsule"><b class="gold">$${champion}</b>to the champion</span>` +
+      `<span class="capsule"><b class="gold">$${runnerUp}</b>runner-up</span>` + left;
+    return;
+  }
+  if (post) {
+    const cut = gaps[cutAt];
+    caps.innerHTML =
+      `<span class="capsule"><b class="accent">${n - post.round.drop}</b>of ${n} advance</span>` +
+      (cut === undefined ? "" : `<span class="capsule"><b class="${tier(cut)}">${fmt(cut)}</b>cut line</span>`) + left;
+    return;
+  }
+  caps.innerHTML =
     `<span class="capsule"><b>${within}</b>within ${WITHIN.toFixed(1)}</span>` +
-    `<span class="capsule"><b>${atStake}</b>wins at stake</span>` +
-    `<span class="capsule"><b class="accent">${startersLeft}</b>starters left</span>`;
+    `<span class="capsule"><b>${atStake}</b>wins at stake</span>` + left;
 }
 
 function renderHero(changed, takeover) {
   const lead = teams[0], chaser = teams[1], lt = tier(gaps[0]);
+  // Playoffs: the round's leader; the Bowl's leader is the champion once
+  // the games are done, and only the Bowl gets the gold (the rounds before
+  // it pay nothing). Week 18: both sides face to face under their flags.
+  const label = duel
+    ? (roundFinal() ? "Wins the Pro Bowl" : takeover ? "New leader" : "Leading the Pro Bowl")
+    : post
+    ? (roundFinal() ? (post.round.bowl ? "Fantasy Bowl champion" : `${post.round.name} &middot; advances`)
+      : takeover ? "New leader" : `Leading ${post.round.ref}`)
+    : weekIsFinal() ? `Week ${WEEK} winner` : takeover ? "New leader" : `Leading Week ${WEEK}`;
+  const gold = duel ? roundFinal() : post ? Boolean(post.round.bowl) && roundFinal() : weekIsFinal();   // a real boolean: toggle(x, undefined) flips
+  const mid = duel
+    ? `<div class="duel">` +
+        duel.sides.map((s) => { const t = byId(s.id); return (
+          `<div class="duel-side${t.id === lead.id ? " lead" : ""}">` +
+            flagOf(s.flag) +
+            `<span class="duel-name">${esc(t.team)}</span>` +
+            `<span class="duel-pts${fl(changed, t.id)}" data-tween="pts:${t.id}" data-delta>${fmt(t.live)}</span>` +
+            `<span class="duel-sub">${t.members.length} managers${t.toPlay ? ` &middot; ${t.toPlay} to play` : ""}</span>` +
+          `</div>`); }).join(`<span class="duel-v" aria-hidden="true">v</span>`) +
+      `</div>`
+    : `<div class="hero-mid">` +
+        `<div class="hero-id">` +
+          `<span class="hero-name">${esc(lead.team)}</span>` +
+          `<span class="hero-rec">${post ? `#${lead.seed} seed &middot; ${lead.season}` : `${lead.record} all-play`}</span>` +
+        `</div>` +
+        `<span class="hero-pts${fl(changed, lead.id)}" data-tween="pts:${lead.id}" data-delta>${fmt(lead.live)}</span>` +
+      `</div>`;
   heroBody.innerHTML =
     `<div class="hero-top">` +
-      `<span class="micro hero-label"><span class="badge">1</span>${weekIsFinal() ? `Week ${WEEK} winner` : takeover ? "New leader" : `Leading Week ${WEEK}`}</span>` +
+      `<span class="micro hero-label"><span class="badge">1</span>${label}</span>` +
       `<span class="hero-status">${statusOf(lead)}</span>` +
-    `</div>` +
-    `<div class="hero-mid">` +
-      `<div class="hero-id">` +
-        `<span class="hero-name">${esc(lead.team)}</span>` +
-        `<span class="hero-rec">${lead.record} all-play</span>` +
-      `</div>` +
-      `<span class="hero-pts${fl(changed, lead.id)}" data-tween="pts:${lead.id}" data-delta>${fmt(lead.live)}</span>` +
-    `</div>` +
+    `</div>` + mid +
     `<div class="hero-strip">` +
       `<span class="tier ${lt}">${TIER_LABEL[lt]}</span>` +
-      `<span class="leads">Leads <b>${esc(chaser.team)}</b> by</span>` +
+      (duel
+        ? `<span class="leads"><b>${esc(lead.team)}</b> ${roundFinal() ? "beat" : "leads"} <b>${esc(chaser.team)}</b> by</span>`
+        : `<span class="leads">${roundFinal() ? "Beat" : "Leads"} <b>${esc(chaser.team)}</b> by</span>`) +
       `<span class="hero-gap${changed.has(lead.id) || changed.has(chaser.id) ? " flash" : ""}" data-tween="gap:${lead.id}:${chaser.id}">${fmt(gaps[0])}</span>` +
     `</div>`;
-  hero.classList.toggle("winner", weekIsFinal());
-  document.getElementById("hero-wrap").classList.toggle("winner", weekIsFinal());
+  hero.classList.toggle("winner", gold);
+  document.getElementById("hero-wrap").classList.toggle("winner", gold);
   hero.setAttribute("aria-label",
-    `${lead.team} leads Week ${WEEK} with ${fmt(lead.live)} points, ${fmt(gaps[0])} ahead of ${chaser.team}. Open lineup.`);
+    `${lead.team} leads ${duel ? "the Pro Bowl" : post ? post.round.ref : `Week ${WEEK}`} with ${fmt(lead.live)} points, ${fmt(gaps[0])} ahead of ${chaser.team}. Open lineup.`);
 
   if (takeover && !reducedMotion.matches) {
     hero.classList.remove("takeover");
@@ -143,6 +347,39 @@ function renderRows(changed) {
     before.set(el.dataset.id, el.getBoundingClientRect().top);
   }
 
+  // Pakistan vs. the World: each side, then the managers who filled its
+  // lineup and what each contributed, fused under it.
+  if (duel) {
+    const dot = (t) => (t.onNow ? `<span class="dot"></span>` : "");
+    rowsEl.innerHTML = teams.map((t) =>
+      `<button class="row side fuse-bottom" type="button" data-id="${t.id}"` +
+      ` aria-label="${esc(t.team)}, ${fmt(t.live)} points, ${t.members.length} managers. Open lineup.">` +
+        `<span class="rank">${t.rank}</span>` +
+        `<span class="who">` +
+          `<span class="name">${esc(t.team)}</span>` +
+          `<span class="sub"><span class="rec">${t.record}</span><span class="rec">${t.starters.length} players</span>` +
+            `<span class="status${t.onNow ? " on" : ""}">${dot(t)}${statusOf(t)}</span></span>` +
+        `</span>` +
+        `<span class="pts${fl(changed, t.id)}" data-tween="pts:${t.id}" data-delta>${fmt(t.live)}</span>` +
+        `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
+      `</button>` +
+      t.members.map((m, j, arr) =>
+        `<button class="row contrib fuse-top${j < arr.length - 1 ? " fuse-bottom" : ""}" type="button" data-id="${m.id}"` +
+        ` aria-label="${esc(m.team)}, ${m.starters.length} in the ${esc(t.team)} lineup, ${fmt(m.live)} points. Open lineup.">` +
+          `<span class="rank">${esc(m.team.trim()[0] || "?")}</span>` +
+          `<span class="who">` +
+            `<span class="name">${esc(m.team)}</span>` +
+            `<span class="sub"><span class="rec">${m.starters.length} ${m.starters.length === 1 ? "player" : "players"}</span>` +
+              `<span class="status${m.onNow ? " on" : ""}">${dot(m)}${statusOf(m)}</span></span>` +
+          `</span>` +
+          `<span class="pts${fl(changed, m.id)}" data-tween="pts:${m.id}" data-delta>${fmt(m.live)}</span>` +
+          `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
+        `</button>`).join("")
+    ).join(`<div class="board-sep board-v" role="presentation"><span>v</span></div>`);
+    markActive();
+    return;
+  }
+
   // The leader lives in the hero, which already shows its lead over #2, so
   // the list starts at rank 2. The first listed row never fuses upward:
   // there is no card above it to fuse with, even when that gap is hot (the
@@ -156,9 +393,16 @@ function renderRows(changed) {
     const tiers = [above, below].filter((g) => g !== undefined).map(tier);
     const rankTier = tiers.includes("critical") ? "critical" : tiers.includes("live") ? "live" : "";
 
+    // Playoffs: rows under the cut line are "out" and every row says which
+    // side of it it is on.
+    const out = post !== null && !t.through;
     const rowCls = ["row",
       fuseTop ? "fuse-top" : "", fuseBottom ? "fuse-bottom" : "",
-      fuseTop || fuseBottom ? "fused" : ""].filter(Boolean).join(" ");
+      fuseTop || fuseBottom ? "fused" : "", out ? "out" : ""].filter(Boolean).join(" ");
+    const fate = !post ? ""
+      : post.round.bowl ? (roundFinal() && out ? `<span class="fate out">Runner-up</span>` : "")
+      : out ? `<span class="fate out">${roundFinal() ? "Eliminated" : "Out"}</span>`
+      : `<span class="fate in">${roundFinal() ? "Advances" : "In"}</span>`;
 
     const row =
       `<button class="${rowCls}" type="button" data-id="${t.id}"` +
@@ -167,7 +411,7 @@ function renderRows(changed) {
         `<span class="who">` +
           `<span class="name">${esc(t.team)}</span>` +
           `<span class="sub">` +
-            `<span class="rec">${t.record}</span>` +
+            `<span class="rec">${t.record}</span>` + fate +
             `<span class="status${t.onNow ? " on" : ""}">` +
               (t.onNow ? `<span class="dot"></span>` : "") + statusOf(t) +
             `</span>` +
@@ -179,17 +423,32 @@ function renderRows(changed) {
 
     if (below === undefined) return row;
     const gt = tier(below);
+    const cut = i === cutAt;
     // A coin-flip pill flashes when either score beside it moved.
     const pillFlash = gt === "critical" && (changed.has(t.id) || changed.has(teams[i + 1].id));
     return row +
-      `<div class="gap ${gt}" aria-label="Gap ${fmt(below)}${gt === "critical" ? ", coin flip" : ""}">` +
+      `<div class="gap ${gt}${cut ? " cut" : ""}" aria-label="${cut ? "Cut line, " : ""}Gap ${fmt(below)}${gt === "critical" ? ", coin flip" : ""}">` +
         `<span class="line"></span>` +
         `<span class="pill${pillFlash ? " flash" : ""}"><span data-tween="gap:${t.id}:${teams[i + 1].id}">${fmt(below)}</span>` +
-          (gt === "critical" ? `<span class="flip">Coin flip</span>` : "") +
+          (cut ? `<span class="flip">${gt === "critical" ? "Cut &middot; coin flip" : "Cut line"}</span>`
+            : gt === "critical" ? `<span class="flip">Coin flip</span>` : "") +
         `</span>` +
         `<span class="line"></span>` +
       `</div>`;
-  }).join("");
+  }).join("") +
+  // Round 1: whoever is resting sits under the list, unranked.
+  (byeTeams.length ? `<div class="board-sep" role="presentation"><span>Bye week</span></div>` : "") +
+  byeTeams.map((t) =>
+    `<button class="row bye" type="button" data-id="${t.id}"` +
+    ` aria-label="${esc(t.team)}, ${t.record}, bye this week. Open roster.">` +
+      `<span class="rank">Bye</span>` +
+      `<span class="who">` +
+        `<span class="name">${esc(t.team)}</span>` +
+        `<span class="sub"><span class="rec">${t.record}</span><span class="status">${statusOf(t)}</span></span>` +
+      `</span>` +
+      `<span class="pts">&mdash;</span>` +
+      `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
+    `</button>`).join("");
 
   markActive();
 
@@ -273,8 +532,13 @@ function rollNumbers(shown) {
   }
 }
 
+let silent = false;   // a view switch: nothing rolls, nothing pops a delta
+
 function render(changed = new Set()) {
-  const shown = snapshotShown();
+  // A member's change is its side's change.
+  if (duel) for (const id of [...changed]) if (duel.sideOf.has(id)) changed.add(duel.sideOf.get(id).id);
+  renderChrome();
+  const shown = silent ? new Map() : snapshotShown();
   const takeover = leaderId !== null && teams[0].id !== leaderId;
   leaderId = teams[0].id;
   renderCapsules();
@@ -298,8 +562,9 @@ function render(changed = new Set()) {
 // Where the week stands. Ending the day makes every game final; ending
 // the week is MFL marking it official (stats corrections done).
 const slate = { sunFinal: false, weekFinal: false, nextWeek: false };
-// The week's "final" treatment lasts until the next week begins.
-const weekIsFinal = () => slate.weekFinal && !slate.nextWeek;
+// The week's "final" treatment lasts until the next week begins. A playoff
+// round counts as final once its games are (roundFinal).
+const weekIsFinal = () => (slate.weekFinal && !slate.nextWeek) || roundFinal();
 
 const LIVE_NFL = new Map([
   ["JAC", "Q3 8:12"], ["KCC", "Q3 8:12"],   // Jaguars at Chiefs
@@ -310,7 +575,10 @@ const clockFor = (p) => LIVE_NFL.get(p.tm);
 
 const liveStats = {};   // `${teamId}:${index}` (bench: `b${index}`) -> mutated copy of st
 const slotKey = (t, k, bench) => `${t.id}:${bench ? "b" : ""}${k}`;
-const slotPlayer = (t, k, bench) => (bench ? t.bench : t.starters)[k];
+// k is always the index on the FRANCHISE's lineup: a Week 18 member's
+// lists are re-cut, so its players carry their franchise index (k / bk).
+const franchiseOf = (t) => ROSTERS.find((r) => r.id === t.id) || t;
+const slotPlayer = (t, k, bench) => (bench ? franchiseOf(t).bench : franchiseOf(t).starters)[k];
 const statsFor = (t, k, bench = false) => liveStats[slotKey(t, k, bench)] || slotPlayer(t, k, bench).st || {};
 
 const ri = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
@@ -383,14 +651,14 @@ const spotEl = document.getElementById("spot");
 let lastSpotKey = null;
 
 function spotlightPick() {
-  const all = teams.flatMap((t) => liveStarters(t, new Set()).map((p) => ({ ...p, franchise: t.team })));
+  const all = teams.flatMap((t) => liveStarters(t, new Set()).map((p) => ({ ...p, franchise: p.from || t.team })));
   let pool, label, when;
   if (slate.nextWeek) return { top: null, key: "none" };            // new week, nothing final yet
-  if (slate.weekFinal) { pool = all; label = "\u2605 MVP of the week"; when = `Week ${WEEK} final`; }
+  if (weekIsFinal()) { pool = all; label = post ? `\u2605 MVP of ${post.round.ref}` : duel ? "\u2605 MVP of the Pro Bowl" : "\u2605 MVP of the week"; when = `${post ? post.round.name : duel ? EXHIBITION.name : `Week ${WEEK}`} final`; }
   else if (slate.sunFinal) { pool = all.filter((p) => !THU_NFL.has(p.tm)); label = "Top scorer"; when = "Sunday"; }
   else return { top: null, key: "none" };                             // Sunday is in progress
   const top = pool.reduce((a, p) => (p.pts > a.pts ? p : a), pool[0]);
-  return { top, label, when, mvp: slate.weekFinal, key: `${when}:${top?.key}` };
+  return { top, label, when, mvp: weekIsFinal(), key: `${when}:${top?.key}` };
 }
 
 function renderSpotlight() {
@@ -467,6 +735,7 @@ const playerRow = (p, bench, top = false, enter = -1) =>
     `<span class="pname"><b>${esc(p.n)}</b>` +
       `<span class="pmeta">${esc(p.tm)}<span aria-hidden="true">·</span>` +
         (isLive(p) ? `<span class="clock"><span class="dot"></span>${clockFor(p)}</span>` : `<span>Final</span>`) +
+        (p.from ? `<span aria-hidden="true">·</span><span class="pfrom">${esc(p.from)}</span>` : "") +
       `</span>` +
       `<span class="pstat">${esc(statLine(p.pos, p.st))}</span>` +
     `</span>` +
@@ -481,14 +750,20 @@ let tab = "starters";
 let lastFocus = null;
 
 // Starters with any live bumps applied, in fixture order.
+// A player that already carries a key (Week 18's re-cut lists) is read by
+// that key; otherwise by its place on the franchise's lineup.
 const liveStarters = (t, changed) => t.starters.map((p, k) => {
-  const key = `${t.id}:${k}`;
-  return { ...p, key, pts: r2(p.pts + (playerBump[key] || 0)), flash: changed.has(key), st: statsFor(t, k) };
+  const key = p.key || `${t.id}:${k}`;
+  const owner = p.fromId ? { id: p.fromId } : t;   // a side's players belong to their franchises
+  const src = p.key ? slotPlayer(owner, p.k, false) : p;
+  return { ...p, key, pts: r2(src.pts + (playerBump[key] || 0)), flash: changed.has(key), st: p.key ? (liveStats[key] || src.st || {}) : statsFor(t, k) };
 });
 
 const liveBench = (t, changed) => t.bench.map((p, k) => {
-  const key = `${t.id}:b${k}`;
-  return { ...p, key, pts: r2(p.pts + (benchBump[key] || 0)), flash: changed.has(key), st: statsFor(t, k, true) };
+  const key = p.key || `${t.id}:b${k}`;
+  const bumped = playerBump[key] || benchBump[key] || 0;
+  const src = p.key ? slotPlayer(p.fromId ? { id: p.fromId } : t, p.bk ?? p.k, p.bk != null) : p;
+  return { ...p, key, pts: r2(src.pts + bumped), flash: changed.has(key), st: p.key ? (liveStats[key] || src.st || {}) : statsFor(t, k, true) };
 });
 
 function renderTeam(changed = new Set()) {
@@ -496,13 +771,16 @@ function renderTeam(changed = new Set()) {
   const starters = liveStarters(t, changed);
   const bench = liveBench(t, changed);
 
-  document.getElementById("team-rank").textContent = t.rank;
-  document.getElementById("team-week").textContent = `Week ${WEEK}`;
+  document.getElementById("team-rank").textContent = t.bye ? "Bye" : t.rank ?? t.team.trim()[0];
+  document.getElementById("team-week").textContent = duel ? `${EXHIBITION.name} \u00b7 Week ${WEEK}` : post ? `${post.round.name} \u00b7 Week ${WEEK}` : `Week ${WEEK}`;
   document.getElementById("team-status").innerHTML = statusOf(t);
   document.getElementById("team-name").textContent = t.team;
-  document.getElementById("team-rec").textContent = `${t.record} all-play`;
+  document.getElementById("team-rec").textContent = post ? `#${t.seed} seed \u00b7 ${t.season} regular season`
+    : t.isSide ? `${t.members.length} managers \u00b7 one super lineup`
+    : t.side ? `${t.starters.length} in the ${t.side.name} lineup`
+    : `${t.record} all-play`;
   const ptsEl = document.getElementById("team-pts");
-  ptsEl.textContent = fmt(t.live);
+  ptsEl.textContent = t.bye ? "\u2014" : fmt(t.live);
   ptsEl.dataset.tween = `pts:${t.id}`;
   ptsEl.dataset.delta = "";
   ptsEl.classList.toggle("flash", changed.has(t.id));
@@ -510,14 +788,16 @@ function renderTeam(changed = new Set()) {
   stEl.textContent = fmt(sum(starters));
   stEl.dataset.tween = `starters:${t.id}`;
   document.getElementById("tab-bench-n").textContent = `${fmt(sum(bench))} behind`;
+  document.querySelector('.tab[data-tab="bench"]').hidden = Boolean(t.isSide);   // a side has no bench, only the lineup
 
-  const list = tab === "bench" ? bench : starters;
+  const view = t.isSide ? "starters" : tab;
+  const list = view === "bench" ? bench : starters;
   const topPts = Math.max(0, ...starters.map((p) => p.pts));
   const isTop = (p) => !bench.includes(p) && topPts > 0 && p.pts === topPts;
-  tabs.forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
+  tabs.forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === view)));
   rosterEl.innerHTML = list.length
-    ? rosterHtml(list, tab === "bench", isTop)
-    : `<p class="empty">No ${tab} on this roster.</p>`;
+    ? rosterHtml(list, view === "bench", isTop)
+    : `<p class="empty">No ${view} on this roster.</p>`;
   if (rosterEnter) rosterEl.scrollTop = 0;   // new contents start at the top
   rosterEnter = false;
   markMore();
@@ -822,9 +1102,11 @@ let simTimer = null;
 
 // Only players whose game is on the field can score. Kickers never
 // score touchdowns, so they are left out of the TD pool.
+// Points land on franchises: in Week 18 the sides are sums of their members.
+const scoringTeams = () => (duel ? duelMembers : teams);
 const randomStarter = (forTd = false) => {
-  const pool = teams.flatMap((t) => t.starters
-    .map((p, k) => ({ t, k, p }))
+  const pool = scoringTeams().flatMap((t) => t.starters
+    .map((p, k) => ({ t, k: p.k ?? k, p }))
     .filter(({ p }) => isLive(p) && !(forTd && p.pos === "K")));
   return pool[Math.floor(Math.random() * pool.length)];
 };
@@ -834,7 +1116,7 @@ function scoreTouchdown(t, k, changed) {
   const pts = r2(6 + Math.random() * 4);
   bump(t, k, pts);
   bumpStats(t, k, pts, true);
-  announceTouchdown({ player: t.starters[k], franchise: t.team, pts, starter: true });
+  announceTouchdown({ player: slotPlayer(t, k), franchise: t.team, pts, starter: true });
   changed.add(t.id).add(`${t.id}:${k}`);
 }
 
@@ -845,12 +1127,14 @@ function scoreBenchTouchdown(t, k, changed) {
   const key = `${t.id}:b${k}`;
   benchBump[key] = r2((benchBump[key] || 0) + pts);
   bumpStats(t, k, pts, true, true);
-  announceTouchdown({ player: t.bench[k], franchise: t.team, pts, starter: false });
+  announceTouchdown({ player: slotPlayer(t, k, true), franchise: t.team, pts, starter: false });
   changed.add(key);
 }
 
 const randomBench = () => {
-  const pool = teams.flatMap((t) => t.bench.map((p, k) => ({ t, k, p })).filter(({ p }) => isLive(p) && p.pos !== "K"));
+  // Week 18 members' benches also hold their unpicked starters; only true
+  // bench players (bk) are bench scorers.
+  const pool = scoringTeams().flatMap((t) => t.bench.map((p, k) => ({ t, k: p.bk ?? k, p })).filter(({ p }) => isLive(p) && p.pos !== "K" && (!duel || p.bk != null)));
   return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
 };
 
@@ -908,7 +1192,7 @@ document.getElementById("end-week").addEventListener("click", () => {
 
 document.getElementById("td-chi").addEventListener("click", () => {
   if (slate.sunFinal) return;
-  const bears = teams.flatMap((t) => t.starters.map((p, k) => ({ t, k, p })))
+  const bears = scoringTeams().flatMap((t) => t.starters.map((p, k) => ({ t, k: p.k ?? k, p })))
     .filter(({ p }) => p.tm === "CHI" && isLive(p) && p.pos !== "K");
   const pick = bears.length ? bears[Math.floor(Math.random() * bears.length)] : randomStarter(true);
   const changed = new Set();
@@ -926,17 +1210,57 @@ document.getElementById("td").addEventListener("click", () => {
   render(changed);
 });
 
-// Hands #2 exactly enough (plus a little) to pass #1, on one starter.
+// Hands #2 exactly enough (plus a little) to pass #1, on one starter. In
+// Week 18 the chaser is a side, so one of its managers takes the points.
 document.getElementById("flip").addEventListener("click", () => {
-  const chaser = teams[1];
-  const live = chaser.starters.map((p, k) => (isLive(p) ? k : -1)).filter((k) => k >= 0);
-  const k = live.length ? live[Math.floor(Math.random() * live.length)] : Math.floor(Math.random() * chaser.starters.length);
+  const chaser = teams[1].isSide
+    ? (teams[1].members.find((m) => m.starters.some(isLive)) || teams[1].members[0])
+    : teams[1];
+  const live = chaser.starters.map((p, k) => (isLive(p) ? (p.k ?? k) : -1)).filter((k) => k >= 0);
+  const k = live.length ? live[Math.floor(Math.random() * live.length)] : (chaser.starters[Math.floor(Math.random() * chaser.starters.length)].k ?? Math.floor(Math.random() * chaser.starters.length));
   const pts = r2(gaps[0] + 0.5 + Math.random() * 2.5);
   bump(chaser, k, pts);
   bumpStats(chaser, k, pts, pts >= 6);
   derive();
   render(new Set([chaser.id, `${chaser.id}:${k}`]));
 });
+
+/* ---------------- the postseason views (demo bar tags) ----------------
+   Week 12 is the fixture as it is. Round 1, the Semifinal and the Fantasy
+   Bowl seed from the real 2025 season and fold the earlier rounds from
+   this board's live points; the Pro Bowl splits the same eleven franchises
+   into Pakistan and the World. Switching views is a debut, not a lead
+   change (no takeover), and the simulator keeps running on whoever is
+   on the field in the new view. */
+
+const REGULAR_WEEK = WEEK;
+const viewTags = [...document.querySelectorAll(".devbar [data-view]")];
+
+// Weeks 1-14 as played, then each earlier round scored by this board.
+const weeksFor = (week) => SEASON_SCORES.filter((w) => w.week <= Playoffs.PLAYOFFS.regularSeasonWeeks).concat(
+  ROUNDS.filter((r) => r.week < week).map((r) => ({ week: r.week, franchise: ROSTERS.map((t) => ({ id: t.id, score: r2(t.pts + (teamBump[t.id] || 0)) })) })));
+
+function setView(week) {
+  WEEK = week; post = null; duel = null;
+  if (week === EXHIBITION.week) duel = Playoffs.exhibition();
+  else if (Playoffs.round(week)) {
+    const f = Playoffs.field(weeksFor(week), week);
+    f.recordOf = new Map(f.seeds.map((s) => [s.id, s.record]));
+    post = f;
+  }
+  viewTags.forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.view) === week)));
+  leaderId = null;
+  rowsEl.innerHTML = "";   // a new board, not rows sliding to new slots
+  derive();
+  // A new view opens on its leader in the laptop pane; on a phone an open
+  // team that is not in this view closes.
+  if (desktop.matches) { open = teams[0].id; rosterEnter = true; }
+  else if (open !== null && !byId(open)) closeTeam();
+  silent = true;
+  try { render(); } finally { silent = false; }
+  markActive();
+}
+viewTags.forEach((b) => b.addEventListener("click", () => setView(Number(b.dataset.view))));
 
 simBtn.addEventListener("click", () => {
   if (simTimer) { clearInterval(simTimer); simTimer = null; }

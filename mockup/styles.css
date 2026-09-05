@@ -557,8 +557,11 @@ button.hero { cursor: pointer; }
   letter-spacing: -.01em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.sub { display: flex; align-items: center; gap: 6px; font: 600 11.5px/1 var(--font-data); color: var(--text-muted); }
+/* The sub-line wraps as a whole (seed chip, In/Out and status can outgrow a
+   narrow phone in the playoffs); a chip never breaks inside. */
+.sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font: 600 11.5px/1 var(--font-data); color: var(--text-muted); }
 .rec {
+  white-space: nowrap;
   padding: 3px 7px; border-radius: var(--radius-pill);
   background: var(--surface-raised);
   font: 800 10.5px/1 var(--font-data);
@@ -1389,3 +1392,130 @@ button.hero { cursor: pointer; }
   .delta { display: none; }
   .team-page, .team-page .shell { animation: none; }
 }
+
+/* ---------- playoffs ----------
+   Weeks 15-17. The round's name is the title, "Playoffs · Week 15" sits
+   over it as a kicker, and a strip of the three rounds says where the
+   postseason stands. Only the franchises playing the round are ranked;
+   the seed chip replaces the week's record. The cut line is the divider
+   under the last advancing rank: dashed while settled, and the urgency
+   scale takes it over as it tightens, like any other gap. Rows under it
+   are "out" (hollow rank circle) until the round's games are done, when
+   In/Out become Advances/Eliminated. Round 1 lists the resting No. 1
+   seed under the board, unranked. Accent marks the round on show, as it
+   marks any selection. */
+
+.kicker { color: var(--text-muted); display: flex; align-items: center; gap: 8px; margin-bottom: -2px; }
+.kicker[hidden] { display: none; }
+.kicker a { color: var(--accent); text-decoration: none; }
+.kicker a:hover { text-decoration: underline; }
+
+.rounds { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.rounds[hidden] { display: none; }
+.round {
+  display: inline-flex; flex-direction: column; gap: 4px;
+  padding: 8px 12px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  color: var(--text-secondary); text-decoration: none;
+  transition: background .25s, color .25s;
+}
+.round .rname { font: 700 12.5px/1 var(--font-display); letter-spacing: -.01em; white-space: nowrap; }
+.round .rweek { font: 800 9.5px/1 var(--font-data); letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); }
+.round.now { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+.round.now .rweek { color: inherit; opacity: .8; }
+a.round.past:hover { color: var(--text-primary); filter: brightness(1.06); }
+.round.next { opacity: .55; box-shadow: none; }
+.rarrow { color: var(--text-faint); font: 400 18px/1 var(--font-data); }
+
+/* Capsule numbers: the cut line takes the gap's tier; money is gold. */
+.capsule b.live { color: var(--gap-live); }
+.capsule b.settled { color: var(--text-primary); }
+.capsule b.gold { color: var(--gold); }
+
+/* In / Out (Advances / Eliminated, Runner-up) beside the seed chip. */
+.fate {
+  padding: 3px 7px; border-radius: var(--radius-pill);
+  font: 800 10px/1 var(--font-data); letter-spacing: .1em; text-transform: uppercase;
+  white-space: nowrap;
+}
+.fate.in { background: var(--accent-soft); color: var(--accent); }
+.fate.out { background: var(--surface-raised); color: var(--text-muted); }
+.row.out .rank:not(.critical):not(.live) {
+  background: transparent; color: var(--text-muted);
+  box-shadow: inset 0 0 0 1.5px var(--border-strong);
+}
+
+/* The cut line: a dashed hairline and a labelled pill while settled; the
+   live and coin-flip treatments above take over as it tightens. */
+.gap.cut:not(.live):not(.critical) .line {
+  background: repeating-linear-gradient(90deg, var(--text-muted) 0 5px, transparent 5px 10px);
+  opacity: .7;
+}
+.gap.cut:not(.live):not(.critical) .pill { color: var(--text-primary); border-color: var(--border-strong); }
+.gap.cut .flip { font-size: 9.5px; }
+
+/* Round 1: the resting seed under the board. */
+.board-sep {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 10px 6px;
+  font: 800 9.5px/1 var(--font-data); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.board-sep::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.row.bye .rank { font: italic 900 10px/1 var(--font-display); letter-spacing: .04em; text-transform: uppercase; }
+.row.bye .pts { color: var(--text-faint); }
+
+@media (min-width: 1024px) {
+  .row.active .fate.in { background: var(--hero-pill); color: var(--hero-accent); }
+  .row.active .fate.out { background: var(--hero-pill); color: var(--hero-muted); }
+  .row.active .rank { box-shadow: none; }
+}
+
+/* ---------- Week 18: Pakistan vs. the World ----------
+   The hero puts both sides face to face, the leader bright and the
+   trailing side muted, over the usual strip with the margin. The board
+   lists each side and, fused under it, the managers who filled its lineup
+   with what each contributed. A side's page is its super lineup; each row
+   names the franchise the player came from. */
+.duel { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
+.duel-side { display: flex; flex-direction: column; gap: 6px; min-width: 0; transition: opacity .3s; }
+.duel-side:last-child { align-items: flex-end; text-align: right; }
+/* Each side's flag over its name: a small rounded flag, dimmed with the
+   rest of the trailing side. */
+.duel-flag { display: block; height: 30px; margin-bottom: 4px; }   /* by height: the two flags have different proportions */
+.duel-flag svg { display: block; height: 100%; width: auto; border-radius: 4px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .18), 0 4px 10px rgba(0, 0, 0, .35); }
+.duel-side:not(.lead) .duel-flag { opacity: .6; }
+.duel-name { font: italic 900 22px/1 var(--font-display); letter-spacing: -.02em; text-transform: uppercase; text-wrap: balance; }
+.duel-pts { position: relative; font: 800 40px/1 var(--font-data); letter-spacing: -.03em; transition: color .4s; }
+.duel-side:not(.lead) .duel-name, .duel-side:not(.lead) .duel-pts { color: var(--hero-muted); }
+.hero.winner .duel-side.lead .duel-pts { color: var(--hero-gold); }
+.duel-sub { font: 700 12px/1 var(--font-data); color: var(--hero-muted); }
+.duel-v {
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--hero-pill); color: var(--hero-muted);
+  font: italic 900 13px/1 var(--font-display);
+}
+@media (max-width: 430px) {
+  .duel-name { font-size: 18px; }
+  .duel-pts { font-size: 32px; }
+}
+/* The managers under a side: a shallower, sunken row. */
+.row.contrib {
+  grid-template-columns: 30px 1fr 82px 14px;
+  padding: 9px 14px 9px 14px;
+  background: var(--surface-sunken);
+  box-shadow: inset 0 1px 0 var(--border);
+}
+.row.contrib .rank { width: 30px; height: 30px; font: italic 900 11px/1 var(--font-display); }
+.row.contrib .rank-icon { width: 30px; height: 30px; }
+.row.contrib .name { font-size: 14px; }
+.row.contrib .pts { font-size: 17px; }
+.pname .pmeta .pfrom { color: var(--text-secondary); text-transform: none; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Between the two sides: the v centred on a hairline. */
+.board-v { justify-content: center; padding: 10px 10px 8px; font: italic 900 12px/1 var(--font-display); text-transform: lowercase; letter-spacing: 0; }
+.board-v::before, .board-v::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+/* Demo bar: the view tags and a break before the actions. */
+.sim.tag[aria-pressed="true"] { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+.devbreak { flex-basis: 100%; height: 0; }
