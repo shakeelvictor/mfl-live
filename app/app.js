@@ -217,6 +217,7 @@ function renderChrome() {
   title.classList.toggle("bowl", bowlTitle);
   document.getElementById("week-trophy").hidden = !bowlTitle;
   document.getElementById("bowl-bg").classList.toggle("on", bowlTitle);   // the gold clouds behind the board
+  document.getElementById("app").classList.toggle("bowl", bowlTitle);     // and the text above and below the title steps up a shade
   document.querySelector(".standings-head h2").textContent = duel ? "Sides" : "Standings";
   const kick = document.getElementById("kick");
   kick.hidden = phase !== "preseason" || !kickoff;
