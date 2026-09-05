@@ -199,7 +199,12 @@ function renderChrome() {
   const kicker = document.getElementById("kicker");
   kicker.hidden = !post && !duel;
   if (post || duel) kicker.innerHTML = duel ? `Week ${WEEK} &middot; Pakistan vs. the World` : `Playoffs &middot; Week ${WEEK}`;
-  document.getElementById("week-title").textContent = duel ? EXHIBITION.name : post ? post.round.name : `Week ${WEEK}`;
+  const title = document.getElementById("week-title");
+  title.textContent = duel ? EXHIBITION.name : post ? post.round.name : `Week ${WEEK}`;
+  // The Fantasy Bowl: the title's drift turns gold and a trophy sits beside it.
+  const bowlTitle = post !== null && Boolean(post.round.bowl);
+  title.classList.toggle("bowl", bowlTitle);
+  document.getElementById("week-trophy").hidden = !bowlTitle;
   document.querySelector(".standings-head h2").textContent = duel ? "Sides" : "Standings";
   document.getElementById("subhead").innerHTML =
     (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head`
