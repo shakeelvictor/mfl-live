@@ -38,6 +38,7 @@ const TYPES = {
   nflSchedule:   { params: ['W'], maxAge: 300, noLeague: true },
   playersMap:    { params: ['PLAYERS'], maxAge: 3600 },   // built here, see below
   seasonScores:  { params: [], maxAge: 600 },             // built here: every week's franchise scores, for the playoffs
+  stats:         { params: ['W'], maxAge: 60 },           // built here: Sleeper's live stat lines for rostered players, context only
 };
 
 // MFL asks clients to cache and back off, not retry. A 429 puts the whole
@@ -128,6 +129,47 @@ async function seasonScores() {
     franchise: toArray(wk.franchise).map((f) => ({ id: f.id, score: Number(f.score) || 0 })),
   }));
   return { data: { weeks } };
+}
+
+/* ---------------- stat lines ----------------
+   Context beside MFL's points, never a score (recomputing points from
+   stats is disqualified: see CLAUDE.md). Sleeper's weekly stats are free
+   and update during games, but cover every NFL player (~570KB), so they
+   are cut down here to the league's rostered players (their Sleeper ids
+   come from the same join playersMap uses, remembered for an hour) and to
+   the keys a stat line is built from: ~10KB, held a minute. */
+
+const STAT_KEYS = ['pass_cmp', 'pass_att', 'pass_yd', 'pass_td', 'pass_int', 'rush_att', 'rush_yd', 'rush_td',
+  'rec', 'rec_tgt', 'rec_yd', 'rec_td', 'fum_lost', 'fgm', 'fga', 'xpm', 'xpa',
+  'idp_tkl', 'idp_tkl_solo', 'idp_tkl_ast', 'idp_sack', 'idp_int', 'idp_ff', 'idp_fum_rec', 'idp_pass_def', 'idp_tkl_loss',
+  'idp_blk_kick', 'idp_safe', 'idp_def_td', 'st_tkl_solo', 'st_ff', 'st_fum_rec', 'st_td'];   // special teams counts toward IDP in MFL
+
+let sidCache = { at: 0, sids: null };
+async function rosteredSids() {
+  if (sidCache.sids && Date.now() - sidCache.at < 3600e3) return sidCache.sids;
+  const pm = await playersMap();
+  if (pm.error) throw new Error(`stats: ${pm.error}`);
+  const sids = new Set(Object.values(pm.data.players).map((p) => p.sid).filter(Boolean));
+  sidCache = { at: Date.now(), sids };
+  return sids;
+}
+
+async function stats(params) {
+  const week = String(params.W || '').replace(/\D/g, '');
+  if (!week) return { error: 'stats needs W' };
+  const sids = await rosteredSids();
+  const res = await fetch(`https://api.sleeper.app/v1/stats/nfl/regular/${SEASON}/${week}`, { headers: { 'User-Agent': UA } });
+  if (!res.ok) throw new Error(`Sleeper stats: HTTP ${res.status}`);
+  const all = await res.json();
+  const out = {};
+  for (const sid of sids) {
+    const src = all[sid];
+    if (!src) continue;
+    const st = {};
+    for (const k of STAT_KEYS) if (src[k]) st[k] = src[k];
+    if (Object.keys(st).length) out[sid] = st;
+  }
+  return { data: { week: Number(week), stats: out } };
 }
 
 /* ---------------- request handler ---------------- */
@@ -221,6 +263,7 @@ async function fetchFresh(type, spec, params) {
   try {
     const r = type === 'playersMap' ? await playersMap(params)
       : type === 'seasonScores' ? await seasonScores()
+      : type === 'stats' ? await stats(params)
       : await mfl(type, params, { noLeague: spec.noLeague });
     if (r.error) return json(200, { ok: false, type, error: r.error }, Math.min(spec.maxAge, 60));
 

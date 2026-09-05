@@ -701,7 +701,10 @@ function statLine(pos, st) {
     st.idp_tkl_loss ? `${st.idp_tkl_loss} TFL` : "", st.idp_sack ? `${st.idp_sack} SCK` : "",
     st.idp_int ? `${st.idp_int} INT` : "", st.idp_ff ? `${st.idp_ff} FF` : "",
     st.idp_fum_rec ? `${st.idp_fum_rec} FR` : "", st.idp_pass_def ? `${st.idp_pass_def} PD` : "",
-    st.idp_td ? `${st.idp_td} TD` : "",
+    st.idp_blk_kick ? `${st.idp_blk_kick} BLK` : "", st.idp_safe ? `${st.idp_safe} SAF` : "",
+    // MFL counts special-teams tackles toward IDP totals; Sleeper breaks them out.
+    st.st_tkl_solo ? `${st.st_tkl_solo} ST TKL` : "", st.st_ff ? `${st.st_ff} ST FF` : "", st.st_fum_rec ? `${st.st_fum_rec} ST FR` : "",
+    (st.idp_td || st.idp_def_td || st.st_td) ? `${(st.idp_td || 0) + (st.idp_def_td || 0) + (st.st_td || 0)} TD` : "",
   ]);
 }
 
@@ -794,7 +797,7 @@ const logoBadge = (tm) => logoSrc(tm) ? `<span class="plogo"><img src="${logoSrc
 
 // Touchdowns from the stat line (all kinds), so a simulated score adds the
 // chip live. IDP scores use the mockup's own idp_td key.
-const tdCount = (st) => (st ? (st.pass_td || 0) + (st.rush_td || 0) + (st.rec_td || 0) + (st.idp_td || 0) : 0);
+const tdCount = (st) => (st ? (st.pass_td || 0) + (st.rush_td || 0) + (st.rec_td || 0) + (st.idp_td || 0) + (st.idp_def_td || 0) + (st.st_td || 0) : 0);
 const tdBadge = (st) => { const n = tdCount(st); return n ? `<span class="ptd">${n > 1 ? n + " " : ""}TD</span>` : ""; };
 
 // top: the team's highest-scoring starter gets a gold ring (MVP echo).
@@ -1238,13 +1241,19 @@ let rosterIds = new Map();    // franchise id -> [player ids]
 let lastScores = new Map();   // `${franchise}:${player}` -> score at the previous poll
 let scheduleAt = 0;           // when the NFL schedule was last fetched
 const SCHEDULE_EVERY = 5 * 60e3;
+// Stat lines: Sleeper's live stats through the proxy, keyed by Sleeper id,
+// refreshed once a minute in season. Context beside MFL's number, never a
+// score; a failed fetch keeps the last lines.
+let statsBySid = {};
+let statsAt = 0;
+const STATS_EVERY = 60e3;
 
 const mkPlayer = (id, pts = 0, secs = null) => {
   const i = playerInfo[id] || {};
   // MFL spells kickers "PK"; the page's positions (and the league's lineup
   // rule) say K. Every defensive position maps to the one IDP colour later.
   const pos = i.pos === "PK" ? "K" : (i.pos || "?");
-  return { id, n: i.n || `#${id}`, pos, tm: i.tm || "", pts, sid: i.sid || null, st: {}, secs };
+  return { id, n: i.n || `#${id}`, pos, tm: i.tm || "", pts, sid: i.sid || null, st: (i.sid && statsBySid[i.sid]) || {}, secs };
 };
 
 async function ensurePlayers(ids) {
@@ -1329,6 +1338,11 @@ async function refreshLive(first = false) {
   const L = ls.data.liveScoring;
   WEEK = Number(L.week) || WEEK;
   await loadPlayoffs();
+  if (first || Date.now() - statsAt > STATS_EVERY) {
+    const st = await api("stats", { W: String(WEEK) }).catch((e) => ({ ok: false, error: String(e) }));
+    if (st.ok) { statsBySid = st.data.stats || {}; statsAt = Date.now(); }
+    else console.warn("stat lines unavailable, keeping the last ones:", st.error);
+  }
   const franchises = toArray(L.franchise);
   await ensurePlayers([...rosterIds.values()].flat().concat(franchises.flatMap((f) => toArray(f.players?.player).map((p) => p.id))));
 

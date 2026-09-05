@@ -12,7 +12,9 @@ traps only — don't duplicate the spike doc here.
 
 Build the leaderboard. Source it from **MFL's own `liveScoring`**, not a
 third-party feed. The roster stat-line view and the Sleeper dependency are cut
-from the POC.
+from the POC. (Revisited 2026-09-05: stat lines are back as **context
+only**, fed live from Sleeper through the proxy's `stats` type; points
+never come from them. See "Player images and stats".)
 
 ## The app on `main` (started 2026-09-02)
 
@@ -48,7 +50,7 @@ from the POC.
 - **Polling budget (MFL rate-limits; an older POC got throttled).** The
   proxy keeps a per-instance response cache by (type, params) with each
   type's max-age (liveScoring 15s, schedule/lineups 5m, rosters 10m, league
-  15m, players 1h), coalesces identical in-flight requests, serves stale on
+  15m, players 1h, stats 1m from Sleeper), coalesces identical in-flight requests, serves stale on
   MFL errors, and on a 429 stops calling MFL for 5 minutes (stale answers
   meanwhile, 503 + Retry-After otherwise). So N open pages cost one MFL
   call per window per type. The page polls liveScoring every 30s in season
@@ -474,11 +476,17 @@ on the field and everything else is Final; "on now" on the leaderboard is derive
 simulator only bumps players in that game, editing their line to match the
 bump. The line is context next to MFL's number and never feeds it.
 
-**Images are off the live path; stat lines are on it.** The crosswalk is a
-cache job and headshots are static files, so neither touches Sunday polling --
-and a headshot cannot contradict a score. Live stat lines would need Sleeper
-polled *during games* and carry the drift problem above. That asymmetry is why
-headshots are in and stat lines are still out.
+**Live stat lines are in, as context only (2026-09-05).** The proxy's
+`stats` type fetches Sleeper's weekly stats (`/v1/stats/nfl/regular/<season>/<W>`,
+free, updates during games, ~570KB for every NFL player), cuts them to the
+league's rostered players (Sleeper ids from the playersMap join, remembered
+an hour) and to `STAT_KEYS`, and holds the ~10KB result a minute; the page
+asks once a minute in season and hands each player its line as `st`, so
+rows, the spotlight and the TD chip read real lines. Sleeper down or slow
+means the last lines stay (a warning in the console), never a missing
+score: MFL's points are untouched. The drift finding above is why they
+stay context: a line beside MFL's number, never feeding it. Headshots are
+static files off the live path; a headshot cannot contradict a score.
 
 ## Licensing a faster stat feed does not help
 
