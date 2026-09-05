@@ -1535,9 +1535,17 @@ a.round.past:hover { color: var(--text-primary); filter: brightness(1.06); }
    Bowl title takes the leading score's iridescent sweep instead: in dark,
    white glyphs with a pearl band of pink, cyan, mint and cream; in light,
    the near-black glyphs with a muted iridescent glint through them. */
-:root { --iri-base: #ffffff; --iri-1: #ffd6ea; --iri-2: #cdefff; --iri-3: #d9ffe6; --iri-4: #fff0c4; }
-:root[data-theme="light"] { --iri-base: #101514; --iri-1: #b8557f; --iri-2: #2f86c2; --iri-3: #2a9c78; --iri-4: #b8891c; }
-h1.bowl { background-image: linear-gradient(100deg, var(--iri-base) 0%, var(--iri-base) 26%, var(--iri-1) 38%, var(--iri-2) 46%, var(--iri-3) 54%, var(--iri-4) 62%, var(--iri-base) 74%, var(--iri-base) 100%); }
+:root { --iri-base: #ffffff; --iri-1: #ffe3ef; --iri-2: #dff3ff; --iri-3: #e4fff0; --iri-4: #fff6d8; --iri-glow: drop-shadow(0 0 8px rgba(255, 255, 255, .38)) drop-shadow(0 0 26px rgba(255, 226, 240, .30)); }
+:root[data-theme="light"] { --iri-base: #101514; --iri-1: #8f4a68; --iri-2: #2f6f9c; --iri-3: #2b7d63; --iri-4: #8f6d1c; --iri-glow: drop-shadow(0 2px 6px rgba(16, 21, 20, .16)) drop-shadow(0 0 18px rgba(47, 111, 156, .18)); }
+/* A narrower, paler band than the score's, on a slower drift (22s against
+   the title's usual 12s), and a glow. text-shadow would paint over the
+   clipped gradient, so the glow is a drop-shadow filter on the rendered
+   glyphs (two layers: a tight white halo and a wide pearl one). */
+h1.bowl {
+  background-image: linear-gradient(100deg, var(--iri-base) 0%, var(--iri-base) 34%, var(--iri-1) 42%, var(--iri-2) 47%, var(--iri-3) 52%, var(--iri-4) 57%, var(--iri-base) 66%, var(--iri-base) 100%);
+  animation-duration: 22s;
+  filter: var(--iri-glow);
+}
 .trophy {
   font-size: 44px; line-height: 1; align-self: center;
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .35));
