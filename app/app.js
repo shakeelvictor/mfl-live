@@ -210,7 +210,12 @@ function renderChrome() {
       // Looking back at a finished round (?w=15): a way back to the live one.
       (QUERY.has("w") ? ` &middot; <a href="${location.pathname}">Back to now</a>` : "");
   }
-  document.getElementById("week-title").textContent = duel ? EXHIBITION.name : post ? post.round.name : `Week ${WEEK}`;
+  const title = document.getElementById("week-title");
+  title.textContent = duel ? EXHIBITION.name : post ? post.round.name : `Week ${WEEK}`;
+  // The Fantasy Bowl: the title's drift turns gold and a trophy sits beside it.
+  const bowlTitle = post !== null && Boolean(post.round.bowl);
+  title.classList.toggle("bowl", bowlTitle);
+  document.getElementById("week-trophy").hidden = !bowlTitle;
   document.querySelector(".standings-head h2").textContent = duel ? "Sides" : "Standings";
   const kick = document.getElementById("kick");
   kick.hidden = phase !== "preseason" || !kickoff;

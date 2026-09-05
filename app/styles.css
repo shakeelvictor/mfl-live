@@ -1505,3 +1505,22 @@ a.round.past:hover { color: var(--text-primary); filter: brightness(1.06); }
 /* Between the two sides: the v centred on a hairline. */
 .board-v { justify-content: center; padding: 10px 10px 8px; font: italic 900 12px/1 var(--font-display); text-transform: lowercase; letter-spacing: 0; }
 .board-v::before, .board-v::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+/* ---------- the Fantasy Bowl title ----------
+   The WEEK title's drift in gold: gold glyphs with a pale band gliding
+   through (deeper gold and a brighter band in light, for contrast on
+   white), and a trophy beside the words, outside the gradient. */
+:root { --title-gold: #f2c94c; --title-gold-band: #fff3c2; }
+:root[data-theme="light"] { --title-gold: #9a6b00; --title-gold-band: #e2b53a; }
+h1.bowl { background-image: linear-gradient(100deg, var(--title-gold) 0%, var(--title-gold) 30%, var(--title-gold-band) 50%, var(--title-gold) 70%, var(--title-gold) 100%); }
+.trophy {
+  font-size: 44px; line-height: 1; align-self: center;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .35));
+  animation: fflr-trophy 3.2s ease-in-out infinite;
+}
+.trophy[hidden] { display: none; }
+@keyframes fflr-trophy { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+/* Narrow phones: FANTASY BOWL fills the line at 46px, so the Bowl title
+   drops a size to keep the trophy beside it. */
+@media (max-width: 430px) { .trophy { font-size: 34px; } h1.bowl { font-size: 38px; } }
+@media (prefers-reduced-motion: reduce) { .trophy { animation: none; } }

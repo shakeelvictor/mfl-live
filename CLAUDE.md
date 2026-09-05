@@ -129,6 +129,11 @@ be total.
   the left, under their franchise icon or an initial, the leader bright,
   the margin in the strip) and the board lists both finalists with no
   divider between them (Champion / Runner-up once final). The Bowl's
+  title wears the drift in gold (`h1.bowl`, `--title-gold` tokens per
+  theme) with a trophy emoji beside it, kept outside the h1 because the
+  gradient is painted through the glyphs and would swallow the emoji's
+  colours (on phones under 430px the Bowl title drops to 38px so the
+  trophy stays on its line). The Bowl's
   leader is "Fantasy Bowl champion" with the gold and the money bag once
   final; the
   earlier rounds get no gold, they pay nothing. The spotlight's MVP is
