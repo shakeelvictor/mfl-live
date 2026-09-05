@@ -80,8 +80,8 @@ element and scores are second.
   animations never fight FLIP transforms later. Skipped under reduced
   motion.
 - The header is the wordmark only: **MFL LIVE**, with LIVE in the live red
-  and a pulsing dot after it; once the week is official the dot goes and
-  LIVE rejoins the name. There is no separate status line.
+  and a pulsing dot after it; it stays on always, before the
+  season and after a week is final (the name, not a status). There is no separate status line.
 - In dark the hero has **no border and no inset highlight** (`--hero-border`,
   `--hero-shadow`): its gradient fades to near-canvas, so either reads as a
   stray outline. Light keeps both.
