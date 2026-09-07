@@ -308,6 +308,45 @@ function renderCapsules() {
     `<span class="capsule"><b>${atStake}</b>wins at stake</span>` + left;
 }
 
+// A franchise name is one column of the hero and the score is the other. A
+// long single word ("WhiskeyDitka" at 30px) is wider than the column and,
+// since the column may shrink below it, ran under the score. Step the size
+// down until the longest word fits (the box is measured, so an icon counts
+// too); if it still does not at the floor, give the name the full width and
+// drop the score under it (.hero-mid.stack), and only past that let the word
+// break. Only measurable while the element is displayed, so openTeam() calls
+// it after showing the page. Multi-word names wrap and are left at full size.
+const NAME_MIN_PX = 24;
+function fitName(el) {
+  if (!el) return;
+  const mid = el.closest(".hero-mid");
+  el.style.fontSize = "";
+  el.classList.remove("wrap-any");
+  mid?.classList.remove("stack");
+  if (!el.clientWidth) return;   // hidden (the page is closed, or the pane hides its hero)
+  const fits = () => el.scrollWidth <= el.clientWidth + 1;
+  const shrink = () => {
+    el.style.fontSize = "";
+    let size = parseFloat(getComputedStyle(el).fontSize);
+    while (!fits() && size > NAME_MIN_PX) {
+      size -= 1;
+      el.style.fontSize = `${size}px`;
+    }
+    return fits();
+  };
+  if (shrink()) return;
+  if (mid) {
+    mid.classList.add("stack");
+    if (shrink()) return;
+  }
+  el.classList.add("wrap-any");
+}
+function fitNames() {
+  fitName(heroBody.querySelector(".hero-name"));
+  fitName(document.getElementById("team-name"));
+}
+addEventListener("resize", fitNames);
+
 function renderHero(changed, takeover) {
   if (phase === "preseason") return;   // hidden by renderChrome; the countdown pill stands in
   const lead = teams[0], chaser = teams[1], lt = tier(gaps[0]);
@@ -371,6 +410,7 @@ function renderHero(changed, takeover) {
   document.getElementById("hero-wrap").classList.toggle("winner", duel ? roundFinal() : gold);
   hero.setAttribute("aria-label",
     `${lead.team} leads ${duel ? "the Pro Bowl" : post ? post.round.ref : `Week ${WEEK}`} with ${fmt(lead.live)} points, ${fmt(gaps[0])} ahead of ${chaser.team}. Open lineup.`);
+  fitName(heroBody.querySelector(".hero-name"));
 
   if (takeover && !reducedMotion.matches) {
     hero.classList.remove("takeover");
@@ -849,7 +889,9 @@ function renderTeam(changed = new Set()) {
   const statusEl = document.getElementById("team-status");
   statusEl.hidden = pre;
   statusEl.innerHTML = statusOf(t);
-  document.getElementById("team-name").innerHTML = `${franchiseIcon(t, "hero-icon")}${esc(t.team)}`;
+  const nameEl = document.getElementById("team-name");
+  nameEl.innerHTML = `${franchiseIcon(t, "hero-icon")}${esc(t.team)}`;
+  fitName(nameEl);   // a no-op while the page is closed; openTeam() fits it once shown
   document.getElementById("team-rec").textContent = pre
     ? (starters.length ? `pre-season \u00b7 ${starters.length} starters set` : "pre-season \u00b7 lineup due at kickoff")
     : post ? `#${t.seed} seed \u00b7 ${t.season} regular season`
@@ -930,6 +972,7 @@ function openTeam(id) {
   page.dataset.open = "true";
   page.scrollTop = 0;
   document.body.classList.add("team-open");   // board keeps its scroll position
+  fitName(document.getElementById("team-name"));   // measurable now that the page is displayed
   document.getElementById("back").focus();
 }
 

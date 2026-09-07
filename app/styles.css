@@ -325,7 +325,7 @@ button.hero { cursor: pointer; }
   white-space: nowrap;
 }
 
-.hero-mid { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; }
+.hero-mid { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
 .hero-id { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .hero-name {
   margin: 0;
@@ -335,6 +335,13 @@ button.hero { cursor: pointer; }
   text-wrap: balance;
 }
 .team-page .hero-name { font-size: 30px; }
+/* fitName() steps the size down when a name's longest word is wider than its
+   column; at its floor the score drops under the name instead, and only past
+   that may the word break rather than run under the score. */
+.hero-mid.stack { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; row-gap: 8px; }
+.hero-mid.stack .hero-id { display: contents; }   /* name across both columns, record beside the score */
+.hero-mid.stack .hero-name { grid-column: 1 / -1; }
+.hero-name.wrap-any { overflow-wrap: anywhere; }
 .hero-rec { font: 700 12px/1 var(--font-data); color: var(--hero-muted); }
 /* Franchise icons from MFL, when set: by the name in a hero, badged on the
    rank circle in the list (or in its place before the season). */

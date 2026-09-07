@@ -286,6 +286,16 @@ element and scores are second.
   and a pulsing dot after it, always (it is the name, not a status: it
   used to drop the dot before the season and once a week was official,
   changed 2026-09-05). There is no separate status line.
+- **Hero names fit their column** (`fitName()` in `app.js`, 2026-09-07): a
+  single word wider than the name column ("WhiskeyDitka" at 30px on a
+  375px phone) used to run under the score. The script steps the name
+  down to a 24px floor; if the word still cannot sit beside the score, the
+  `.hero-mid` goes `.stack` (name across the hero, record and score on one
+  line under it), and only past that may the word break (`.wrap-any`).
+  Measured on render, after `openTeam()` shows the page (the page is
+  `display: none` during `renderTeam()`, so an earlier measurement is 0)
+  and on resize. Multi-word names still wrap at full size. Same code in
+  `mockup/app.js` on `poc`.
 - In dark the hero has **no border and no inset highlight** (`--hero-border`,
   `--hero-shadow`): its gradient fades to near-canvas, so either reads as a
   stray outline. Light keeps both.
