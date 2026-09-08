@@ -864,7 +864,9 @@ button.hero { cursor: pointer; }
   transition: height .3s ease;
 }
 .prow.open .pdetail { height: auto; overflow: visible; }
-.pdetail.tween { overflow: hidden; }
+/* Clipped while the height tweens, open state included: the open rule
+   above would otherwise win and the content spilled over the next row. */
+.pdetail.tween, .prow.open .pdetail.tween { overflow: hidden; }
 /* The game strip: away @ home with scores, the player's team bright, a
    football (the possession marker) by whoever has the ball, RZ in the
    coin-flip red, and the state on the right. Wraps on a narrow row. */
