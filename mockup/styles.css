@@ -689,12 +689,15 @@ button.hero { cursor: pointer; }
   position: relative;
   display: grid;
   grid-template-columns: 40px 40px 1fr auto;
-  gap: 10px; align-items: center;
+  gap: 0 10px; align-items: center;   /* no row gap: the detail panel sits flush when closed */
   padding: 9px 8px;
   border-radius: var(--radius-row);
   transition: background .2s, opacity .3s;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 .prow:hover { background: var(--surface-raised); }
+.prow:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 /* Still on the field: mint ring on the headshot and a soft mint wash that
    fades out across the row, the same signal as "on now" on the board. */
@@ -837,8 +840,66 @@ button.hero { cursor: pointer; }
 .pname .pstat:empty { display: none; }
 .prow.bench .pstat { color: var(--text-muted); }
 
+.pright { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
 .ppts { font: 800 17px/1 var(--font-data); letter-spacing: -.01em; text-align: right; transition: color .4s; }
 .ppts.zero { color: var(--text-muted); }
+/* The chevron under the points: a tap opens the breakdown. Points down
+   closed, up open. */
+.pchev {
+  width: 7px; height: 7px; margin: 0 3px 3px 0;
+  border-right: 2px solid var(--text-muted); border-bottom: 2px solid var(--text-muted);
+  transform: rotate(45deg);
+  transition: transform .25s, border-color .2s;
+}
+.prow.open .pchev { transform: translateY(3px) rotate(225deg); border-color: var(--accent); }
+
+/* The breakdown: a panel across the row under the columns, opened by
+   tweening its grid track from nothing to its content (the inner div
+   clips it meanwhile), so the roster rows below slide down with it. */
+.pdetail {
+  grid-column: 1 / -1;
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows .3s ease;
+}
+.pdetail > div { min-height: 0; overflow: hidden; }
+.prow.open .pdetail { grid-template-rows: 1fr; }
+/* The game strip: away @ home with scores, the player's team bright, a
+   football (the possession marker) by whoever has the ball, RZ in the
+   coin-flip red, and the state on the right. Wraps on a narrow row. */
+.pgame {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+  margin-top: 10px; padding: 7px 10px;
+  border-radius: var(--radius-row);
+  background: var(--surface-raised); border: 1px solid var(--border);
+  font: 700 12px/1 var(--font-data); color: var(--text-muted);
+}
+.pg-team { display: inline-flex; align-items: center; gap: 5px; }
+.pg-team img { width: 16px; height: 16px; object-fit: contain; }
+.pg-team.mine { color: var(--text-primary); }
+.pg-id { letter-spacing: .06em; }
+.pg-score { font-size: 14px; font-weight: 800; letter-spacing: -.01em; }
+.pg-team.mine .pg-score { color: var(--text-primary); }
+.pg-team.poss .pg-score::after { content: "\1F3C8"; margin-left: 4px; font-size: 10px; }
+.pg-rz { padding: 2px 4px; border-radius: 3px; background: var(--gap-critical); color: #fff; font: 800 8.5px/1 var(--font-data); letter-spacing: .06em; }
+.pg-at { font-weight: 600; }
+.pg-state { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.pgame.live .pg-state { color: var(--accent); }
+.pgame + .ptiles, .pgame + .pnone { padding-top: 8px; }
+
+.ptiles {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 6px;
+  padding: 10px 0 2px;
+}
+.ptile {
+  display: flex; flex-direction: column; gap: 4px; min-width: 0;
+  padding: 7px 8px; border-radius: var(--radius-row);
+  background: var(--surface-raised); border: 1px solid var(--border);
+}
+.ptile b { font: 800 15px/1 var(--font-data); letter-spacing: -.01em; white-space: nowrap; }
+.ptile span { font: 700 9px/1 var(--font-data); letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ptile.zero b { color: var(--text-muted); }
+.pnone { margin: 0; padding: 10px 0 2px; font: 600 12px/1.3 var(--font-data); color: var(--text-muted); }
+.prow.bench .ptile b { color: var(--text-secondary); }
 
 /* Live values flash once on change; rows in flight sit above the dividers. */
 .flash { animation: fflr-flash .9s ease-out; }
@@ -1101,7 +1162,12 @@ button.hero { cursor: pointer; }
   .team-page .tabs { padding: 3px; }
   .team-page .tab { height: 36px; }
   .team-page .roster { padding: 10px; }
-  .team-page .prow { grid-template-columns: 36px 36px 1fr auto; gap: 10px; padding: 10px 8px; }
+  .team-page .prow { grid-template-columns: 36px 36px 1fr auto; gap: 0 10px; padding: 10px 8px; }
+  .team-page .ptiles { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); padding-top: 8px; }
+  .team-page .ptile { padding: 6px 7px; }
+  .team-page .ptile b { font-size: 14px; }
+  .team-page .pgame { margin-top: 8px; padding: 6px 9px; font-size: 11px; }
+  .team-page .pg-score { font-size: 13px; }
   .team-page .pgroup { padding: 5px 8px 1px; font-size: 9px; }
   .team-page .pgroup:first-child { padding-top: 0; }
   .team-page .prow .avatar, .team-page .prow .avatar-fb { width: 36px; height: 36px; }
@@ -1389,6 +1455,7 @@ button.hero { cursor: pointer; }
   .witch *, .witch { animation: none !important; }   /* a still frame, held briefly (the script shortens it) */
   .td-scrim, .td-card, .td-card * { animation: none !important; }
   .prow.enter { animation: none; }
+  .pdetail, .pchev { transition: none; }
   h1 { animation: none; background-position: 50% 50%; }   /* the band held mid-title */
   .flash { animation: none; }
   .hero.takeover, .hero.takeover * { animation: none !important; }

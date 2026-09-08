@@ -106,6 +106,23 @@ element and scores are second.
   swing instead of repainting each frame (it stuttered without), and the
   top scorer's gold wave, a per-frame repaint, waits until the swing has
   settled. A poll's re-render leaves them still.
+  **Each row expands** (ported from `main`, 2026-09-08): the row is a
+  button (tap, Enter or Space; `role="button"`, `aria-expanded`) and
+  opens a card under it, `.pdetail`: a **game strip** across the top
+  (`gameStrip()`: away @ home with both scores from the staged `GAMES`
+  slate, the real 2025 Week 12 finals re-paired around the two staged
+  live games, the player's team bright, a football by the side with
+  the ball, RZ in the coin-flip red, the clock or Final on the right;
+  a simulated touchdown adds seven to the scorer's side, `scoreNfl`),
+  then a grid of stat tiles (`statTiles()`, kept the same as `main`'s:
+  the position's core counts always, zeros muted, the rest once they
+  count, a rate where the volume supports one). The chevron under the
+  points flips. Opened in place, not by re-render, so the panel's
+  `grid-template-rows: 0fr -> 1fr` transition plays and the rows below
+  slide; the open set is remembered by slot key (`expanded`) so a tick's
+  re-render keeps them open. `.prow` has no row gap so the closed panel
+  sits flush; the laptop pane refreshes `markMore()` when a panel
+  finishes opening.
   Rows carry three small signals: the NFL logo badged on the
   headshot (as on the spotlight and touchdown cards), a mint **TD** chip on
   the headshot's top corner for anyone who has scored (counted from the

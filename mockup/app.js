@@ -631,6 +631,24 @@ const LIVE_NFL = new Map([
 const isLive = (p) => !slate.sunFinal && LIVE_NFL.has(p.tm);
 const clockFor = (p) => LIVE_NFL.get(p.tm);
 
+// The NFL slate behind the rows, for the expanded row's game strip: the
+// real 2025 Week 12 finals, re-paired around the two staged live games
+// (the Jaguars and Bears are on the field against the Chiefs and Vikings
+// here, so their real opponents meet each other). A simulated touchdown
+// adds seven to the scorer's side. poss: who has the ball in a live game.
+const GAMES = [
+  { away: "BUF", home: "HOU", as: 19, hs: 23 }, { away: "NEP", home: "CIN", as: 26, hs: 20 },
+  { away: "SEA", home: "TEN", as: 30, hs: 24 }, { away: "IND", home: "ARI", as: 20, hs: 24 },
+  { away: "PIT", home: "GBP", as: 28, hs: 23 }, { away: "NYG", home: "DET", as: 27, hs: 34 },
+  { away: "NYJ", home: "BAL", as: 10, hs: 23 }, { away: "CLE", home: "LVR", as: 24, hs: 10 },
+  { away: "PHI", home: "DAL", as: 21, hs: 24 }, { away: "ATL", home: "NOS", as: 24, hs: 10 },
+  { away: "TBB", home: "LAR", as: 7, hs: 34 }, { away: "CAR", home: "SFO", as: 9, hs: 20 },
+  { away: "JAC", home: "KCC", as: 17, hs: 20, poss: "KCC" },
+  { away: "CHI", home: "MIN", as: 24, hs: 21, poss: "CHI", rz: "CHI" },
+];
+const GAME_OF = new Map(GAMES.flatMap((g) => [[g.away, g], [g.home, g]]));
+const scoreNfl = (tm, by = 7) => { const g = GAME_OF.get(tm); if (g) g[g.home === tm ? "hs" : "as"] += by; };
+
 const liveStats = {};   // `${teamId}:${index}` (bench: `b${index}`) -> mutated copy of st
 const slotKey = (t, k, bench) => `${t.id}:${bench ? "b" : ""}${k}`;
 // k is always the index on the FRANCHISE's lineup: a Week 18 member's
@@ -693,6 +711,53 @@ function statLine(pos, st) {
     st.idp_fum_rec ? `${st.idp_fum_rec} FR` : "", st.idp_pass_def ? `${st.idp_pass_def} PD` : "",
     st.idp_td ? `${st.idp_td} TD` : "",
   ]);
+}
+
+/* Expanded row: the same line as tiles, every counting stat the line
+   folds away (targets, attempts, assists, a lost fumble) laid out, with
+   a rate where the volume supports one. Core tiles for the position
+   always show (zeros muted) so an empty line still reads as a line; the
+   rest only once they count. Context beside MFL's number, as ever.
+   Same as app/statTiles on main. */
+const tile = (l, v, always = false) => ({ l, v, always });
+const rate = (yd, n) => (n > 0 ? (yd / n).toFixed(1) : null);
+function statTiles(pos, st) {
+  st = st || {};
+  const n = (k) => st[k] || 0;
+  const frac = (a, b) => `${n(a)}/${n(b) || n(a)}`;
+  let tiles;
+  if (pos === "QB") tiles = [
+    tile("CMP/ATT", frac("pass_cmp", "pass_att"), true), tile("PASS YDS", n("pass_yd"), true),
+    tile("PASS TD", n("pass_td"), true), tile("INT", n("pass_int"), true),
+    tile("Y/A", rate(n("pass_yd"), n("pass_att"))),
+    tile("RUSH", n("rush_att")), tile("RUSH YDS", n("rush_yd")), tile("RUSH TD", n("rush_td")),
+    tile("FUM LOST", n("fum_lost")),
+  ];
+  else if (pos === "RB") tiles = [
+    tile("CAR", n("rush_att"), true), tile("RUSH YDS", n("rush_yd"), true), tile("RUSH TD", n("rush_td"), true),
+    tile("Y/C", rate(n("rush_yd"), n("rush_att"))),
+    tile("REC/TGT", frac("rec", "rec_tgt"), true), tile("REC YDS", n("rec_yd"), true), tile("REC TD", n("rec_td")),
+    tile("FUM LOST", n("fum_lost")),
+  ];
+  else if (pos === "WR" || pos === "TE") tiles = [
+    tile("REC/TGT", frac("rec", "rec_tgt"), true), tile("REC YDS", n("rec_yd"), true), tile("REC TD", n("rec_td"), true),
+    tile("Y/R", rate(n("rec_yd"), n("rec"))),
+    tile("CAR", n("rush_att")), tile("RUSH YDS", n("rush_yd")), tile("RUSH TD", n("rush_td")),
+    tile("FUM LOST", n("fum_lost")),
+  ];
+  else if (pos === "K") tiles = [
+    tile("FG", frac("fgm", "fga"), true), tile("XP", frac("xpm", "xpa"), true),
+  ];
+  else tiles = [
+    tile("TKL", n("idp_tkl"), true), tile("SOLO", n("idp_tkl_solo"), true), tile("AST", n("idp_tkl_ast"), true),
+    tile("TFL", n("idp_tkl_loss")), tile("SACK", n("idp_sack")), tile("INT", n("idp_int")),
+    tile("FF", n("idp_ff")), tile("FR", n("idp_fum_rec")), tile("PD", n("idp_pass_def")),
+    tile("BLK", n("idp_blk_kick")), tile("SAF", n("idp_safe")),
+    tile("ST TKL", n("st_tkl_solo")), tile("ST FF", n("st_ff")), tile("ST FR", n("st_fum_rec")),
+    tile("TD", n("idp_td") + n("idp_def_td") + n("st_td")),
+  ];
+  const zero = (v) => v === null || v === 0 || /^0\/0$/.test(String(v));
+  return tiles.filter((t) => t.always || !zero(t.v)).map((t) => ({ ...t, zero: zero(t.v) }));
 }
 
 /* ---------------- spotlight ----------------
@@ -785,9 +850,45 @@ const logoBadge = (tm) => LOGOS[tm] ? `<span class="plogo"><img src="${LOGOS[tm]
 const tdCount = (st) => (st ? (st.pass_td || 0) + (st.rush_td || 0) + (st.rec_td || 0) + (st.idp_td || 0) : 0);
 const tdBadge = (st) => { const n = tdCount(st); return n ? `<span class="ptd">${n > 1 ? n + " " : ""}TD</span>` : ""; };
 
+// Which rows are expanded, by slot key, so a tick's re-render keeps them open.
+const expanded = new Set();
+const detailKey = (p) => p.key;
+
+// The player's NFL game across the top of the card: away @ home with
+// both scores, the player's own team bright, a football by whoever has
+// the ball, RZ when they are in the red zone, and the clock or Final.
+const gameStrip = (p) => {
+  const g = GAME_OF.get(p.tm);
+  if (!g) return "";
+  const live = isLive(p);
+  const team = (id, score) =>
+    `<span class="pg-team${id === p.tm ? " mine" : ""}${live && g.poss === id ? " poss" : ""}">` +
+      (LOGOS[id] ? `<img src="${LOGOS[id]}" alt="">` : "") +
+      `<span class="pg-id">${esc(id)}</span><b class="pg-score">${score}</b>` +
+      (live && g.rz === id ? `<span class="pg-rz">RZ</span>` : "") +
+    `</span>`;
+  return `<div class="pgame${live ? " live" : ""}">` +
+    team(g.away, g.as) + `<span class="pg-at">@</span>` + team(g.home, g.hs) +
+    `<span class="pg-state">${live ? `<span class="dot"></span>${clockFor(p)}` : "Final"}</span>` +
+  `</div>`;
+};
+
+const detailHtml = (p) => {
+  const tiles = Object.keys(p.st || {}).length ? statTiles(p.pos, p.st) : [];
+  return `<div class="pdetail" aria-hidden="${expanded.has(detailKey(p)) ? "false" : "true"}"><div>` +
+    gameStrip(p) +
+    (tiles.length
+      ? `<div class="ptiles">${tiles.map((t) => `<span class="ptile${t.zero ? " zero" : ""}"><b>${esc(t.v)}</b><span>${esc(t.l)}</span></span>`).join("")}</div>`
+      : `<p class="pnone">No stats yet</p>`) +
+  `</div></div>`;
+};
+
 // top: the team's highest-scoring starter gets a gold ring (MVP echo).
+// The row is a button: tap (or Enter/Space) opens the game strip and stat
+// breakdown under it; the chevron under the points says so.
 const playerRow = (p, bench, top = false, enter = -1) =>
-  `<div class="prow${bench ? " bench" : ""}${p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${top ? " top" : ""}${enter >= 0 ? " enter" : ""}"${enter >= 0 ? ` style="--i:${enter}"` : ""}>` +
+  `<div class="prow${bench ? " bench" : ""}${p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${top ? " top" : ""}${enter >= 0 ? " enter" : ""}${expanded.has(detailKey(p)) ? " open" : ""}"${enter >= 0 ? ` style="--i:${enter}"` : ""}` +
+    ` role="button" tabindex="0" aria-expanded="${expanded.has(detailKey(p))}" data-pk="${esc(detailKey(p))}">` +
     `<span class="pface">${avatar(p)}${logoBadge(p.tm)}${tdBadge(p.st)}</span>` +
     `<span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span>` +
     `<span class="pname"><b>${esc(p.n)}</b>` +
@@ -797,7 +898,11 @@ const playerRow = (p, bench, top = false, enter = -1) =>
       `</span>` +
       `<span class="pstat">${esc(statLine(p.pos, p.st))}</span>` +
     `</span>` +
-    `<span class="ppts${p.pts === 0 ? " zero" : ""}${p.flash ? " flash" : ""}"${p.key ? ` data-tween="p:${p.key}" data-delta` : ""}>${fmt(p.pts)}</span>` +
+    `<span class="pright">` +
+      `<span class="ppts${p.pts === 0 ? " zero" : ""}${p.flash ? " flash" : ""}"${p.key ? ` data-tween="p:${p.key}" data-delta` : ""}>${fmt(p.pts)}</span>` +
+      `<span class="pchev" aria-hidden="true"></span>` +
+    `</span>` +
+    detailHtml(p) +
   `</div>`;
 
 const page = document.getElementById("team");
@@ -936,6 +1041,29 @@ rowsEl.addEventListener("click", (e) => {
 hero.addEventListener("click", () => openTeam(teams[0].id));
 document.getElementById("back").addEventListener("click", closeTeam);
 tabs.forEach((b) => b.addEventListener("click", () => { tab = b.dataset.tab; rosterEnter = true; renderTeam(); }));
+
+// Expand or collapse a player's breakdown in place (no re-render, so the
+// panel's height transition plays); the next render keeps the state.
+function togglePlayer(row) {
+  const on = !row.classList.contains("open");
+  row.classList.toggle("open", on);
+  row.setAttribute("aria-expanded", String(on));
+  row.querySelector(".pdetail")?.setAttribute("aria-hidden", String(!on));
+  if (on) expanded.add(row.dataset.pk); else expanded.delete(row.dataset.pk);
+  markMore();
+}
+rosterEl.addEventListener("click", (e) => {
+  const row = e.target.closest(".prow");
+  if (row) togglePlayer(row);
+});
+rosterEl.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const row = e.target.closest(".prow");
+  if (!row) return;
+  e.preventDefault();   // Space would scroll the roster
+  togglePlayer(row);
+});
+rosterEl.addEventListener("transitionend", (e) => { if (e.target.classList.contains("pdetail")) markMore(); });
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
   if (witch.dataset.open === "true") endWitchingHour();
@@ -1177,6 +1305,7 @@ function scoreTouchdown(t, k, changed) {
   const pts = r2(6 + Math.random() * 4);
   bump(t, k, pts);
   bumpStats(t, k, pts, true);
+  scoreNfl(slotPlayer(t, k).tm);
   announceTouchdown({ player: slotPlayer(t, k), franchise: t.team, pts, starter: true });
   changed.add(t.id).add(`${t.id}:${k}`);
 }
@@ -1188,6 +1317,7 @@ function scoreBenchTouchdown(t, k, changed) {
   const key = `${t.id}:b${k}`;
   benchBump[key] = r2((benchBump[key] || 0) + pts);
   bumpStats(t, k, pts, true, true);
+  scoreNfl(slotPlayer(t, k, true).tm);
   announceTouchdown({ player: slotPlayer(t, k, true), franchise: t.team, pts, starter: false });
   changed.add(key);
 }
