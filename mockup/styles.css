@@ -832,30 +832,13 @@ button.hero { cursor: pointer; }
 .pname .pmeta { display: flex; align-items: center; gap: 6px; font: 700 11px/1 var(--font-data); letter-spacing: .08em; color: var(--text-muted); text-transform: uppercase; }
 .pname .pmeta .clock { display: inline-flex; align-items: center; gap: 5px; color: var(--accent); }
 /* Red zone (the offense inside the 20, or a defender's opponent there):
-   a red comet laps the row's border at a steady pace, a faint red ring
-   under it so the card reads red where the comet is not, a red glow
-   pulsing around the row, and a red headshot ring. Both animated pieces
-   are pseudo-elements, so their animations never fight the row's own
-   (the swing-in). The comet is a short bar (transparent tail, red head)
-   carried along the border by a motion path, inset(0 round radius),
-   with offset-distance 0 -> 100%: constant speed along the perimeter.
-   (A conic gradient turned at a constant rate zipped along the long
-   edges and crawled round the ends.) Browsers without basic-shape
-   motion paths keep the ring and glow and skip the comet. In a
-   franchise's status a red count pill, "2 RZ", breathes in place of
-   "on now" while any starter is in one. Urgency red, never mint. */
+   a faint red ring on the row, a red glow pulsing around it, and a red
+   headshot ring. The glow is a pseudo-element, so its animation never
+   fights the row's own (the swing-in). (A comet lapping the border was
+   tried and dropped; the glow alone reads better.) In a franchise's
+   status a red count pill, "2 RZ", breathes in place of "on now" while
+   any starter is in one. Urgency red, never mint. */
 .prow.rz { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gap-critical) 38%, transparent); }
-.prow.rz::before {
-  content: ""; position: absolute; top: 0; left: 0;
-  width: 56px; height: 2px; border-radius: 2px;
-  background: linear-gradient(90deg, transparent, var(--gap-critical));
-  box-shadow: 0 0 6px 1px color-mix(in srgb, var(--gap-critical) 55%, transparent);
-  offset-path: inset(0 round var(--radius-row));
-  offset-rotate: auto;
-  pointer-events: none;
-  animation: fflr-rz-lap 4s linear infinite;
-}
-@supports not (offset-path: inset(0 round 8px)) { .prow.rz::before { display: none; } }
 .prow.rz::after {
   content: ""; position: absolute; inset: 0; border-radius: inherit;
   box-shadow: 0 0 10px 0 var(--gap-critical-soft);
@@ -863,7 +846,6 @@ button.hero { cursor: pointer; }
   animation: fflr-rz-glow 1.8s ease-in-out infinite;
 }
 .prow.rz .avatar, .prow.rz .avatar-fb { border-color: var(--gap-critical); box-shadow: 0 0 0 2px var(--gap-critical-soft); }
-@keyframes fflr-rz-lap { to { offset-distance: 100%; } }
 @keyframes fflr-rz-glow {
   50% { box-shadow: 0 0 18px 3px color-mix(in srgb, var(--gap-critical) 38%, transparent); }
 }
@@ -1510,7 +1492,7 @@ button.hero { cursor: pointer; }
   .td-scrim, .td-card, .td-card * { animation: none !important; }
   .prow.enter { animation: none; }
   .pdetail, .pchev { transition: none; }
-  .prow.rz::before, .prow.rz::after, .rzn { animation: none; }
+  .prow.rz::after, .rzn { animation: none; }
   h1 { animation: none; background-position: 50% 50%; }   /* the band held mid-title */
   .flash { animation: none; }
   .hero.takeover, .hero.takeover * { animation: none !important; }
