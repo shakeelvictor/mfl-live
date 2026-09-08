@@ -829,17 +829,29 @@ button.hero { cursor: pointer; }
 }
 .pname .pmeta { display: flex; align-items: center; gap: 6px; font: 700 11px/1 var(--font-data); letter-spacing: .08em; color: var(--text-muted); text-transform: uppercase; }
 .pname .pmeta .clock { display: inline-flex; align-items: center; gap: 5px; color: var(--accent); }
-/* Red zone: a red chip after the clock (the offense inside the 20, or a
-   defender's opponent there), pulsing softly; "red zone" in the same red
-   replaces "on now" in a franchise's status. Urgency red, never mint. */
-.prz {
-  padding: 3px 4px; border-radius: 3px;
-  background: var(--gap-critical); color: #fff;
-  font: 800 8.5px/1 var(--font-data); letter-spacing: .06em;
-  animation: fflr-rz 1.6s ease-in-out infinite;
+/* Red zone: the row wears a red ring that breathes (the offense inside
+   the 20, or a defender's opponent there) and the headshot ring goes red.
+   The ring is a pseudo-element so its animation never fights the row's
+   own (the swing-in). In a franchise's status a red count pill, "2 RZ",
+   replaces "on now" while any starter is in one. Urgency red, never mint. */
+.prow.rz::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  box-shadow: inset 0 0 0 1.5px var(--gap-critical), 0 0 0 0 var(--gap-critical-soft);
+  pointer-events: none;
+  animation: fflr-rz-ring 1.8s ease-in-out infinite;
 }
-.status .rz, .hero-status .rz { color: var(--gap-critical); font-weight: 800; }
-@keyframes fflr-rz { 50% { opacity: .55; } }
+.prow.rz .avatar, .prow.rz .avatar-fb { border-color: var(--gap-critical); box-shadow: 0 0 0 2px var(--gap-critical-soft); }
+@keyframes fflr-rz-ring {
+  0%, 100% { box-shadow: inset 0 0 0 1.5px var(--gap-critical), 0 0 0 0 var(--gap-critical-soft); }
+  50% { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--gap-critical) 55%, transparent), 0 0 0 5px var(--gap-critical-soft); }
+}
+.rzn {
+  display: inline-flex; align-items: center;
+  padding: 2px 6px; border-radius: var(--radius-pill);
+  background: var(--gap-critical); color: #fff;
+  font: 800 10px/1 var(--font-data); letter-spacing: .04em;
+}
+.hero-status .rzn { font-size: 11px; }
 /* Stat line: context beside MFL's number, never a score of its own. */
 .pname .pstat {
   font: 600 11.5px/1.2 var(--font-data);
@@ -1456,7 +1468,7 @@ button.hero { cursor: pointer; }
   .td-scrim, .td-card, .td-card * { animation: none !important; }
   .prow.enter { animation: none; }
   .pdetail, .pchev { transition: none; }
-  .prz { animation: none; }
+  .prow.rz::before { animation: none; }
   h1 { animation: none; background-position: 50% 50%; }   /* the band held mid-title */
   .flash { animation: none; }
   .hero.takeover, .hero.takeover * { animation: none !important; }

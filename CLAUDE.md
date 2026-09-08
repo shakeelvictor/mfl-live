@@ -351,12 +351,14 @@ element and scores are second.
   `spike/fake-round.mjs` stages the home side with the ball in both
   live games and in the red zone in the first, so `app-2025-w15-live`
   shows every RZ marker.
-  **Red zone** (2026-09-08): a pulsing red `RZ` chip after the clock
-  on a live row when the player's offense is inside the 20 (a defender
-  gets it when the opponent is), and "red zone" in the same red
-  replaces "on now" in a franchise's status while any starter is in
-  one (`inRedZone`). Urgency red, never mint. The game strip's RZ chip
-  is the team-level flag.
+  **Red zone** (2026-09-08): a live row whose player's offense is
+  inside the 20 (a defender's when the opponent is) wears a **red ring
+  that breathes** (`.prow.rz::before`, a pseudo-element so its
+  animation never fights the swing-in's; the headshot ring goes red
+  too; the row's title says which), and a franchise's status carries a
+  red count pill, "2 RZ" (`rzCount`), in place of "on now" while any
+  starter is in one (`inRedZone`). Urgency red, never mint. The game
+  strip's RZ chip is the team-level flag.
   Rows carry three small signals: the NFL logo badged on the
   headshot (as on the spotlight and touchdown cards), a mint **TD** chip on
   the headshot's top corner for anyone who has scored (counted from the
