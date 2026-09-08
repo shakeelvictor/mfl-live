@@ -49,13 +49,14 @@ never come from them. See "Player images and stats".)
   so don't.
 - **Polling budget (MFL rate-limits; an older POC got throttled).** The
   proxy keeps a per-instance response cache by (type, params) with each
-  type's max-age (liveScoring 15s, schedule 1m, lineups 5m, rosters 10m, league
+  type's max-age (liveScoring 15s, schedule 15s, lineups 5m, rosters 10m, league
   15m, players 1h, stats 1m from Sleeper), coalesces identical in-flight requests, serves stale on
   MFL errors, and on a 429 stops calling MFL for 5 minutes (stale answers
   meanwhile, 503 + Retry-After otherwise). So N open pages cost one MFL
   call per window per type. The page polls liveScoring every 30s in season
-  (the schedule every 5m, every 1m while a game is on, since it carries
-  the game scores; `gamesOn()`), everything every 5m before the season, and
+  (the schedule every 5m, and with every poll while a game is on, since
+  it carries the game scores, possession and red zone; `gamesOn()`),
+  everything every 5m before the season, and
   nothing while the tab is hidden (a poll fires when it is shown again).
 - **`app/app.js`** boots by loading league + rosters, then polls
   `liveScoring` (and, less often, `nflSchedule`) on that budget. Before the season, liveScoring's
@@ -347,6 +348,15 @@ element and scores are second.
   and the state on the right: kickoff day and time before the game
   ("MIA at PIT"), the player's own clock from liveScoring while on, or
   Final. The fixture fallback has no schedule, so no strip.
+  `spike/fake-round.mjs` stages the home side with the ball in both
+  live games and in the red zone in the first, so `app-2025-w15-live`
+  shows every RZ marker.
+  **Red zone** (2026-09-08): a pulsing red `RZ` chip after the clock
+  on a live row when the player's offense is inside the 20 (a defender
+  gets it when the opponent is), and "red zone" in the same red
+  replaces "on now" in a franchise's status while any starter is in
+  one (`inRedZone`). Urgency red, never mint. The game strip's RZ chip
+  is the team-level flag.
   Rows carry three small signals: the NFL logo badged on the
   headshot (as on the spotlight and touchdown cards), a mint **TD** chip on
   the headshot's top corner for anyone who has scored (counted from the

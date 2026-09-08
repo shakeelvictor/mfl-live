@@ -34,6 +34,9 @@ const clock = new Map();   // NFL team -> seconds remaining
 liveGames.forEach((g, i) => {
   g.gameSecondsRemaining = String(i === 0 ? 2100 : 640);   // one in the third quarter, one late in the fourth
   for (const t of toArray(g.team)) clock.set(t.id, Number(g.gameSecondsRemaining));
+  // The home side has the ball; in the first game it is in the red zone,
+  // so the RZ markers (row, status, game strip) show mid-round.
+  for (const t of toArray(g.team)) { t.hasPossession = t.isHome; t.inRedZone = i === 0 ? t.isHome : '0'; }
 });
 
 // Player -> NFL team, from MFL's player list for the ids in the fixture.

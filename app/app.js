@@ -175,7 +175,7 @@ const statusOf = (t) => phase === "preseason"
     ? "none in the lineup"
   : t.toPlay === 0
     ? "all played"
-    : `${t.toPlay} to play${t.onNow ? " &middot; on now" : ""}`;
+    : `${t.toPlay} to play${t.starters.some(inRedZone) ? ' &middot; <span class="rz">red zone</span>' : t.onNow ? " &middot; on now" : ""}`;
 
 const fmtDay = (d) => d ? d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) : "";
 const fmtTime = (d) => d ? d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
@@ -677,6 +677,17 @@ const isLive = (p) => !slate.sunFinal && (FIXTURE
   ? LIVE_NFL.has(p.tm)
   : (secsOf(p) != null && secsOf(p) > 0 && secsOf(p) < 3600));
 const clockFor = (p) => (FIXTURE ? LIVE_NFL.get(p.tm) : clockText(secsOf(p)));
+// Red zone, from the schedule's per-team flags (inRedZone, hasPossession):
+// an offensive player's own team inside the 20, a defender's opponent
+// there (that is when he can make the play). Live players only, and not
+// when the flags say the other side clearly has the ball.
+const inRedZone = (p) => {
+  const m = games.get(p.tm)?.match;
+  if (!m || !isLive(p)) return false;
+  const mine = m.away.id === p.tm ? m.away : m.home, other = mine === m.away ? m.home : m.away;
+  const side = POS_CLASS[p.pos] ? mine : other, opp = side === mine ? other : mine;
+  return side.rz && !(opp.poss && !side.poss);
+};
 // What a row shows when the player is not on the field.
 const gameLabel = (p) => {
   if (FIXTURE) return "Final";
@@ -948,6 +959,7 @@ const playerRow = (p, bench, top = false, enter = -1) => {
     `<span class="pname"><b>${esc(p.n)}</b>` +
       `<span class="pmeta">${esc(p.tm)}<span aria-hidden="true">·</span>` +
         (isLive(p) ? `<span class="clock"><span class="dot"></span>${clockFor(p)}</span>` : `<span>${esc(gameLabel(p))}</span>`) +
+        (inRedZone(p) ? `<span class="prz" title="${POS_CLASS[p.pos] ? "In the red zone" : "Opponent in the red zone"}">RZ</span>` : "") +
         (p.from ? `<span aria-hidden="true">·</span><span class="pfrom">${esc(p.from)}</span>` : "") +
       `</span>` +
       `<span class="pstat">${esc(statLine(p.pos, p.st))}</span>` +
@@ -1432,10 +1444,10 @@ let opener = "";              // "NEP at SEA", the week's first game (live sourc
 let rosterIds = new Map();    // franchise id -> [player ids]
 let lastScores = new Map();   // `${franchise}:${player}` -> score at the previous poll
 let scheduleAt = 0;           // when the NFL schedule was last fetched
-// Kickoffs do not move, but the schedule also carries each game's score
-// (the expanded row's game strip), so while a game is on it is refetched
-// every minute; otherwise every five.
-const SCHEDULE_EVERY = 5 * 60e3, SCHEDULE_LIVE_EVERY = 60e3;
+// Kickoffs do not move, but the schedule also carries each game's score,
+// possession and red zone (the game strip, the RZ markers), so while a
+// game is on it comes with every poll; otherwise every five minutes.
+const SCHEDULE_EVERY = 5 * 60e3;
 const gamesOn = () => [...games.values()].some((g) => g.kickoff <= Date.now() && g.secs > 0);
 // Stat lines: Sleeper's live stats through the proxy, keyed by Sleeper id,
 // refreshed once a minute in season. Context beside MFL's number, never a
@@ -1511,7 +1523,7 @@ async function refreshLive(first = false) {
   const w = QUERY.get("w") || "";
   // The schedule is fetched every few minutes, not every poll: kickoffs do
   // not move, and in season each player's own clock comes with liveScoring.
-  const wantSchedule = first || !games.size || Date.now() - scheduleAt > (gamesOn() ? SCHEDULE_LIVE_EVERY : SCHEDULE_EVERY);
+  const wantSchedule = first || !games.size || gamesOn() || Date.now() - scheduleAt > SCHEDULE_EVERY;
   const [ls, sch] = await Promise.all([api("liveScoring", { W: w, DETAILS: "1" }), wantSchedule ? api("nflSchedule", { W: w }) : null]);
 
   if (sch) {

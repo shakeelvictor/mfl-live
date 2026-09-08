@@ -35,7 +35,7 @@ const TYPES = {
   players:       { params: ['PLAYERS', 'DETAILS'], maxAge: 3600 },
   liveScoring:   { params: ['W', 'DETAILS'], maxAge: 15 },
   weeklyResults: { params: ['W'], maxAge: 300 },   // lineups (status: starter) exist before liveScoring does
-  nflSchedule:   { params: ['W'], maxAge: 60, noLeague: true },   // carries game scores; the page asks every minute while games are on
+  nflSchedule:   { params: ['W'], maxAge: 15, noLeague: true },   // game scores, possession, red zone: polled with liveScoring while games are on
   playersMap:    { params: ['PLAYERS'], maxAge: 3600 },   // built here, see below
   seasonScores:  { params: [], maxAge: 600 },             // built here: every week's franchise scores, for the playoffs
   stats:         { params: ['W'], maxAge: 60 },           // built here: Sleeper's live stat lines for rostered players, context only
