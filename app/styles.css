@@ -548,7 +548,18 @@ button.hero { cursor: pointer; }
   background: var(--surface);
   color: var(--text-primary);
   border-radius: var(--radius-row);
-  transition: background .25s, border-radius .3s, transform .5s cubic-bezier(.34, 1.4, .64, 1), box-shadow .5s;
+  position: relative; isolation: isolate;   /* its lift shadow (::before, z -1) stays inside the row's own stack */
+  transition: background .25s, border-radius .3s, transform .45s cubic-bezier(.2, .8, .2, 1);
+}
+/* The lift's shadow lives on a pseudo-element and fades in, so the lift
+   costs the compositor a transform and an opacity: a transitioning
+   box-shadow repaints its 44px blur every frame and stuttered on phones. */
+.row::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  border-radius: inherit;
+  box-shadow: var(--shadow-lift);
+  opacity: 0; transition: opacity .45s;
+  pointer-events: none;
 }
 .row:hover { filter: brightness(1.06); }
 .row:focus-visible { outline-offset: -2px; }
@@ -567,12 +578,24 @@ button.hero { cursor: pointer; }
 .row.moving, .row.sel, .hero-wrap.sel { transform: translateY(var(--dy, 0px)); }
 .row.sel {
   transform: translateY(var(--dy, 0px)) perspective(900px) translateZ(51px);   /* 6% bigger */
-  position: relative; z-index: 3;
-  box-shadow: var(--shadow-lift);
+  z-index: 3;
   border-radius: var(--radius-row);   /* a lifted row leaves its fused cluster: every corner rounded again */
 }
-.hero-wrap.sel { transform: perspective(1200px) translateZ(28px); z-index: 3; transition: transform .5s cubic-bezier(.34, 1.4, .64, 1); }
-.hero-wrap.sel .hero { box-shadow: var(--hero-shadow), var(--shadow-lift); }
+.row.sel::before { opacity: 1; }
+/* The hero's lift is lighter (it is already the biggest thing on the
+   page) and eases both ways from the base rule, so dropping it never
+   snaps. On laptop it is the load's own zoom: the pane shows the leader
+   from the start, and pickOnLoad() lifts the hero once the cascade ends. */
+.hero-wrap { isolation: isolate; transition: transform .55s cubic-bezier(.2, .8, .2, 1); }
+.hero-wrap::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-lift);
+  opacity: 0; transition: opacity .55s;
+  pointer-events: none;
+}
+.hero-wrap.sel { transform: perspective(1200px) translateZ(28px); z-index: 3; }
+.hero-wrap.sel::before { opacity: 1; }
 
 .rank {
   width: 36px; height: 36px; border-radius: 50%;
@@ -708,19 +731,32 @@ button.hero { cursor: pointer; }
   gap: 0 10px; align-items: center;   /* no row gap: the detail panel sits flush when closed */
   padding: 9px 8px;
   border-radius: var(--radius-row);
-  transition: background .2s, opacity .3s, scale .45s cubic-bezier(.34, 1.4, .64, 1), box-shadow .45s;
+  isolation: isolate;   /* the lift shadow (::before, z -1) stays inside the row's own stack */
+  transition: background .2s, opacity .3s, scale .45s cubic-bezier(.2, .8, .2, 1);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 .prow:hover { background: var(--surface-raised); }
 /* An open row comes forward: it scales up (the individual scale property,
-   so the swing-in's transform animation cannot override it), sits on the
-   raised surface with its own shadow, above the rows around it. */
+   so the swing-in's transform animation cannot override it) and sits on
+   the raised surface above the rows around it. Its shadow is a pseudo-
+   element fading in, so the compositor animates a scale and an opacity
+   and nothing repaints per frame (a transitioning box-shadow did, and
+   the swing stuttered on phones); will-change gives it a layer from the
+   first frame. One row is open at a time, so the layer is one. */
+.prow::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  border-radius: inherit;
+  box-shadow: var(--shadow-lift);
+  opacity: 0; transition: opacity .45s;
+  pointer-events: none;
+}
 .prow.open {
   scale: 1.05; z-index: 1;
   background-color: var(--surface-raised);
-  box-shadow: var(--shadow-lift);
+  will-change: scale;
 }
+.prow.open::before { opacity: 1; }
 .prow:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 /* Still on the field: mint ring on the headshot and a soft mint wash that
@@ -863,7 +899,6 @@ button.hero { cursor: pointer; }
    status a red count pill, "2 RZ", breathes in place of "on now" while
    any starter is in one. Urgency red, never mint. */
 .prow.rz { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gap-critical) 38%, transparent); }
-.prow.rz.open { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gap-critical) 38%, transparent), var(--shadow-lift); }
 .prow.rz::after {
   content: ""; position: absolute; inset: 0; border-radius: inherit;
   box-shadow: 0 0 10px 0 var(--gap-critical-soft);
@@ -915,7 +950,7 @@ button.hero { cursor: pointer; }
 .pdetail {
   grid-column: 1 / -1;
   height: 0; overflow: hidden;
-  transition: height .3s ease;
+  transition: height .45s cubic-bezier(.2, .8, .2, 1);   /* in step with the row's scale */
 }
 .prow.open .pdetail { height: auto; overflow: visible; }
 /* Clipped while the height tweens, open state included: the open rule
@@ -1240,7 +1275,7 @@ button.hero { cursor: pointer; }
   /* --tab-t (set by the script) is how far down the pane the tab sits, so
      --join is the pane's colour at that height. The tab fades from a touch
      lighter on its left to exactly --join at the bridge. */
-  .row { transition: background .25s, color .25s, transform .5s cubic-bezier(.34, 1.4, .64, 1), box-shadow .5s; }   /* no radius tween: the bridge appears at once */
+  .row { transition: background .25s, color .25s, transform .45s cubic-bezier(.2, .8, .2, 1); }   /* no radius tween: the bridge appears at once */
   /* The lift grows about the right edge, so the tab's seam with the pane
      (and the bridge, which scales with the row) stays put. */
   .row.sel, .hero-wrap.sel { transform-origin: 100% 50%; }
@@ -1259,8 +1294,7 @@ button.hero { cursor: pointer; }
     box-shadow:
       inset 1px 0 0 var(--tab-line),
       inset 0 1px 0 var(--tab-line),
-      inset 0 -1px 0 var(--tab-line),
-      var(--shadow-lift);
+      inset 0 -1px 0 var(--tab-line);
   }
   .row.active:hover { filter: none; }
   .row.active .chev { opacity: 0; }
@@ -1515,7 +1549,8 @@ button.hero { cursor: pointer; }
   .spot::before, .hero-wave, .hero-money, .prow.top { animation: none; }
   .loader-scene, .loader-brand span { animation: none; }   /* shown at once; the WebP still loops */
   .row.enter { animation: none; }
-  .row, .hero-wrap.sel, .prow { transition-property: background, color, opacity, border-radius; }   /* lifts land at once */
+  .row, .hero-wrap, .prow { transition-property: background, color, opacity, border-radius; }   /* lifts land at once */
+  .row::before, .hero-wrap::before, .prow::before { transition: none; }
   .delta { display: none; }
   .team-page, .team-page .shell { animation: none; }
 }

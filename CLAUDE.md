@@ -317,7 +317,21 @@ element and scores are second.
   `scale: 1.05`, the individual property so the swing-in's transform
   animation cannot override it, raised surface, the lift shadow; the
   laptop roster's side padding is 14px so the scaled row clears the
-  card's overflow clip). Reduced motion lands both at once.
+  card's overflow clip). **One breakdown at a time**: opening a row
+  closes the open one (`togglePlayer` -> `setPlayer`), and a tap
+  anywhere outside a row (`closePlayers`, a capture-phase document
+  listener so it runs before a tab or row handler re-renders) puts it
+  away and clears `expanded`. **The lift shadows are pseudo-elements
+  fading in** (`.row::before`, `.prow::before`, `.hero-wrap::before`,
+  each element `isolation: isolate` so the z -1 pseudo stays in its
+  own stack): a transitioning `box-shadow` repainted its blur every
+  frame and stuttered on phones; the easing is a plain decelerate
+  (`cubic-bezier(.2, .8, .2, 1)`, .45s, the panel's height tween in
+  step), no overshoot. **On laptop the leader's hero is the load's own
+  zoom**: `boot()` opens it unpicked (`openTeam(id, false)`) and
+  `pickOnLoad()` lifts it once the cascade ends, since the cascade
+  animates the same transform and a lift set earlier snapped in when
+  the cascade's class came off. Reduced motion lands every lift at once.
 - In dark the hero has **no border and no inset highlight** (`--hero-border`,
   `--hero-shadow`): its gradient fades to near-canvas, so either reads as a
   stray outline. Light keeps both.

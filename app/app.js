@@ -1082,8 +1082,9 @@ function markActive() {
 }
 addEventListener("resize", () => { if (desktop.matches) markActive(); });
 
-function openTeam(id) {
-  open = id; picked = id; tab = "starters";
+function openTeam(id, pick = true) {
+  open = id; tab = "starters";
+  if (pick) picked = id;
   rosterEnter = true;
   renderTeam();
   markActive();
@@ -1135,8 +1136,8 @@ tabs.forEach((b) => b.addEventListener("click", () => { if (!b.hidden && !tabs.s
 // inline size: an open panel is then a plain block, natural height, no
 // overflow clip, nothing for a browser's paint cache to get wrong (Safari
 // left the tile labels unpainted inside an animated, clipped grid track).
-function togglePlayer(row) {
-  const on = !row.classList.contains("open");
+function setPlayer(row, on) {
+  if (row.classList.contains("open") === on) return;
   const d = row.querySelector(".pdetail");
   const tween = d && !reducedMotion.matches;
   if (tween) { d.classList.add("tween"); d.style.height = `${on ? 0 : d.scrollHeight}px`; d.getBoundingClientRect(); }
@@ -1147,10 +1148,26 @@ function togglePlayer(row) {
   if (on) expanded.add(row.dataset.pk); else expanded.delete(row.dataset.pk);
   markMore();
 }
+// One breakdown at a time: opening a row closes whichever was open.
+function togglePlayer(row) {
+  const on = !row.classList.contains("open");
+  if (on) for (const other of rosterEl.querySelectorAll(".prow.open")) if (other !== row) setPlayer(other, false);
+  setPlayer(row, on);
+}
+function closePlayers() {
+  for (const row of rosterEl.querySelectorAll(".prow.open")) setPlayer(row, false);
+  expanded.clear();   // a poll's re-render must not bring it back
+}
 rosterEl.addEventListener("click", (e) => {
   const row = e.target.closest(".prow");
   if (row) togglePlayer(row);
 });
+// A tap anywhere else puts the open breakdown away. Capture phase, so it
+// runs before a tab or a row handler re-renders the roster: those rows
+// then render closed instead of opening and closing.
+document.addEventListener("click", (e) => {
+  if (expanded.size && !e.target.closest(".prow")) closePlayers();
+}, true);
 rosterEl.addEventListener("keydown", (e) => {
   if (e.key !== "Enter" && e.key !== " ") return;
   const row = e.target.closest(".prow");
@@ -1707,7 +1724,7 @@ function hideLoading() {
 // Top to bottom: every block on the board, then each standings row and
 // divider in order, then the laptop pane.
 function cascadeIn() {
-  if (reducedMotion.matches) return;
+  if (reducedMotion.matches) { pickOnLoad(); return; }
   const app = document.getElementById("app");
   const targets = [
     ...[...document.querySelectorAll(".col-board > *")].flatMap((el) =>
@@ -1719,7 +1736,17 @@ function cascadeIn() {
   setTimeout(() => {
     app.classList.remove("intro");
     targets.forEach((el) => { el.classList.remove("cascade"); el.style.removeProperty("--i"); });
+    pickOnLoad();
   }, targets.length * 55 + 700);
+}
+// The laptop pane shows the leader from the start; once the board has
+// cascaded in, the leader's hero rises to say so. Lifted after the
+// cascade, not before it: the cascade animates the same transform, so a
+// lift set earlier sat hidden under it and snapped in when the run ended.
+function pickOnLoad() {
+  if (!desktop.matches || open === null || picked !== null) return;
+  picked = open;
+  markActive();
 }
 
 const loadStart = performance.now();
@@ -1735,7 +1762,7 @@ async function boot() {
   }
   derive();
   render();
-  if (desktop.matches) openTeam(teams[0].id);
+  if (desktop.matches) openTeam(teams[0].id, false);   // shown, not yet lifted: pickOnLoad() lifts it after the cascade
   await document.fonts.ready;
   const wait = Math.max(0, MIN_LOAD_MS - (performance.now() - loadStart));
   setTimeout(() => { cascadeIn(); hideLoading(); if (QUERY.has("witch")) playWitchingHour(); }, wait);
