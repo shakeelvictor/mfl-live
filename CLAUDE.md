@@ -130,13 +130,17 @@ element and scores are second.
   sits flush; the laptop pane refreshes `markMore()` when a panel
   finishes opening.
   **Red zone** (2026-09-08): a live row whose player's offense is
-  inside the 20 (a defender's when the opponent is) wears a **red ring
-  that breathes** (`.prow.rz::before`, a pseudo-element so its
-  animation never fights the swing-in's; the headshot ring goes red
-  too; the row's title says which), and a franchise's status carries a
-  red count pill, "2 RZ" (`rzCount`), in place of "on now" while any
-  starter is in one (`inRedZone`). Urgency red, never mint. The game
-  strip's RZ chip is the team-level flag.
+  inside the 20 (a defender's when the opponent is) has a **red comet
+  lapping its border** over a faint red ring, a **red glow pulsing**
+  around the row, and a red headshot ring (`.prow.rz::before` is the
+  lap: a conic gradient turned through a registered `--rz-a` angle,
+  masked to the border with `mask-composite: exclude`; `::after` is
+  the glow, since the ring's mask would clip a shadow on the same
+  element; pseudo-elements so neither animation fights the swing-in's;
+  the row's title says which), and a franchise's status carries a
+  breathing red count pill, "2 RZ" (`rzCount`), in place of "on now"
+  while any starter is in one (`inRedZone`). Urgency red, never mint.
+  The game strip's RZ chip is the team-level flag.
   Rows carry three small signals: the NFL logo badged on the
   headshot (as on the spotlight and touchdown cards), a mint **TD** chip on
   the headshot's top corner for anyone who has scored (counted from the
