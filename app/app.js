@@ -751,6 +751,52 @@ function statLine(pos, st) {
   ]);
 }
 
+/* Expanded row: the same Sleeper line as tiles, every counting stat the
+   line folds away (targets, attempts, assists, a lost fumble) laid out,
+   with a rate where the volume supports one. Core tiles for the position
+   always show (zeros muted) so an empty line still reads as a line;
+   the rest only once they count. Context beside MFL's number, as ever. */
+const tile = (l, v, always = false) => ({ l, v, always });
+const rate = (yd, n) => (n > 0 ? (yd / n).toFixed(1) : null);
+function statTiles(pos, st) {
+  st = st || {};
+  const n = (k) => st[k] || 0;
+  const frac = (a, b) => `${n(a)}/${n(b) || n(a)}`;
+  let tiles;
+  if (pos === "QB") tiles = [
+    tile("CMP/ATT", frac("pass_cmp", "pass_att"), true), tile("PASS YDS", n("pass_yd"), true),
+    tile("PASS TD", n("pass_td"), true), tile("INT", n("pass_int"), true),
+    tile("Y/A", rate(n("pass_yd"), n("pass_att"))),
+    tile("RUSH", n("rush_att")), tile("RUSH YDS", n("rush_yd")), tile("RUSH TD", n("rush_td")),
+    tile("FUM LOST", n("fum_lost")),
+  ];
+  else if (pos === "RB") tiles = [
+    tile("CAR", n("rush_att"), true), tile("RUSH YDS", n("rush_yd"), true), tile("RUSH TD", n("rush_td"), true),
+    tile("Y/C", rate(n("rush_yd"), n("rush_att"))),
+    tile("REC/TGT", frac("rec", "rec_tgt"), true), tile("REC YDS", n("rec_yd"), true), tile("REC TD", n("rec_td")),
+    tile("FUM LOST", n("fum_lost")),
+  ];
+  else if (pos === "WR" || pos === "TE") tiles = [
+    tile("REC/TGT", frac("rec", "rec_tgt"), true), tile("REC YDS", n("rec_yd"), true), tile("REC TD", n("rec_td"), true),
+    tile("Y/R", rate(n("rec_yd"), n("rec"))),
+    tile("CAR", n("rush_att")), tile("RUSH YDS", n("rush_yd")), tile("RUSH TD", n("rush_td")),
+    tile("FUM LOST", n("fum_lost")),
+  ];
+  else if (pos === "K") tiles = [
+    tile("FG", frac("fgm", "fga"), true), tile("XP", frac("xpm", "xpa"), true),
+  ];
+  else tiles = [
+    tile("TKL", n("idp_tkl"), true), tile("SOLO", n("idp_tkl_solo"), true), tile("AST", n("idp_tkl_ast"), true),
+    tile("TFL", n("idp_tkl_loss")), tile("SACK", n("idp_sack")), tile("INT", n("idp_int")),
+    tile("FF", n("idp_ff")), tile("FR", n("idp_fum_rec")), tile("PD", n("idp_pass_def")),
+    tile("BLK", n("idp_blk_kick")), tile("SAF", n("idp_safe")),
+    tile("ST TKL", n("st_tkl_solo")), tile("ST FF", n("st_ff")), tile("ST FR", n("st_fum_rec")),
+    tile("TD", n("idp_td") + n("idp_def_td") + n("st_td")),
+  ];
+  const zero = (v) => v === null || v === 0 || /^0\/0$/.test(String(v));
+  return tiles.filter((t) => t.always || !zero(t.v)).map((t) => ({ ...t, zero: zero(t.v) }));
+}
+
 /* ---------------- spotlight ----------------
    A between-days card. After a day's games are all final, the day's
    highest-scoring STARTER (bench points do not count for anyone) gets a
@@ -843,10 +889,60 @@ const logoBadge = (tm) => logoSrc(tm) ? `<span class="plogo"><img src="${logoSrc
 const tdCount = (st) => (st ? (st.pass_td || 0) + (st.rush_td || 0) + (st.rec_td || 0) + (st.idp_td || 0) + (st.idp_def_td || 0) + (st.st_td || 0) : 0);
 const tdBadge = (st) => { const n = tdCount(st); return n ? `<span class="ptd">${n > 1 ? n + " " : ""}TD</span>` : ""; };
 
+// Which rows are expanded, by player (MFL id when the feed supplies one,
+// the slot key on the fixture), so a poll's re-render keeps them open.
+const expanded = new Set();
+const detailKey = (p) => (p.id ? `pid:${p.id}` : p.key);
+
+// What an expanded row says when there is no line to break out.
+const noStats = (p) => phase === "preseason" ? "No stats until kickoff"
+  : secsOf(p) == null && !FIXTURE ? "Game not started"
+  : "No stats yet";
+
+// The player's NFL game across the top of the card: away at home with
+// both scores once it has kicked off (the player's own team bright, a
+// football by whoever has the ball, RZ when they are in the red zone),
+// and the state: kickoff day and time, the clock, or Final. Scores are
+// the schedule's (a minute old at most while games are on); the clock is
+// the player's own from liveScoring, which every poll refreshes.
+const gameStrip = (p) => {
+  const g = games.get(p.tm)?.match;
+  if (!g) return "";
+  const secs = secsOf(p);
+  const started = Date.now() >= g.kickoff || (secs != null && secs < 3600);
+  const live = started && secs != null && secs > 0;
+  const state = !started ? fmtKick(g.kickoff) : secs == null || secs <= 0 ? "Final" : clockText(secs);
+  const team = (s) =>
+    `<span class="pg-team${s.id === p.tm ? " mine" : ""}${live && s.poss ? " poss" : ""}">` +
+      (logoSrc(s.id) ? `<img src="${logoSrc(s.id)}" alt="" loading="lazy">` : "") +
+      `<span class="pg-id">${esc(s.id)}</span>` +
+      (started ? `<b class="pg-score">${s.score}</b>` : "") +
+      (live && s.rz ? `<span class="pg-rz">RZ</span>` : "") +
+    `</span>`;
+  return `<div class="pgame${live ? " live" : ""}">` +
+    team(g.away) + `<span class="pg-at">${started ? "@" : "at"}</span>` + team(g.home) +
+    `<span class="pg-state">${live ? `<span class="dot"></span>` : ""}${esc(state)}</span>` +
+  `</div>`;
+};
+
+const detailHtml = (p) => {
+  const tiles = Object.keys(p.st || {}).length ? statTiles(p.pos, p.st) : [];
+  return `<div class="pdetail" aria-hidden="${expanded.has(detailKey(p)) ? "false" : "true"}"><div>` +
+    gameStrip(p) +
+    (tiles.length
+      ? `<div class="ptiles">${tiles.map((t) => `<span class="ptile${t.zero ? " zero" : ""}"><b>${esc(t.v)}</b><span>${esc(t.l)}</span></span>`).join("")}</div>`
+      : `<p class="pnone">${esc(noStats(p))}</p>`) +
+  `</div></div>`;
+};
+
 // top: the team's highest-scoring starter gets a gold ring (MVP echo).
+// The row is a button: tap (or Enter/Space) opens the stat breakdown
+// under it; the chevron under the points says so.
 const playerRow = (p, bench, top = false, enter = -1) => {
   const dim = bench && phase !== "preseason";   // pre-season the roster is nobody's bench
-  return `<div class="prow${dim ? " bench" : ""}${dim && p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${top ? " top" : ""}${enter >= 0 ? " enter" : ""}"${enter >= 0 ? ` style="--i:${enter}"` : ""}>` +
+  const isOpen = expanded.has(detailKey(p));
+  return `<div class="prow${dim ? " bench" : ""}${dim && p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${top ? " top" : ""}${enter >= 0 ? " enter" : ""}${isOpen ? " open" : ""}"${enter >= 0 ? ` style="--i:${enter}"` : ""}` +
+    ` role="button" tabindex="0" aria-expanded="${isOpen}" data-pk="${esc(detailKey(p))}">` +
     `<span class="pface">${avatar(p)}${logoBadge(p.tm)}${tdBadge(p.st)}</span>` +
     `<span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span>` +
     `<span class="pname"><b>${esc(p.n)}</b>` +
@@ -856,7 +952,11 @@ const playerRow = (p, bench, top = false, enter = -1) => {
       `</span>` +
       `<span class="pstat">${esc(statLine(p.pos, p.st))}</span>` +
     `</span>` +
-    `<span class="ppts${p.pts === 0 ? " zero" : ""}${p.flash ? " flash" : ""}"${p.key ? ` data-tween="p:${p.key}" data-delta` : ""}>${phase === "preseason" ? "&mdash;" : fmt(p.pts)}</span>` +
+    `<span class="pright">` +
+      `<span class="ppts${p.pts === 0 ? " zero" : ""}${p.flash ? " flash" : ""}"${p.key ? ` data-tween="p:${p.key}" data-delta` : ""}>${phase === "preseason" ? "&mdash;" : fmt(p.pts)}</span>` +
+      `<span class="pchev" aria-hidden="true"></span>` +
+    `</span>` +
+    detailHtml(p) +
   `</div>`;
 };
 
@@ -1006,6 +1106,29 @@ document.getElementById("back").addEventListener("click", closeTeam);
 // The lone Roster tab (no lineup yet) is not a choice: remember only a
 // real Starters/Bench pick, so the flip to live still lands on Starters.
 tabs.forEach((b) => b.addEventListener("click", () => { if (!b.hidden && !tabs.some((o) => o.hidden)) tab = b.dataset.tab; rosterEnter = true; renderTeam(); }));
+
+// Expand or collapse a player's stat breakdown in place (no re-render, so
+// the panel's height transition plays); the next render keeps the state.
+function togglePlayer(row) {
+  const on = !row.classList.contains("open");
+  row.classList.toggle("open", on);
+  row.setAttribute("aria-expanded", String(on));
+  row.querySelector(".pdetail")?.setAttribute("aria-hidden", String(!on));
+  if (on) expanded.add(row.dataset.pk); else expanded.delete(row.dataset.pk);
+  markMore();
+}
+rosterEl.addEventListener("click", (e) => {
+  const row = e.target.closest(".prow");
+  if (row) togglePlayer(row);
+});
+rosterEl.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const row = e.target.closest(".prow");
+  if (!row) return;
+  e.preventDefault();   // Space would scroll the roster
+  togglePlayer(row);
+});
+rosterEl.addEventListener("transitionend", (e) => { if (e.target.classList.contains("pdetail")) markMore(); });
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
   if (witch.dataset.open === "true") endWitchingHour();
@@ -1286,7 +1409,11 @@ let opener = "";              // "NEP at SEA", the week's first game (live sourc
 let rosterIds = new Map();    // franchise id -> [player ids]
 let lastScores = new Map();   // `${franchise}:${player}` -> score at the previous poll
 let scheduleAt = 0;           // when the NFL schedule was last fetched
-const SCHEDULE_EVERY = 5 * 60e3;
+// Kickoffs do not move, but the schedule also carries each game's score
+// (the expanded row's game strip), so while a game is on it is refetched
+// every minute; otherwise every five.
+const SCHEDULE_EVERY = 5 * 60e3, SCHEDULE_LIVE_EVERY = 60e3;
+const gamesOn = () => [...games.values()].some((g) => g.kickoff <= Date.now() && g.secs > 0);
 // Stat lines: Sleeper's live stats through the proxy, keyed by Sleeper id,
 // refreshed once a minute in season. Context beside MFL's number, never a
 // score. The fetch runs beside the poll, never in its path: it has its
@@ -1361,7 +1488,7 @@ async function refreshLive(first = false) {
   const w = QUERY.get("w") || "";
   // The schedule is fetched every few minutes, not every poll: kickoffs do
   // not move, and in season each player's own clock comes with liveScoring.
-  const wantSchedule = first || !games.size || Date.now() - scheduleAt > SCHEDULE_EVERY;
+  const wantSchedule = first || !games.size || Date.now() - scheduleAt > (gamesOn() ? SCHEDULE_LIVE_EVERY : SCHEDULE_EVERY);
   const [ls, sch] = await Promise.all([api("liveScoring", { W: w, DETAILS: "1" }), wantSchedule ? api("nflSchedule", { W: w }) : null]);
 
   if (sch) {
@@ -1371,13 +1498,17 @@ async function refreshLive(first = false) {
   for (const m of toArray(sch.ok ? sch.data.nflSchedule?.matchup : [])) {
     const k = new Date(Number(m.kickoff) * 1000);
     const secs = Number(m.gameSecondsRemaining);
+    const [a, b] = toArray(m.team);
+    const away = a?.isHome === "1" ? b : a, home = a?.isHome === "1" ? a : b;
     if (!firstKick || k < firstKick) {
       firstKick = k;
-      const [a, b] = toArray(m.team);
-      const away = a?.isHome === "1" ? b : a, home = a?.isHome === "1" ? a : b;
       opener = away && home ? `${away.id} at ${home.id}` : "";
     }
-    for (const t of toArray(m.team)) games.set(t.id, { kickoff: k, secs: Number.isFinite(secs) ? secs : 3600 });
+    // The game itself (both scores, who has the ball, red zone) for the
+    // expanded row's game strip.
+    const side = (t) => ({ id: t.id, score: Number(t.score) || 0, poss: t.hasPossession === "1", rz: t.inRedZone === "1" });
+    const match = away && home ? { kickoff: k, away: side(away), home: side(home) } : null;
+    for (const t of toArray(m.team)) games.set(t.id, { kickoff: k, secs: Number.isFinite(secs) ? secs : 3600, match });
   }
   kickoff = firstKick;
   // The week's first game day (Thursday, usually) is its own spotlight day.
