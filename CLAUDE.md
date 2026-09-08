@@ -105,7 +105,9 @@ element and scores are second.
   `backface-visibility: hidden` so Safari composites them before the
   swing instead of repainting each frame (it stuttered without), and the
   top scorer's gold wave, a per-frame repaint, waits until the swing has
-  settled. A poll's re-render leaves them still.
+  settled. `.enter` (and `--i`) come off at the swing's `animationend`
+  (2026-09-08), so the compositor hints do not linger on settled rows
+  until the next render. A poll's re-render leaves them still.
   **Each row expands** (ported from `main`, 2026-09-08): the row is a
   button (tap, Enter or Space; `role="button"`, `aria-expanded`) and
   opens a card under it, `.pdetail`: a **game strip** across the top
@@ -118,8 +120,12 @@ element and scores are second.
   the position's core counts always, zeros muted, the rest once they
   count, a rate where the volume supports one). The chevron under the
   points flips. Opened in place, not by re-render, so the panel's
-  `grid-template-rows: 0fr -> 1fr` transition plays and the rows below
-  slide; the open set is remembered by slot key (`expanded`) so a tick's
+  height transition plays (the script tweens the panel to its measured
+  height, then clears the inline size, so an open panel is a plain
+  block: natural height, no overflow clip; Safari left the tile labels
+  unpainted in the first cut, a `0fr -> 1fr` grid track with a clipped
+  inner div, and the labels lost their own overflow clip for the same
+  reason, 2026-09-08) and the rows below slide; the open set is remembered by slot key (`expanded`) so a tick's
   re-render keeps them open. `.prow` has no row gap so the closed panel
   sits flush; the laptop pane refreshes `markMore()` when a panel
   finishes opening.

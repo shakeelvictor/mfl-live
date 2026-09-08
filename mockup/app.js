@@ -1044,11 +1044,20 @@ tabs.forEach((b) => b.addEventListener("click", () => { tab = b.dataset.tab; ros
 
 // Expand or collapse a player's breakdown in place (no re-render, so the
 // panel's height transition plays); the next render keeps the state.
+// The panel's height cannot transition to auto, so the script tweens it
+// to its measured height (or back to 0) and, once there, clears the
+// inline size: an open panel is then a plain block, natural height, no
+// overflow clip, nothing for a browser's paint cache to get wrong (Safari
+// left the tile labels unpainted inside an animated, clipped grid track).
 function togglePlayer(row) {
   const on = !row.classList.contains("open");
+  const d = row.querySelector(".pdetail");
+  const tween = d && !reducedMotion.matches;
+  if (tween) { d.classList.add("tween"); d.style.height = `${on ? 0 : d.scrollHeight}px`; d.getBoundingClientRect(); }
   row.classList.toggle("open", on);
   row.setAttribute("aria-expanded", String(on));
-  row.querySelector(".pdetail")?.setAttribute("aria-hidden", String(!on));
+  d?.setAttribute("aria-hidden", String(!on));
+  if (tween) d.style.height = `${on ? d.scrollHeight : 0}px`;
   if (on) expanded.add(row.dataset.pk); else expanded.delete(row.dataset.pk);
   markMore();
 }
@@ -1063,7 +1072,21 @@ rosterEl.addEventListener("keydown", (e) => {
   e.preventDefault();   // Space would scroll the roster
   togglePlayer(row);
 });
-rosterEl.addEventListener("transitionend", (e) => { if (e.target.classList.contains("pdetail")) markMore(); });
+rosterEl.addEventListener("transitionend", (e) => {
+  if (!e.target.classList.contains("pdetail") || e.propertyName !== "height") return;
+  e.target.style.height = "";
+  e.target.classList.remove("tween");
+  markMore();
+});
+// Once a row's swing has settled, drop .enter: its will-change and
+// backface-visibility keep the row on its own compositor layer, and in
+// Safari text opened inside such a layer later (the breakdown's tile
+// labels) went unpainted.
+rosterEl.addEventListener("animationend", (e) => {
+  if (e.animationName !== "fflr-sway") return;
+  e.target.classList.remove("enter");
+  e.target.style.removeProperty("--i");
+});
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
   if (witch.dataset.open === "true") endWitchingHour();

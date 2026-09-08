@@ -853,16 +853,18 @@ button.hero { cursor: pointer; }
 }
 .prow.open .pchev { transform: translateY(3px) rotate(225deg); border-color: var(--accent); }
 
-/* The breakdown: a panel across the row under the columns, opened by
-   tweening its grid track from nothing to its content (the inner div
-   clips it meanwhile), so the roster rows below slide down with it. */
+/* The breakdown: a panel across the row under the columns. Closed it is
+   0 high and clipped; the script tweens its height open (.tween keeps
+   the clip meanwhile) and then clears it, so an open panel is a plain
+   block at its natural height with nothing clipped: rows rendered open
+   by a poll and rows opened in place end in the same state. */
 .pdetail {
   grid-column: 1 / -1;
-  display: grid; grid-template-rows: 0fr;
-  transition: grid-template-rows .3s ease;
+  height: 0; overflow: hidden;
+  transition: height .3s ease;
 }
-.pdetail > div { min-height: 0; overflow: hidden; }
-.prow.open .pdetail { grid-template-rows: 1fr; }
+.prow.open .pdetail { height: auto; overflow: visible; }
+.pdetail.tween { overflow: hidden; }
 /* The game strip: away @ home with scores, the player's team bright, a
    football (the possession marker) by whoever has the ball, RZ in the
    coin-flip red, and the state on the right. Wraps on a narrow row. */
@@ -896,7 +898,10 @@ button.hero { cursor: pointer; }
   background: var(--surface-raised); border: 1px solid var(--border);
 }
 .ptile b { font: 800 15px/1 var(--font-data); letter-spacing: -.01em; white-space: nowrap; }
-.ptile span { font: 700 9px/1 var(--font-data); letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* No overflow clip on the label: Safari left clipped text unpainted
+   after the panel's track transition, so the labels vanished. They are
+   short enough for the narrowest tile. */
+.ptile span { font: 700 9px/1 var(--font-data); letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
 .ptile.zero b { color: var(--text-muted); }
 .pnone { margin: 0; padding: 10px 0 2px; font: 600 12px/1.3 var(--font-data); color: var(--text-muted); }
 .prow.bench .ptile b { color: var(--text-secondary); }
