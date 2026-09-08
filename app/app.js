@@ -678,15 +678,14 @@ const isLive = (p) => !slate.sunFinal && (FIXTURE
   : (secsOf(p) != null && secsOf(p) > 0 && secsOf(p) < 3600));
 const clockFor = (p) => (FIXTURE ? LIVE_NFL.get(p.tm) : clockText(secsOf(p)));
 // Red zone, from the schedule's per-team flags (inRedZone, hasPossession):
-// an offensive player's own team inside the 20, a defender's opponent
-// there (that is when he can make the play). Live players only, and not
-// when the flags say the other side clearly has the ball.
+// an offensive player's own team inside the 20. Live players only, not
+// IDP (a defender facing a red-zone drive is not the same signal), and
+// not when the flags say the other side clearly has the ball.
 const inRedZone = (p) => {
   const m = games.get(p.tm)?.match;
-  if (!m || !isLive(p)) return false;
+  if (!m || !isLive(p) || !POS_CLASS[p.pos]) return false;
   const mine = m.away.id === p.tm ? m.away : m.home, other = mine === m.away ? m.home : m.away;
-  const side = POS_CLASS[p.pos] ? mine : other, opp = side === mine ? other : mine;
-  return side.rz && !(opp.poss && !side.poss);
+  return mine.rz && !(other.poss && !mine.poss);
 };
 // How many of a franchise's starters are in a red-zone situation right now.
 const rzCount = (t) => t.starters.filter(inRedZone).length;
@@ -956,7 +955,7 @@ const playerRow = (p, bench, top = false, enter = -1) => {
   const dim = bench && phase !== "preseason";   // pre-season the roster is nobody's bench
   const isOpen = expanded.has(detailKey(p));
   return `<div class="prow${dim ? " bench" : ""}${dim && p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${inRedZone(p) ? " rz" : ""}${top ? " top" : ""}${enter >= 0 ? " enter" : ""}${isOpen ? " open" : ""}"${enter >= 0 ? ` style="--i:${enter}"` : ""}` +
-    ` role="button" tabindex="0" aria-expanded="${isOpen}" data-pk="${esc(detailKey(p))}"${inRedZone(p) ? ` title="${POS_CLASS[p.pos] ? "In the red zone" : "Opponent in the red zone"}"` : ""}>` +
+    ` role="button" tabindex="0" aria-expanded="${isOpen}" data-pk="${esc(detailKey(p))}"${inRedZone(p) ? ` title="In the red zone"` : ""}>` +
     `<span class="pface">${avatar(p)}${logoBadge(p.tm)}${tdBadge(p.st)}</span>` +
     `<span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span>` +
     `<span class="pname"><b>${esc(p.n)}</b>` +

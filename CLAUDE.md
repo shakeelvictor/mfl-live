@@ -352,12 +352,13 @@ element and scores are second.
   live games and in the red zone in the first, so `app-2025-w15-live`
   shows every RZ marker.
   **Red zone** (2026-09-08): a live row whose player's offense is
-  inside the 20 (a defender's when the opponent is) wears a faint red
+  inside the 20 (offensive positions only; IDP get nothing, a defender
+  facing a red-zone drive is a different signal) wears a faint red
   ring with a **red glow pulsing** around the row and a red headshot
   ring (`.prow.rz::after` is the glow, a pseudo-element so its
   animation never fights the swing-in's; a comet lapping the border
   was tried on 2026-09-08, as a conic sweep and then on a motion path,
-  and dropped for the glow alone; the row's title says which), and a franchise's status carries a
+  and dropped for the glow alone), and a franchise's status carries a
   breathing red count pill, "2 RZ" (`rzCount`), in place of "on now"
   while any starter is in one (`inRedZone`). Urgency red, never mint.
   The game strip's RZ chip is the team-level flag.
