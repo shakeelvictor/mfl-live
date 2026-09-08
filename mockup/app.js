@@ -647,13 +647,11 @@ const GAMES = [
   { away: "CHI", home: "MIN", as: 24, hs: 21, poss: "CHI", rz: "CHI" },
 ];
 const GAME_OF = new Map(GAMES.flatMap((g) => [[g.away, g], [g.home, g]]));
-// Red zone: an offensive player's own team inside the 20, a defender's
-// opponent there (that is when he can make the play). Live players only.
+// Red zone: an offensive player's own team inside the 20. Live players
+// only, not IDP.
 const inRedZone = (p) => {
   const g = GAME_OF.get(p.tm);
-  if (!g || !isLive(p)) return false;
-  const opp = g.away === p.tm ? g.home : g.away;
-  return g.rz === (POS_CLASS[p.pos] ? p.tm : opp);
+  return Boolean(g && isLive(p) && POS_CLASS[p.pos] && g.rz === p.tm);
 };
 // How many of a franchise's starters are in a red-zone situation right now.
 const rzCount = (t) => t.starters.filter(inRedZone).length;
@@ -899,7 +897,7 @@ const detailHtml = (p) => {
 // breakdown under it; the chevron under the points says so.
 const playerRow = (p, bench, top = false, enter = -1) =>
   `<div class="prow${bench ? " bench" : ""}${p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${inRedZone(p) ? " rz" : ""}${top ? " top" : ""}${enter >= 0 ? " enter" : ""}${expanded.has(detailKey(p)) ? " open" : ""}"${enter >= 0 ? ` style="--i:${enter}"` : ""}` +
-    ` role="button" tabindex="0" aria-expanded="${expanded.has(detailKey(p))}" data-pk="${esc(detailKey(p))}"${inRedZone(p) ? ` title="${POS_CLASS[p.pos] ? "In the red zone" : "Opponent in the red zone"}"` : ""}>` +
+    ` role="button" tabindex="0" aria-expanded="${expanded.has(detailKey(p))}" data-pk="${esc(detailKey(p))}"${inRedZone(p) ? ` title="In the red zone"` : ""}>` +
     `<span class="pface">${avatar(p)}${logoBadge(p.tm)}${tdBadge(p.st)}</span>` +
     `<span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span>` +
     `<span class="pname"><b>${esc(p.n)}</b>` +
