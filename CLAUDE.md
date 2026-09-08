@@ -129,6 +129,12 @@ element and scores are second.
   re-render keeps them open. `.prow` has no row gap so the closed panel
   sits flush; the laptop pane refreshes `markMore()` when a panel
   finishes opening.
+  **Red zone** (2026-09-08): a pulsing red `RZ` chip after the clock
+  on a live row when the player's offense is inside the 20 (a defender
+  gets it when the opponent is), and "red zone" in the same red
+  replaces "on now" in a franchise's status while any starter is in
+  one (`inRedZone`). Urgency red, never mint. The game strip's RZ chip
+  is the team-level flag.
   Rows carry three small signals: the NFL logo badged on the
   headshot (as on the spotlight and touchdown cards), a mint **TD** chip on
   the headshot's top corner for anyone who has scored (counted from the

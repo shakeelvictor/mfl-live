@@ -190,7 +190,7 @@ const statusOf = (t) => t.bye
     ? "none in the lineup"
   : t.toPlay === 0
     ? "all played"
-    : `${t.toPlay} to play${t.onNow ? " &middot; on now" : ""}`;
+    : `${t.toPlay} to play${t.starters.some(inRedZone) ? ' &middot; <span class="rz">red zone</span>' : t.onNow ? " &middot; on now" : ""}`;
 
 /* ---------------- chrome ---------------- */
 
@@ -647,6 +647,14 @@ const GAMES = [
   { away: "CHI", home: "MIN", as: 24, hs: 21, poss: "CHI", rz: "CHI" },
 ];
 const GAME_OF = new Map(GAMES.flatMap((g) => [[g.away, g], [g.home, g]]));
+// Red zone: an offensive player's own team inside the 20, a defender's
+// opponent there (that is when he can make the play). Live players only.
+const inRedZone = (p) => {
+  const g = GAME_OF.get(p.tm);
+  if (!g || !isLive(p)) return false;
+  const opp = g.away === p.tm ? g.home : g.away;
+  return g.rz === (POS_CLASS[p.pos] ? p.tm : opp);
+};
 const scoreNfl = (tm, by = 7) => { const g = GAME_OF.get(tm); if (g) g[g.home === tm ? "hs" : "as"] += by; };
 
 const liveStats = {};   // `${teamId}:${index}` (bench: `b${index}`) -> mutated copy of st
@@ -894,6 +902,7 @@ const playerRow = (p, bench, top = false, enter = -1) =>
     `<span class="pname"><b>${esc(p.n)}</b>` +
       `<span class="pmeta">${esc(p.tm)}<span aria-hidden="true">·</span>` +
         (isLive(p) ? `<span class="clock"><span class="dot"></span>${clockFor(p)}</span>` : `<span>Final</span>`) +
+        (inRedZone(p) ? `<span class="prz" title="${POS_CLASS[p.pos] ? "In the red zone" : "Opponent in the red zone"}">RZ</span>` : "") +
         (p.from ? `<span aria-hidden="true">·</span><span class="pfrom">${esc(p.from)}</span>` : "") +
       `</span>` +
       `<span class="pstat">${esc(statLine(p.pos, p.st))}</span>` +
