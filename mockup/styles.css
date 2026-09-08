@@ -56,6 +56,7 @@
   --tab-line: rgba(255, 255, 255, 0.12);
   --hero-tab-start: oklch(0.42 0.1 178);
   --shadow-row: 0 4px 10px rgba(0, 0, 0, 0.42);
+  --shadow-lift: 0 24px 44px -10px rgba(0, 0, 0, 0.7), 0 6px 14px rgba(0, 0, 0, 0.4);   /* the picked row, risen off the board */
   --shadow-pane: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 20px 50px rgba(0, 0, 0, 0.5);
   --gap-critical: #ff5d5d;
   --gap-critical-soft: rgba(255, 93, 93, 0.14);
@@ -123,6 +124,7 @@
   --tab-line: rgba(255, 255, 255, 0.18);
   --hero-tab-start: #0c5a4b;
   --shadow-row: 0 3px 8px rgba(15, 25, 22, 0.12);
+  --shadow-lift: 0 24px 44px -10px rgba(15, 25, 22, 0.28), 0 6px 14px rgba(15, 25, 22, 0.12);
   --shadow-pane: 0 1px 2px rgba(15, 25, 22, 0.06), 0 20px 50px rgba(15, 25, 22, 0.16);
 }
 
@@ -537,7 +539,7 @@ button.hero { cursor: pointer; }
   background: var(--surface);
   color: var(--text-primary);
   border-radius: var(--radius-row);
-  transition: background .25s, border-radius .3s;
+  transition: background .25s, border-radius .3s, transform .5s cubic-bezier(.34, 1.4, .64, 1), box-shadow .5s;
 }
 .row:hover { filter: brightness(1.06); }
 .row:focus-visible { outline-offset: -2px; }
@@ -546,6 +548,23 @@ button.hero { cursor: pointer; }
 .row.fuse-top    { border-top-left-radius: 0;    border-top-right-radius: 0; }
 .row.fuse-bottom { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 .row.fused       { box-shadow: none; }
+/* The picked team rises off the board: a perspective lift toward the
+   viewer (6% bigger, a little overshoot on the way up), its own shadow
+   deepening under it, above its neighbours, and every corner rounded
+   again (a fused row squares the edges facing a hot gap; lifted, it has
+   left the cluster). The lift and a FLIP move share one transform: the
+   move rides --dy (set by the script for the flight), so a lifted row
+   that changes rank stays lifted as it slides. Hero too, at a lighter
+   lift, since it is already the biggest thing on the page. */
+.row.moving, .row.sel, .hero-wrap.sel { transform: translateY(var(--dy, 0px)); }
+.row.sel {
+  transform: translateY(var(--dy, 0px)) perspective(900px) translateZ(51px);   /* 6% bigger */
+  position: relative; z-index: 3;
+  box-shadow: var(--shadow-lift);
+  border-radius: var(--radius-row);   /* a lifted row leaves its fused cluster: every corner rounded again */
+}
+.hero-wrap.sel { transform: perspective(1200px) translateZ(28px); z-index: 3; transition: transform .5s cubic-bezier(.34, 1.4, .64, 1); }
+.hero-wrap.sel .hero { box-shadow: var(--hero-shadow), var(--shadow-lift); }
 
 .rank {
   width: 36px; height: 36px; border-radius: 50%;
@@ -692,11 +711,19 @@ button.hero { cursor: pointer; }
   gap: 0 10px; align-items: center;   /* no row gap: the detail panel sits flush when closed */
   padding: 9px 8px;
   border-radius: var(--radius-row);
-  transition: background .2s, opacity .3s;
+  transition: background .2s, opacity .3s, scale .45s cubic-bezier(.34, 1.4, .64, 1), box-shadow .45s;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 .prow:hover { background: var(--surface-raised); }
+/* An open row comes forward: it scales up (the individual scale property,
+   so the swing-in's transform animation cannot override it), sits on the
+   raised surface with its own shadow, above the rows around it. */
+.prow.open {
+  scale: 1.05; z-index: 1;
+  background-color: var(--surface-raised);
+  box-shadow: var(--shadow-lift);
+}
 .prow:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 /* Still on the field: mint ring on the headshot and a soft mint wash that
@@ -839,6 +866,7 @@ button.hero { cursor: pointer; }
    status a red count pill, "2 RZ", breathes in place of "on now" while
    any starter is in one. Urgency red, never mint. */
 .prow.rz { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gap-critical) 38%, transparent); }
+.prow.rz.open { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gap-critical) 38%, transparent), var(--shadow-lift); }
 .prow.rz::after {
   content: ""; position: absolute; inset: 0; border-radius: inherit;
   box-shadow: 0 0 10px 0 var(--gap-critical-soft);
@@ -1152,7 +1180,7 @@ button.hero { cursor: pointer; }
     grid-template-columns: minmax(0, 1fr) minmax(380px, 520px);
     gap: 0 var(--gutter);
     align-items: start;
-    padding: 16px 24px 48px;
+    padding: 16px 40px 48px;   /* room for the picked row's lift: it grows leftward about its right edge, up to 5% of the board */
     --gutter: 28px;
   }
 
@@ -1197,7 +1225,7 @@ button.hero { cursor: pointer; }
   .team-page > .shell { gap: 12px; }
   .team-page .tabs { padding: 3px; }
   .team-page .tab { height: 36px; }
-  .team-page .roster { padding: 10px; }
+  .team-page .roster { padding: 10px 14px; }   /* the open row's 5% scale must clear the card's overflow clip */
   .team-page .prow { grid-template-columns: 36px 36px 1fr auto; gap: 0 10px; padding: 10px 8px; }
   .team-page .ptiles { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); padding-top: 8px; }
   .team-page .ptile { padding: 6px 7px; }
@@ -1231,7 +1259,13 @@ button.hero { cursor: pointer; }
   /* --tab-t (set by the script) is how far down the pane the tab sits, so
      --join is the pane's colour at that height. The tab fades from a touch
      lighter on its left to exactly --join at the bridge. */
-  .row { transition: background .25s, color .25s; }   /* no radius tween: the bridge appears at once */
+  .row { transition: background .25s, color .25s, transform .5s cubic-bezier(.34, 1.4, .64, 1), box-shadow .5s; }   /* no radius tween: the bridge appears at once */
+  /* The lift grows about the right edge, so the tab's seam with the pane
+     (and the bridge, which scales with the row) stays put. 5% here: all of
+     the growth goes leftward, and at 1280px (the board at its widest, the
+     shell at its margin) 6% met the viewport edge. */
+  .row.sel, .hero-wrap.sel { transform-origin: 100% 50%; }
+  .row.sel { transform: translateY(var(--dy, 0px)) perspective(900px) translateZ(43px); }
   /* Mixed in sRGB on purpose: that is the space linear-gradient interpolates
      in, so this is the pane's actual colour at --tab-t. Mixing in oklch
      lands a visibly different green. */
@@ -1244,7 +1278,8 @@ button.hero { cursor: pointer; }
     box-shadow:
       inset 1px 0 0 var(--tab-line),
       inset 0 1px 0 var(--tab-line),
-      inset 0 -1px 0 var(--tab-line);
+      inset 0 -1px 0 var(--tab-line),
+      var(--shadow-lift);
   }
   .row.active:hover { filter: none; }
   .row.active .chev { opacity: 0; }
@@ -1499,6 +1534,7 @@ button.hero { cursor: pointer; }
   .spot::before, .hero-wave, .hero-money, .prow.top { animation: none; }
   .loader-scene, .loader-brand span { animation: none; }   /* shown at once; the WebP still loops */
   .row.enter { animation: none; }
+  .row, .hero-wrap.sel, .prow { transition-property: background, color, opacity, border-radius; }   /* lifts land at once */
   .delta { display: none; }
   .team-page, .team-page .shell { animation: none; }
 }

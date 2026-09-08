@@ -521,10 +521,10 @@ function renderRows(changed) {
     if (Math.abs(dy) < 1) continue;
     el.classList.add("moving");
     el.style.transition = "none";
-    el.style.transform = `translateY(${dy}px)`;
+    el.style.setProperty("--dy", `${dy}px`);   // the row's transform reads --dy, so a lifted row stays lifted in flight
     requestAnimationFrame(() => requestAnimationFrame(() => {
       el.style.transition = "transform .55s cubic-bezier(.2, .8, .2, 1)";
-      el.style.transform = "";
+      el.style.removeProperty("--dy");
     }));
     el.addEventListener("transitionend", () => {
       el.classList.remove("moving");
@@ -919,6 +919,8 @@ const page = document.getElementById("team");
 const rosterEl = document.getElementById("roster");
 const tabs = [...page.querySelectorAll(".tab")];
 let open = null;       // team id
+let picked = null;     // the team last opened: its row stays lifted on the board (on a phone,
+                       // after the page closes too, so the board shows where you have been)
 let tab = "starters";
 let lastFocus = null;
 
@@ -1003,13 +1005,18 @@ function markActive() {
     const t = Math.min(1, Math.max(0, (r.top + r.height / 2 - pane.top) / pane.height));
     el.style.setProperty("--tab-t", `${(t * 100).toFixed(2)}%`);
   };
-  for (const el of rowsEl.querySelectorAll(".row")) place(el, desktop.matches && el.dataset.id === open);
-  place(document.getElementById("hero-wrap"), desktop.matches && teams[0]?.id === open);
+  for (const el of rowsEl.querySelectorAll(".row")) {
+    place(el, desktop.matches && el.dataset.id === open);
+    el.classList.toggle("sel", el.dataset.id === picked);
+  }
+  const heroWrap = document.getElementById("hero-wrap");
+  place(heroWrap, desktop.matches && teams[0]?.id === open);
+  heroWrap.classList.toggle("sel", teams[0]?.id === picked);
 }
 addEventListener("resize", () => { if (desktop.matches) markActive(); });
 
 function openTeam(id) {
-  open = id; tab = "starters";
+  open = id; picked = id; tab = "starters";
   rosterEnter = true;
   renderTeam();
   markActive();
