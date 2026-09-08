@@ -190,7 +190,7 @@ const statusOf = (t) => t.bye
     ? "none in the lineup"
   : t.toPlay === 0
     ? "all played"
-    : `${t.toPlay} to play${t.starters.some(inRedZone) ? ' &middot; <span class="rz">red zone</span>' : t.onNow ? " &middot; on now" : ""}`;
+    : `${t.toPlay} to play${rzCount(t) ? ` &middot; <span class="rzn" title="${rzCount(t)} in the red zone">${rzCount(t)} RZ</span>` : t.onNow ? " &middot; on now" : ""}`;
 
 /* ---------------- chrome ---------------- */
 
@@ -655,6 +655,9 @@ const inRedZone = (p) => {
   const opp = g.away === p.tm ? g.home : g.away;
   return g.rz === (POS_CLASS[p.pos] ? p.tm : opp);
 };
+// How many of a franchise's starters are in a red-zone situation right now.
+const rzCount = (t) => t.starters.filter(inRedZone).length;
+
 const scoreNfl = (tm, by = 7) => { const g = GAME_OF.get(tm); if (g) g[g.home === tm ? "hs" : "as"] += by; };
 
 const liveStats = {};   // `${teamId}:${index}` (bench: `b${index}`) -> mutated copy of st
@@ -895,14 +898,14 @@ const detailHtml = (p) => {
 // The row is a button: tap (or Enter/Space) opens the game strip and stat
 // breakdown under it; the chevron under the points says so.
 const playerRow = (p, bench, top = false, enter = -1) =>
-  `<div class="prow${bench ? " bench" : ""}${p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${top ? " top" : ""}${enter >= 0 ? " enter" : ""}${expanded.has(detailKey(p)) ? " open" : ""}"${enter >= 0 ? ` style="--i:${enter}"` : ""}` +
-    ` role="button" tabindex="0" aria-expanded="${expanded.has(detailKey(p))}" data-pk="${esc(detailKey(p))}">` +
+  `<div class="prow${bench ? " bench" : ""}${p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${inRedZone(p) ? " rz" : ""}${top ? " top" : ""}${enter >= 0 ? " enter" : ""}${expanded.has(detailKey(p)) ? " open" : ""}"${enter >= 0 ? ` style="--i:${enter}"` : ""}` +
+    ` role="button" tabindex="0" aria-expanded="${expanded.has(detailKey(p))}" data-pk="${esc(detailKey(p))}"${inRedZone(p) ? ` title="${POS_CLASS[p.pos] ? "In the red zone" : "Opponent in the red zone"}"` : ""}>` +
     `<span class="pface">${avatar(p)}${logoBadge(p.tm)}${tdBadge(p.st)}</span>` +
     `<span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span>` +
     `<span class="pname"><b>${esc(p.n)}</b>` +
       `<span class="pmeta">${esc(p.tm)}<span aria-hidden="true">·</span>` +
         (isLive(p) ? `<span class="clock"><span class="dot"></span>${clockFor(p)}</span>` : `<span>Final</span>`) +
-        (inRedZone(p) ? `<span class="prz" title="${POS_CLASS[p.pos] ? "In the red zone" : "Opponent in the red zone"}">RZ</span>` : "") +
+
         (p.from ? `<span aria-hidden="true">·</span><span class="pfrom">${esc(p.from)}</span>` : "") +
       `</span>` +
       `<span class="pstat">${esc(statLine(p.pos, p.st))}</span>` +
