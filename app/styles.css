@@ -829,29 +829,51 @@ button.hero { cursor: pointer; }
 }
 .pname .pmeta { display: flex; align-items: center; gap: 6px; font: 700 11px/1 var(--font-data); letter-spacing: .08em; color: var(--text-muted); text-transform: uppercase; }
 .pname .pmeta .clock { display: inline-flex; align-items: center; gap: 5px; color: var(--accent); }
-/* Red zone: the row wears a red ring that breathes (the offense inside
-   the 20, or a defender's opponent there) and the headshot ring goes red.
-   The ring is a pseudo-element so its animation never fights the row's
-   own (the swing-in). In a franchise's status a red count pill, "2 RZ",
-   replaces "on now" while any starter is in one. Urgency red, never mint. */
+/* Red zone (the offense inside the 20, or a defender's opponent there):
+   a red comet laps the row's border, a faint red ring under it so the
+   card reads red where the comet is not, a red glow pulsing around the
+   row, and a red headshot ring. Both animated pieces are pseudo-elements,
+   so their animations never fight the row's own (the swing-in). The lap
+   is a conic gradient turned through a registered angle and masked to
+   the border (mask-composite: exclude keeps the ring only); the glow is
+   a box-shadow on ::after, which the ring's mask would otherwise clip.
+   In a franchise's status a red count pill, "2 RZ", breathes in place of
+   "on now" while any starter is in one. Urgency red, never mint. */
+@property --rz-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.prow.rz { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gap-critical) 38%, transparent); }
 .prow.rz::before {
-  content: ""; position: absolute; inset: 0; border-radius: inherit;
-  box-shadow: inset 0 0 0 1.5px var(--gap-critical), 0 0 0 0 var(--gap-critical-soft);
+  content: ""; position: absolute; inset: -1px; border-radius: inherit;
+  padding: 2px; box-sizing: border-box;
+  background: conic-gradient(from var(--rz-a), transparent 0 .58turn, var(--gap-critical) 1turn);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
   pointer-events: none;
-  animation: fflr-rz-ring 1.8s ease-in-out infinite;
+  animation: fflr-rz-lap 2.8s linear infinite;
+}
+.prow.rz::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  box-shadow: 0 0 10px 0 var(--gap-critical-soft);
+  pointer-events: none;
+  animation: fflr-rz-glow 1.8s ease-in-out infinite;
 }
 .prow.rz .avatar, .prow.rz .avatar-fb { border-color: var(--gap-critical); box-shadow: 0 0 0 2px var(--gap-critical-soft); }
-@keyframes fflr-rz-ring {
-  0%, 100% { box-shadow: inset 0 0 0 1.5px var(--gap-critical), 0 0 0 0 var(--gap-critical-soft); }
-  50% { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--gap-critical) 55%, transparent), 0 0 0 5px var(--gap-critical-soft); }
+@keyframes fflr-rz-lap { to { --rz-a: 1turn; } }
+@keyframes fflr-rz-glow {
+  50% { box-shadow: 0 0 18px 3px color-mix(in srgb, var(--gap-critical) 38%, transparent); }
 }
 .rzn {
   display: inline-flex; align-items: center;
   padding: 2px 6px; border-radius: var(--radius-pill);
   background: var(--gap-critical); color: #fff;
   font: 800 10px/1 var(--font-data); letter-spacing: .04em;
+  animation: fflr-rz-pill 1.8s ease-in-out infinite;
 }
 .hero-status .rzn { font-size: 11px; }
+@keyframes fflr-rz-pill {
+  50% { opacity: .72; box-shadow: 0 0 0 3px var(--gap-critical-soft); }
+}
 /* Stat line: context beside MFL's number, never a score of its own. */
 .pname .pstat {
   font: 600 11.5px/1.2 var(--font-data);
@@ -1468,7 +1490,7 @@ button.hero { cursor: pointer; }
   .td-scrim, .td-card, .td-card * { animation: none !important; }
   .prow.enter { animation: none; }
   .pdetail, .pchev { transition: none; }
-  .prow.rz::before { animation: none; }
+  .prow.rz::before, .prow.rz::after, .rzn { animation: none; }
   h1 { animation: none; background-position: 50% 50%; }   /* the band held mid-title */
   .flash { animation: none; }
   .hero.takeover, .hero.takeover * { animation: none !important; }
