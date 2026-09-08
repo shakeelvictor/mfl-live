@@ -298,6 +298,26 @@ element and scores are second.
   `display: none` during `renderTeam()`, so an earlier measurement is 0)
   and on resize. Multi-word names still wrap at full size. Same code in
   `mockup/app.js` on `poc`.
+- **The picked team lifts off the board** (2026-09-08): tapping a row
+  sets `picked` and `markActive()` marks it `.row.sel`: a perspective
+  lift toward the viewer (`perspective(900px) translateZ(51px)`, 6%
+  bigger, a touch of overshoot), its own `--shadow-lift`, a z-index over
+  its neighbours, and **every corner rounded again** (a fused row has
+  squared the edges facing a hot gap; lifted, it has left the cluster, so
+  square corners on one side read as a glitch). On laptop it grows about
+  its right edge so the tab's seam with the pane and the bridge hold, at
+  5% (all of the growth goes leftward, and at 1280px 6% met the viewport
+  edge; the laptop shell keeps 40px side padding for it, since `.app`
+  clips at the viewport); the hero gets a lighter lift when the leader is
+  picked. On a phone the row stays lifted after the team page closes
+  (`picked` outlives `open`), so the board shows where you have been. A
+  FLIP move rides `--dy` inside the same transform, not an inline
+  `transform`, so a lifted row keeps its lift while it slides to a new
+  rank. An **open player row** comes forward the same way (`.prow.open`:
+  `scale: 1.05`, the individual property so the swing-in's transform
+  animation cannot override it, raised surface, the lift shadow; the
+  laptop roster's side padding is 14px so the scaled row clears the
+  card's overflow clip). Reduced motion lands both at once.
 - In dark the hero has **no border and no inset highlight** (`--hero-border`,
   `--hero-shadow`): its gradient fades to near-canvas, so either reads as a
   stray outline. Light keeps both.
