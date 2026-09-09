@@ -17,7 +17,7 @@ let UPDATED = "4:12 PM";
 let phase = "live";            // "live" | "preseason" (liveScoring not available yet)
 let kickoff = null;            // Date of the week's first game (live source)
 let games = new Map();         // NFL team -> { kickoff: Date, secs } from nflSchedule (live source)
-let dayTeams = { early: new Set() };   // NFL teams whose game is on the week's first day
+let dayTeams = { early: new Set(), days: [] };   // the week's game days from the schedule: [{ key, name, teams }] in kickoff order, in NFL (Eastern) dates; `early` is the first day's teams
 
 // Playoffs (Weeks 15-17): the round's field, folded from the season's
 // scores by app/playoffs.js. null in the regular season, before the season,
@@ -823,18 +823,41 @@ function statTiles(pos, st) {
 
 const THU_NFL = new Set(["DET", "CLE"]);   // fixture: Thursday night, Browns at Lions
 const isEarlyDay = (p) => (FIXTURE ? THU_NFL : dayTeams.early).has(p.tm);
+const ET_DATE = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "short", day: "numeric" });
+const ET_WEEKDAY = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "long" });
 const spotEl = document.getElementById("spot");
 let lastSpotKey = null;
+
+// The week's days as they stand: a day has started when its first game has
+// kicked off and is final when every game on it has ended.
+const dayStates = () => {
+  const now = Date.now();
+  return dayTeams.days.map((d) => {
+    const gs = [...d.teams].map((tm) => games.get(tm)).filter(Boolean);
+    return { ...d, started: gs.some((g) => g.kickoff <= now), final: gs.length > 0 && gs.every((g) => g.kickoff <= now && g.secs <= 0) };
+  });
+};
 
 function spotlightPick() {
   const all = teams.flatMap((t) => liveStarters(t, new Set()).map((p) => ({ ...p, franchise: p.from || t.team })));
   let pool, label, when;
   if (slate.nextWeek) return { top: null, key: "none" };            // new week, nothing final yet
   if (weekIsFinal()) { pool = all; label = post ? `\u2605 MVP of ${post.round.ref}` : duel ? "\u2605 MVP of the Pro Bowl" : "\u2605 MVP of the week"; when = `${post ? post.round.name : duel ? EXHIBITION.name : `Week ${WEEK}`} final`; }
-  else if (slate.sunFinal) { pool = all.filter((p) => !isEarlyDay(p)); label = "Top scorer"; when = "Sunday"; }
-  else return { top: null, key: "none" };                             // Sunday is in progress
+  else if (FIXTURE) {                                                 // no schedule: the staged slate (Thursday's teams, everything else Sunday)
+    if (!slate.sunFinal) return { top: null, key: "none" };
+    pool = all.filter((p) => !isEarlyDay(p)); label = "Top scorer"; when = "Sunday";
+  } else {
+    // Between days: the last finished day's top starter, until a later
+    // day's first game kicks off. Nothing while a day is in progress.
+    const days = dayStates();
+    if (days.some((d) => d.started && !d.final)) return { top: null, key: "none" };
+    const day = [...days].reverse().find((d) => d.final);
+    if (!day) return { top: null, key: "none" };
+    pool = all.filter((p) => day.teams.has(p.tm)); label = "Top scorer"; when = day.name;
+  }
+  if (!pool.length) return { top: null, key: "none" };
   const top = pool.reduce((a, p) => (p.pts > a.pts ? p : a), pool[0]);
-  return { top, label, when, mvp: slate.weekFinal, key: `${when}:${top?.key}` };
+  return { top, label, when, mvp: weekIsFinal(), key: `${when}:${top?.key}` };
 }
 
 function renderSpotlight() {
@@ -1672,9 +1695,19 @@ async function refreshLive(first = false) {
     for (const t of toArray(m.team)) games.set(t.id, { kickoff: k, secs: Number.isFinite(secs) ? secs : 3600, match });
   }
   kickoff = firstKick;
-  // The week's first game day (Thursday, usually) is its own spotlight day.
-  const days = [...new Set([...games.values()].map((g) => g.kickoff.toDateString()))].sort((a, b) => new Date(a) - new Date(b));
-  dayTeams.early = new Set(days.length > 1 ? [...games].filter(([, g]) => g.kickoff.toDateString() === days[0]).map(([tm]) => tm) : []);
+  // The week's game days, each its own spotlight day. Grouped by the NFL's
+  // own date (Eastern), not the viewer's: a Sunday afternoon kickoff is
+  // already Monday in Karachi.
+  const byDay = new Map();
+  for (const [tm, g] of games) {
+    const key = ET_DATE.format(g.kickoff);
+    if (!byDay.has(key)) byDay.set(key, { key, name: ET_WEEKDAY.format(g.kickoff), kickoff: g.kickoff, teams: new Set() });
+    const d = byDay.get(key);
+    d.teams.add(tm);
+    if (g.kickoff < d.kickoff) d.kickoff = g.kickoff;
+  }
+  dayTeams.days = [...byDay.values()].sort((a, b) => a.kickoff - b.kickoff);
+  dayTeams.early = new Set(dayTeams.days.length > 1 ? dayTeams.days[0].teams : []);
   }
 
   const changed = new Set();
@@ -1742,6 +1775,10 @@ async function refreshLive(first = false) {
   settleTouchdowns();
   if (duel) for (const id of [...changed]) if (duel.sideOf.has(id)) changed.add(duel.sideOf.get(id).id);
   slate.sunFinal = games.size > 0 && [...games.values()].every((g) => g.secs <= 0);
+  // With the feed the week is final once every game is (MFL's own "official"
+  // mark is not read; the playoffs already use this rule). The MVP card and
+  // the Week winner hero follow, and clear when MFL rolls the week.
+  slate.weekFinal = slate.sunFinal;
   UPDATED = fmtTime(new Date());
   return changed;
 }

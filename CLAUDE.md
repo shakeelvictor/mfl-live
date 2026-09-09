@@ -515,9 +515,23 @@ element and scores are second.
 - **Spotlight card** under the hero, a between-days card: once a day's
   games are all final it shows that day's highest-scoring *starter*
   (headshot, logo, stat line, franchise, points) and goes away when the
-  next day's games kick off; once the week is official it turns gold as the
+  next day's games kick off; once the week is final it turns gold as the
   MVP of the week and stays until the next week begins. While a day is in
-  progress (the mockup's opening state) there is no card. A soft colour wave drifts across its background (accent, gold
+  progress (the mockup's opening state) there is no card. **On `main`
+  the days come from the schedule** (2026-09-08; before that the card
+  only ever appeared once every game of the week was final, labelled
+  Sunday): `dayTeams.days` groups the week's games by their NFL date
+  (Eastern, through Intl, since a Sunday afternoon kickoff is already
+  Monday in Karachi), a day has started when its first game has kicked
+  off and is final when every game on it has ended (`dayStates`), and
+  `spotlightPick` shows the last finished day's top starter, labelled
+  with the weekday, while no day is in progress. The week is final once
+  every game is (`slate.weekFinal = slate.sunFinal`; MFL's "official"
+  mark is not read, the same rule the playoffs use), which turns the
+  card gold and the leader hero into the Week winner; both clear when
+  MFL rolls liveScoring to the next week and the new schedule has
+  nothing final. The fixture has no schedule, so it keeps the staged
+  slate (`THU_NFL`, everything else Sunday). A soft colour wave drifts across its background (accent, gold
   as MVP). When the week is official the leader hero becomes the **Week
   winner**: gold wave, gold badge, and a money-bag emoji hanging over its
   top-right corner (it sits outside the hero, which clips overflow for the
