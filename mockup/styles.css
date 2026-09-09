@@ -51,8 +51,13 @@
   --hero-gold-line: rgba(242, 201, 76, 0.5);
   /* Laptop layout: the selected row and the team panel share this green.
      Solid on purpose, so the tab matches the panel at any height. */
-  --tab-a: oklch(0.39 0.09 178);   /* pane top */
-  --tab-b: oklch(0.29 0.07 178);   /* pane bottom */
+  /* Pane top and bottom. Kept as sRGB hex on purpose: the tab's --join is
+     color-mix(in srgb) and a gradient of legacy colours interpolates in
+     sRGB, so the seam is exact. As oklch these interpolated in oklab and,
+     being outside the sRGB gamut, were gamut-mapped differently by the
+     gradient and the mix, so the bridge never quite matched the pane. */
+  --tab-a: #015145;   /* oklch(0.39 0.0715 178), the in-gamut cut of 0.39 0.09 */
+  --tab-b: #01342b;   /* oklch(0.29 0.053 178) */
   --tab-line: rgba(255, 255, 255, 0.12);
   --hero-tab-start: oklch(0.42 0.1 178);
   --shadow-row: 0 4px 10px rgba(0, 0, 0, 0.42);
@@ -1337,7 +1342,13 @@ button.hero { cursor: pointer; }
   .hero-wrap.active { z-index: 2; }
   .hero-wrap.active .hero {
     border-top-right-radius: 0; border-bottom-right-radius: 0;
-    background: linear-gradient(160deg, var(--hero-tab-start) 0%, var(--join) 70%);
+    /* The diagonal reaches --join only 70% along its line, which the top
+       of the right edge never gets to (a 652x178 hero sits at 57% there),
+       so a second layer fades the right third onto --join and pins the
+       whole edge to the bridge. */
+    background:
+      linear-gradient(90deg, transparent 62%, var(--join) 100%),
+      linear-gradient(160deg, var(--hero-tab-start) 0%, var(--join) 70%);
     border-right-color: transparent;
   }
   .hero-wrap.active::after {

@@ -161,9 +161,16 @@ element and scores are second.
   `--tab-b`), and the script tells the active element how far down the
   pane it sits (`--tab-t`) so CSS `color-mix` derives `--join`, the pane's
   colour at that height (mixed **in sRGB**, because that is the space
-  `linear-gradient` interpolates in -- an oklch mix lands a visibly
-  different green at the seam); the tab's own left-to-right gradient and its
-  bridge land exactly on `--join`. Hero text and an accent rank badge; right
+  `linear-gradient` interpolates in **for legacy colours**; an oklch mix
+  lands a visibly different green at the seam). So `--tab-a`/`--tab-b`
+  must stay sRGB hex in both themes: as oklch (2026-09-08) the pane's
+  gradient interpolated in oklab and, the colours sitting outside the
+  sRGB gamut, gradient and mix were gamut-mapped by different paths and
+  the bridge never matched the pane. The tab's own left-to-right gradient
+  and its bridge land exactly on `--join`; the hero's 160deg gradient
+  reaches `--join` only 70% along its diagonal, which the top of its right
+  edge never gets to, so a second 90deg layer fades its right third onto
+  `--join`. Hero text and an accent rank badge; right
   corners squared, inset-shadow borders (so selection never shifts the
   list; on laptop the row's radius does not tween, so no flicker before the
   bridge) and a `::after` bridge one gutter wide plus 1px, so it covers the
