@@ -25,6 +25,8 @@ let dayTeams = { early: new Set(), days: [] };   // the week's game days from th
 // missing), in which case the board falls back to every franchise as usual.
 let post = null;
 let seasonScores = null;   // [{ week, franchise: [{ id, score }] }] from the proxy
+let seasonRec = null;      // id -> { w, l, t }: all-play through the week before this one (regular season), from seasonScores
+let seasonRecWeek = 0, seasonAt = 0;
 let byeTeams = [];         // resting this round (Round 1: the No. 1 seed)
 let cutAt = -1;            // gaps[cutAt] is the cut line, under the last advancing rank
 const ROUNDS = Playoffs.PLAYOFFS.rounds;
@@ -150,11 +152,19 @@ function derive() {
     .sort((a, b) => phase === "preseason" ? a.team.localeCompare(b.team)
       : post ? (b.live - a.live || a.seed - b.seed)
       : b.live - a.live)
-    .map((t, i, arr) => ({
-      ...t, rank: i + 1,
-      record: post ? `#${t.seed} seed` : `${arr.length - 1 - i}-${i}`,
-      through: post ? i < arr.length - post.round.drop : null,
-    }));
+    .map((t, i, arr) => {
+      // The week's all-play from the rank, on top of the season so far
+      // (seasonRec, the weeks before this one): unofficial, live, and it
+      // moves as the row does. Week 1, the fixture and a failed fetch show
+      // the week alone.
+      const w = arr.length - 1 - i, l = i, so = seasonRec?.get(t.id) || { w: 0, l: 0, t: 0 };
+      return {
+        ...t, rank: i + 1,
+        record: post ? `#${t.seed} seed` : `${so.w + w}-${so.l + l}${so.t ? `-${so.t}` : ""}`,
+        week: `${w}-${l}`,
+        through: post ? i < arr.length - post.round.drop : null,
+      };
+    });
   gaps = teams.slice(0, -1).map((t, i) => r2(t.live - teams[i + 1].live));
   n = teams.length;
   cutAt = post ? n - post.round.drop - 1 : -1;
@@ -1740,6 +1750,7 @@ async function refreshLive(first = false) {
   const L = ls.data.liveScoring;
   WEEK = Number(L.week) || WEEK;
   await loadPlayoffs();
+  await loadSeason();
   if (first || Date.now() - statsAt > statsEvery()) fetchStats(WEEK);   // beside the poll, not in it
   const franchises = toArray(L.franchise);
   await ensurePlayers([...rosterIds.values()].flat().concat(franchises.flatMap((f) => toArray(f.players?.player).map((p) => p.id))));
@@ -1788,6 +1799,22 @@ async function refreshLive(first = false) {
 // refetched when the fold cannot complete, e.g. a page left open from Round
 // 1 into the Semifinal has no Week 15 scores yet. If it still cannot, `post`
 // stays null and the board shows every franchise, as in the regular season.
+// The season so far, for the record chip: every finished week's all-play
+// (Playoffs.allPlay over the weeks before this one, regular season only),
+// fetched with the week's first poll, again when the week rolls, and every
+// half hour in case of stat corrections. Never in the poll's path for long:
+// a failure leaves the last table, or none (the week's record alone).
+const SEASON_EVERY = 30 * 60e3;
+async function loadSeason() {
+  if (FIXTURE || WEEK <= 1 || Playoffs.round(WEEK) || WEEK === EXHIBITION.week) { seasonRec = null; return; }
+  if (seasonRec && seasonRecWeek === WEEK && Date.now() - seasonAt < SEASON_EVERY) return;
+  const ss = await api("seasonScores", {}, 6000).catch((e) => ({ ok: false, error: String(e) }));
+  if (!ss.ok) { console.warn("seasonScores:", ss.error); return; }
+  seasonScores = ss.data.weeks;
+  seasonRec = new Map(Playoffs.allPlay(seasonScores.filter((wk) => Number(wk.week) < WEEK)).map((r) => [r.id, r]));
+  seasonRecWeek = WEEK; seasonAt = Date.now();
+}
+
 async function loadPlayoffs() {
   post = null; duel = null;
   if (WEEK === EXHIBITION.week) { duel = Playoffs.exhibition(); return; }

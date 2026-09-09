@@ -67,6 +67,16 @@ never come from them. See "Player images and stats".)
   by `status`, per-player `gameSecondsRemaining` for the clock) and
   announces a touchdown when a starter jumps >= 6 between polls **and
   Sleeper's stat line confirms it** (see "Every touchdown ... is worth 6").
+  **The record chip is the season's unofficial all-play** (2026-09-08):
+  the week's record from the rank on top of every finished week's, so a
+  10-0 Week 1 reads 20-0 or 19-1 as Week 2 moves. `loadSeason` fetches
+  the proxy's `seasonScores` with the week's first poll, when the week
+  rolls and every half hour (stat corrections), and `Playoffs.allPlay`
+  over the weeks before this one gives `seasonRec` (ties counted as
+  ties, shown as a third number); `derive()` adds the week. Week 1, the
+  fixture and a failed fetch show the week alone (`t.week` keeps the
+  week's own record for whoever wants it). Playoff weeks keep the seed
+  chip.
 - **The fixture is the fallback.** `data.js` (2025 Week 12) loads only when
   the proxy is unreachable or `?source=fixture` is set; the artifact bundle
   inlines it and sets `window.MFL_FIXTURE`. (The simulator that drove it on
@@ -199,8 +209,10 @@ Each of these was verified against real 2025 data, not inferred:
 - **`liveScoring&DETAILS=1` supplies the entire leaderboard in one 22KB
   unauthenticated call** — franchise scores computed under our own rules,
   per-player scores, `status: "starter"`, `playersYetToPlay`,
-  `gameSecondsRemaining`. All-play record is then pure arithmetic on the sorted
-  list. There is nothing to re-derive and no lineup fetch to schedule.
+  `gameSecondsRemaining`. The week's all-play record is then pure
+  arithmetic on the sorted list (the season's, shown on the chip, adds
+  the finished weeks from `seasonScores`). There is nothing to re-derive
+  and no lineup fetch to schedule.
 - **Recomputing scores ourselves is disqualified.** Running real stat lines
   through the fflr scoring engine matched MFL on 127 of 131 starters (96.9%) —
   and still produced the **wrong all-play record for 4 of 11 franchises** in a
