@@ -1114,47 +1114,59 @@ button.hero { cursor: pointer; }
   animation: fflr-td-bar var(--td-ms, 4000ms) linear both;
 }
 
-/* ---------- Bears touchdown: BEAR DOWN! ----------
-   The whole card goes Bears: navy ground with an orange glow, an orange
-   flash on entry, orange rays, orange-and-white portrait ring. Team
-   colours are literal on purpose -- they are the Bears', not the theme's,
-   and the navy ground is the same in both themes so the card reads
-   identically over a light or dark page. */
-.td.td-chi { --chi-orange: #c83803; --chi-navy: #0b162a; --chi-navy-2: #1b3059; }
-.td-chi .td-scrim { background: rgba(11, 22, 42, .72); }
-.td-chi .td-card {
+/* ---------- Team-colour touchdown ----------
+   The whole card goes the scorer's team: --td-ground and --td-accent (set
+   by the script from TEAM_COLORS) paint the ground with an accent glow,
+   an accent flash on entry, accent rays, an accent-and-white portrait
+   ring. Team colours are literal on purpose -- they are the team's, not
+   the theme's -- and the ground is the same in both themes so the card
+   reads identically over a light or dark page; only the scrim differs,
+   a lighter tint in light so the page still shows through. Every alpha
+   is a color-mix of the same two tokens, so any pair works. */
+.td.td-team {
+  --td-ground-2: color-mix(in srgb, var(--td-ground), white 12%);
+  --td-glow: color-mix(in srgb, var(--td-accent) 55%, transparent);
+  --td-ray: color-mix(in srgb, var(--td-accent) 26%, transparent);
+  --td-line: color-mix(in srgb, var(--td-accent) 50%, transparent);
+  --td-shade: color-mix(in srgb, var(--td-ground) 32%, #06090a);   /* the scrim's hue: the ground, darkened, so a red or blue ground dims the page rather than painting it */
+}
+.td-team .td-scrim { background: color-mix(in srgb, var(--td-shade) 76%, transparent); }
+:root[data-theme="light"] .td-team .td-scrim { background: color-mix(in srgb, var(--td-shade) 52%, transparent); }
+.td-team .td-card {
   background:
-    radial-gradient(120% 70% at 50% -10%, rgba(200, 56, 3, .55), transparent 62%),
-    linear-gradient(165deg, var(--chi-navy-2) 0%, var(--chi-navy) 70%);
+    radial-gradient(120% 70% at 50% -10%, var(--td-glow), transparent 62%),
+    linear-gradient(165deg, var(--td-ground-2) 0%, var(--td-ground) 70%);
   color: #fff;
-  border-color: rgba(200, 56, 3, .5);
+  border-color: var(--td-line);
 }
 /* Entry flash: a real element (rebuilt with every card, so it replays
-   for back-to-back Bears) resting at opacity 0. */
+   for back-to-back scores) resting at opacity 0. */
 .td-flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; display: none; }
-.td-chi .td-flash { display: block; background: var(--chi-orange); mix-blend-mode: screen; animation: fflr-strobe .8s ease-out both; }
-.td-chi .td-rays { background: repeating-conic-gradient(from 0deg, rgba(200, 56, 3, .3) 0 10deg, transparent 10deg 24deg); }
-.td-chi .td-shot {
-  border-color: var(--chi-orange);
-  box-shadow: 0 0 0 5px #fff, 0 0 0 9px var(--chi-orange), 0 16px 40px rgba(0, 0, 0, .45);
+.td-team .td-flash { display: block; background: var(--td-accent); mix-blend-mode: screen; animation: fflr-strobe .8s ease-out both; }
+.td-team .td-rays { background: repeating-conic-gradient(from 0deg, var(--td-ray) 0 10deg, transparent 10deg 24deg); }
+.td-team .td-shot {
+  border-color: var(--td-accent);
+  box-shadow: 0 0 0 5px #fff, 0 0 0 9px var(--td-accent), 0 16px 40px rgba(0, 0, 0, .45);
 }
-.td-chi .td-logo { background: #fff; border-color: var(--chi-orange); }
-.td-chi .td-more, .td-chi .td-meta .pos { background: rgba(255, 255, 255, .16); }
-.td-chi .td-meta, .td-chi .td-for { color: rgba(255, 255, 255, .72); }
-.td-chi .td-for b { color: #fff; }
-.td-chi .td-bar { background: var(--chi-orange); }
-.td-chi .td-pts { color: var(--chi-orange); text-shadow: 0 0 18px rgba(200, 56, 3, .55); }
+.td-team .td-logo { background: #fff; border-color: var(--td-accent); color: #111; }
+.td-team .td-more, .td-team .td-meta .pos { background: rgba(255, 255, 255, .16); color: #fff; }
+.td-team .td-meta, .td-team .td-for { color: rgba(255, 255, 255, .72); }
+.td-team .td-for b { color: #fff; }
+.td-team .td-bar { background: var(--td-accent); }
+.td-team .td-pts { color: var(--td-accent); text-shadow: 0 0 18px var(--td-glow); }
+/* Bears only: BEAR DOWN! stomps in under the headline, in the same two
+   colours (orange letters, navy trim). */
 .td-chant {
   position: relative;
   display: flex; justify-content: center; gap: .04em;
   margin-top: -6px;
   font: italic 900 min(34px, 12.4cqi)/1 var(--font-display);   /* 7.7x ratio */
   letter-spacing: .02em; text-transform: uppercase;
-  color: var(--chi-orange);
-  -webkit-text-stroke: 1.5px var(--chi-navy);
+  color: var(--td-accent);
+  -webkit-text-stroke: 1.5px var(--td-ground);
   paint-order: stroke fill;
   /* Navy trim, then a soft white edge so the trim still reads on navy. */
-  text-shadow: 3px 3px 0 var(--chi-navy), 4px 4px 0 rgba(255, 255, 255, .55), 0 0 14px rgba(255, 255, 255, .25);
+  text-shadow: 3px 3px 0 var(--td-ground), 4px 4px 0 rgba(255, 255, 255, .55), 0 0 14px rgba(255, 255, 255, .25);
   animation: fflr-growl .5s ease-in-out 1.35s both;
 }
 .td-chant span {

@@ -3,7 +3,7 @@
 <title>MFL Live</title>
 <!-- Remembered theme, stamped before the stylesheet so there is no flash.
      No stored choice means dark: dark is the default. -->
-<script>try{if(localStorage.getItem("mfl-live-theme")==="light")document.documentElement.dataset.theme="light"}catch(e){}</script>
+<script>try{if(localStorage.getItem("mfl-live-theme")==="light"||/[?&]theme=light\b/.test(location.search))document.documentElement.dataset.theme="light"}catch(e){}</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

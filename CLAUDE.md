@@ -466,11 +466,22 @@ element and scores are second.
   bench touchdown moves the row in the Bench tab and the "behind" total,
   never the franchise total, and gets no card (the gate is liveScoring's
   per-player `status: "starter"`; the simulator scores bench TDs now and
-  then to exercise it). A Bears scorer adds
-  "BEAR DOWN!" stomping in letter by letter in Bears orange with a navy
-  trim, and the whole card goes Bears: navy ground, orange glow, flash and
-  rays, orange-and-white portrait ring. Literal team colours on purpose,
-  identical in both themes. "Bears TD" on the demo bar triggers one. In the mockup a TD is a
+  then to exercise it). **The card wears the scorer's team colours**
+  (2026-09-08): `TEAM_COLORS` in `app.js` gives every team a dark ground
+  and a bright accent by MFL code (`--td-ground` / `--td-accent` on the
+  modal, `.td-team`), and the card is ground with an accent glow, flash
+  and rays, an accent-and-white portrait ring, accent points and bar;
+  every alpha is a `color-mix` of the two, so any pair works. Grounds
+  are the team's darker colour so white text reads; a dull brighter
+  colour (Ravens gold, Giants red) is lifted a shade. Literal on purpose
+  and identical in both themes; only the scrim differs, a darkened tint
+  of the ground (76% in dark, 52% in light) so a red or blue ground dims
+  the page rather than painting it. A free agent keeps the theme's own
+  card. A Bears scorer still adds "BEAR DOWN!" stomping in letter by
+  letter, orange with a navy trim. "Bears TD" on the demo bar triggers
+  one; on `main` `?td=<team>` raises a card for that team's first
+  starter once the board is up (any starter when the team has none),
+  and `?theme=light` stamps the light theme on load, both for checking. In the mockup a TD is a
   simulated event (6 + yardage); with the feed, MFL gives only fantasy
   points, so the trigger would be one starter jumping a touchdown's worth
   between polls.
