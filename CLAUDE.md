@@ -268,8 +268,10 @@ element and scores are second.
   resolved through Intl so DST is right; once per Sunday per browser,
   remembered in localStorage `mfl-live-witch`; a hidden tab plays it
   when shown again within the hour), or on demand from the demo bar.
-  Click or Escape skips it. Literal red in both themes; reduced motion
-  holds the card alone for 3.5s.
+  **Only Escape skips it** (2026-09-08): a stray tap on a full-screen
+  takeover is far likelier than a wish to skip it, so the overlay
+  ignores clicks; the touchdown card keeps its tap-to-skip. Literal red
+  in both themes; reduced motion holds the card alone for 3.5s.
 - **The postseason on the demo bar.** A "View" row of tags (Week 12 /
   Round 1 / Semifinal / Fantasy Bowl / Pro Bowl) switches the board into
   each week of the postseason, the same views as the app on `main`:
