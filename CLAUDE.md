@@ -93,7 +93,11 @@ element and scores are second.
 - **Position chips** use `--pos-qb/rb/wr/te/k/lb`; every defensive position
   maps to `--pos-lb`, matching the league's "3 IDP, any combination" rule.
 - **Roster rows** are grouped by position in lineup order (QB, RB, WR,
-  TE, K, IDP), each group opened by a shallow separator: a micro label in
+  TE, K, IDP), and **within a position the order is fixed for the week**
+  (name, then id; 2026-09-08). It used to be points, so two backs swapped
+  rows whenever one overtook the other, and tied rows (0.00 before
+  kickoff) fell back to MFL's array order, which is not stable between
+  polls. Each group is opened by a shallow separator: a micro label in
   the position's colour and a hairline to the right. When the pane's
   contents change (a team selected, Starters/Bench switched) the rows
   **swing in** like a sign hung from its top edge caught by a breeze:
