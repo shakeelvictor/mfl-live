@@ -477,9 +477,16 @@ element and scores are second.
   and identical in both themes; only the scrim differs, a darkened tint
   of the ground (76% in dark, 52% in light) so a red or blue ground dims
   the page rather than painting it. A free agent keeps the theme's own
-  card. A Bears scorer still adds "BEAR DOWN!" stomping in letter by
-  letter, orange with a navy trim. "Bears TD" on the demo bar triggers
-  one; on `main` `?td=<team>` raises a card for that team's first
+  card. **The Bears sit a tier above every team** (`.td-chi`): BEAR
+  DOWN! stomping in letter by letter, orange with a navy trim, and the
+  whole screen joins in: an orange strobe over the page on entry, orange
+  rays turning at page scale behind the card with a breathing orange
+  halo under it (the scrim's pseudo-elements, opacity and transform
+  only), the card rumbling as the letters land, its own rays brighter
+  and faster, an orange glow on TOUCHDOWN, and a 5.5s hold
+  (`TD_CHI_MS`) against 4s. Under reduced motion the page strobe is
+  hidden, not frozen (a static one is a solid orange sheet). "Bears
+  TD" on the demo bar triggers one; on `main` `?td=<team>` raises a card for that team's first
   starter once the board is up (any starter when the team has none),
   and `?theme=light` stamps the light theme on load, both for checking. In the mockup a TD is a
   simulated event (6 + yardage); with the feed, MFL gives only fantasy
