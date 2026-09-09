@@ -901,7 +901,7 @@ const logoBadge = (tm) => logoSrc(tm) ? `<span class="plogo"><img src="${logoSrc
 
 // Touchdowns from the stat line (all kinds), so a simulated score adds the
 // chip live. IDP scores use the mockup's own idp_td key.
-const tdCount = (st) => (st ? (st.pass_td || 0) + (st.rush_td || 0) + (st.rec_td || 0) + (st.idp_td || 0) + (st.idp_def_td || 0) + (st.st_td || 0) : 0);
+const tdCount = (st) => (st ? (st.pass_td || 0) + (st.rush_td || 0) + (st.rec_td || 0) + (st.idp_td || 0) + (st.idp_def_td || 0) + (st.st_td || 0) + (st.kr_td || 0) + (st.pr_td || 0) : 0);
 const tdBadge = (st) => { const n = tdCount(st); return n ? `<span class="ptd">${n > 1 ? n + " " : ""}TD</span>` : ""; };
 
 // Which rows are expanded, by player (MFL id when the feed supplies one,
@@ -1522,7 +1522,8 @@ let statsBySid = {};
 let statsAt = 0;           // when lines last arrived
 let statsFailed = false;   // a fetch has failed since the last success
 let statsPending = null;
-const STATS_EVERY = 60e3, STATS_TIMEOUT_MS = 8000, STATS_STALE_MS = 5 * 60e3;
+const STATS_TIMEOUT_MS = 8000, STATS_STALE_MS = 5 * 60e3;
+const statsEvery = () => (gamesOn() ? 30e3 : 60e3);   // every poll while games are on: a touchdown's confirmation should land within one
 
 const applyStats = () => {
   for (const t of rosters) for (const p of [...t.starters, ...t.bench]) p.st = (p.sid && statsBySid[p.sid]) || {};
@@ -1533,8 +1534,10 @@ function fetchStats(week) {
     .then((st) => {
       if (!st.ok) throw new Error(st.error);
       statsBySid = st.data.stats || {};
+      const first = statsAt === 0;
       statsAt = Date.now();
       statsFailed = false;
+      confirmTouchdowns(first);
       applyStats();
       if (!polling && teams.length) { derive(); render(); }   // a poll in flight picks them up itself
     })
@@ -1548,6 +1551,61 @@ const statsNote = () => {
   if (statsAt === 0) return statsFailed ? "stats unavailable" : "";
   return Date.now() - statsAt > STATS_STALE_MS ? "stats delayed" : "";
 };
+
+/* Touchdown confirmation. MFL gives points only, so a 6-point jump could
+   as well be a long run or a 60-yard field goal. A jump is held until
+   Sleeper's stat line shows one more touchdown for the player (any
+   touchdown key: pass, rush, rec, defensive, special teams, kick or punt
+   return), within TD_WINDOW_MS either side: whichever signal lands second
+   raises the card, with MFL's delta as the points (two jumps in the window
+   add up). A jump with no touchdown in the window lapses silently.
+   Fallback: while the lines are unavailable or stale (statsNote), have not
+   arrived yet, or for a player with no Sleeper join, the jump alone raises
+   the card, as it did before (2026-09-08). */
+const TD_WINDOW_MS = 3 * 60e3;
+const tdBase = new Map();        // sid -> touchdowns on the last stat line
+const tdConfirmed = new Map();   // sid -> times a new touchdown was seen, not yet matched to a jump
+const tdPending = new Map();     // "fid:pid" -> { ev, at }: a jump waiting for its touchdown
+const statsConfirm = () => statsAt !== 0 && statsNote() === "";
+
+function noteJump(team, p, delta) {
+  const ev = { player: p, franchise: team.team, pts: r2(delta), starter: true };
+  if (!p.sid || !statsConfirm()) { announceTouchdown(ev); return; }
+  const seen = tdConfirmed.get(p.sid);
+  if (seen?.length) { seen.shift(); announceTouchdown(ev); return; }   // Sleeper got there first
+  const key = `${team.id}:${p.id}`, prev = tdPending.get(key);
+  tdPending.set(key, prev ? { ev: { ...ev, pts: r2(prev.ev.pts + delta) }, at: prev.at } : { ev, at: Date.now() });
+}
+// On every stat arrival: one more touchdown on a player's line than last
+// time is a confirmation. The first arrival only sets the baselines; a
+// player with no line before counts from zero.
+function confirmTouchdowns(first) {
+  const now = Date.now();
+  for (const [sid, st] of Object.entries(statsBySid)) {
+    const n = tdCount(st), was = tdBase.get(sid) ?? 0;
+    tdBase.set(sid, n);
+    if (first || n <= was) continue;
+    const seen = tdConfirmed.get(sid) || [];
+    for (let i = was; i < n; i++) seen.push(now);
+    tdConfirmed.set(sid, seen);
+  }
+  settleTouchdowns();
+}
+// Match waiting jumps to confirmations and let old signals lapse. Runs on
+// every stat arrival and every poll, so a jump still lapses when the lines
+// stop coming; if they have gone stale by then, the fallback raises it.
+function settleTouchdowns() {
+  const now = Date.now();
+  for (const [key, { ev, at }] of tdPending) {
+    const seen = tdConfirmed.get(ev.player.sid);
+    if (seen?.length) { seen.shift(); tdPending.delete(key); announceTouchdown(ev); }
+    else if (now - at > TD_WINDOW_MS) { tdPending.delete(key); if (!statsConfirm()) announceTouchdown(ev); }
+  }
+  for (const [sid, seen] of tdConfirmed) {
+    const live = seen.filter((t) => now - t <= TD_WINDOW_MS);
+    if (live.length) tdConfirmed.set(sid, live); else tdConfirmed.delete(sid);
+  }
+}
 
 const mkPlayer = (id, pts = 0, secs = null) => {
   const i = playerInfo[id] || {};
@@ -1643,7 +1701,7 @@ async function refreshLive(first = false) {
   const L = ls.data.liveScoring;
   WEEK = Number(L.week) || WEEK;
   await loadPlayoffs();
-  if (first || Date.now() - statsAt > STATS_EVERY) fetchStats(WEEK);   // beside the poll, not in it
+  if (first || Date.now() - statsAt > statsEvery()) fetchStats(WEEK);   // beside the poll, not in it
   const franchises = toArray(L.franchise);
   await ensurePlayers([...rosterIds.values()].flat().concat(franchises.flatMap((f) => toArray(f.players?.player).map((p) => p.id))));
 
@@ -1667,14 +1725,15 @@ async function refreshLive(first = false) {
       next.set(key, p.pts);
       if (prev != null && p.pts !== prev) {
         changed.add(f.id).add(`${f.id}:${k}`);
-        // MFL gives points only, so a touchdown is a starter jumping by at
-        // least six between polls (CLAUDE.md).
-        if (p.pts - prev >= 6) announceTouchdown({ player: p, franchise: team.team, pts: r2(p.pts - prev), starter: true });
+        // MFL gives points only, so a touchdown starts as a starter jumping
+        // by at least six between polls; Sleeper's line confirms it (above).
+        if (p.pts - prev >= 6) noteJump(team, p, p.pts - prev);
       }
     });
     return team;
   });
   lastScores = next;
+  settleTouchdowns();
   if (duel) for (const id of [...changed]) if (duel.sideOf.has(id)) changed.add(duel.sideOf.get(id).id);
   slate.sunFinal = games.size > 0 && [...games.values()].every((g) => g.secs <= 0);
   UPDATED = fmtTime(new Date());

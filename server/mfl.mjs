@@ -38,7 +38,7 @@ const TYPES = {
   nflSchedule:   { params: ['W'], maxAge: 15, noLeague: true },   // game scores, possession, red zone: polled with liveScoring while games are on
   playersMap:    { params: ['PLAYERS'], maxAge: 3600 },   // built here, see below
   seasonScores:  { params: [], maxAge: 600 },             // built here: every week's franchise scores, for the playoffs
-  stats:         { params: ['W'], maxAge: 60 },           // built here: Sleeper's live stat lines for rostered players, context only
+  stats:         { params: ['W'], maxAge: 30 },           // built here: Sleeper's live stat lines for rostered players; context, and the touchdown confirmation
 };
 
 // MFL asks clients to cache and back off, not retry. A 429 puts the whole
@@ -142,7 +142,7 @@ async function seasonScores() {
 const STAT_KEYS = ['pass_cmp', 'pass_att', 'pass_yd', 'pass_td', 'pass_int', 'rush_att', 'rush_yd', 'rush_td',
   'rec', 'rec_tgt', 'rec_yd', 'rec_td', 'fum_lost', 'fgm', 'fga', 'xpm', 'xpa',
   'idp_tkl', 'idp_tkl_solo', 'idp_tkl_ast', 'idp_sack', 'idp_int', 'idp_ff', 'idp_fum_rec', 'idp_pass_def', 'idp_tkl_loss',
-  'idp_blk_kick', 'idp_safe', 'idp_def_td', 'st_tkl_solo', 'st_ff', 'st_fum_rec', 'st_td'];   // special teams counts toward IDP in MFL
+  'idp_blk_kick', 'idp_safe', 'idp_def_td', 'st_tkl_solo', 'st_ff', 'st_fum_rec', 'st_td', 'kr_td', 'pr_td'];   // special teams counts toward IDP in MFL; every touchdown key confirms a card
 
 let sidCache = { at: 0, sids: null };
 async function rosteredSids() {

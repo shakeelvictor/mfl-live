@@ -50,7 +50,7 @@ never come from them. See "Player images and stats".)
 - **Polling budget (MFL rate-limits; an older POC got throttled).** The
   proxy keeps a per-instance response cache by (type, params) with each
   type's max-age (liveScoring 15s, schedule 15s, lineups 5m, rosters 10m, league
-  15m, players 1h, stats 1m from Sleeper), coalesces identical in-flight requests, serves stale on
+  15m, players 1h, stats 30s from Sleeper), coalesces identical in-flight requests, serves stale on
   MFL errors, and on a 429 stops calling MFL for 5 minutes (stale answers
   meanwhile, 503 + Retry-After otherwise). So N open pages cost one MFL
   call per window per type. The page polls liveScoring every 30s in season
@@ -65,7 +65,8 @@ never come from them. See "Player images and stats".)
   countdown hero to the week's first kickoff, a single Roster tab. In season
   it builds franchises from liveScoring (score, `playersYetToPlay`, starters
   by `status`, per-player `gameSecondsRemaining` for the clock) and
-  announces a touchdown when a starter jumps >= 6 between polls.
+  announces a touchdown when a starter jumps >= 6 between polls **and
+  Sleeper's stat line confirms it** (see "Every touchdown ... is worth 6").
 - **The fixture is the fallback.** `data.js` (2025 Week 12) loads only when
   the proxy is unreachable or `?source=fixture` is set; the artifact bundle
   inlines it and sets `window.MFL_FIXTURE`. (The simulator that drove it on
@@ -213,11 +214,24 @@ Each of these was verified against real 2025 data, not inferred:
   from `TYPE=rules`: passing, rushing, receiving, kick and punt return,
   defensive and fumble return, and the team-defense TD all pay `*6`), so the
   page's "starter jumps >= 6 between polls" touchdown gate matches the QB
-  passing value too. The gate cannot tell a touchdown from any other 6-point
-  jump: a 45-yard run (0.13333/yd), a 60-yard catch (6 + 0.5) or a 60-yard
-  field goal also clear it, and two plays landing in the same 30s poll add
-  up. MFL gives points only, so that is the ceiling; accept the rare false
-  card rather than recompute from stats.
+  passing value too. The jump alone cannot tell a touchdown from any other
+  6-point jump: a 45-yard run (0.13333/yd), a 60-yard catch (6 + 0.5) or a
+  60-yard field goal also clear it, and two plays landing in the same 30s
+  poll add up. So since 2026-09-08 **the card waits for Sleeper's line to
+  confirm** (`noteJump` / `confirmTouchdowns` / `settleTouchdowns` in
+  `app.js`): a jump is held until the player's touchdown count on the stat
+  line (pass, rush, rec, `idp_def_td`, `st_td`, `kr_td`, `pr_td`) rises,
+  within a three-minute window either side; whichever signal lands second
+  raises the card, with MFL's delta as the points (so a touchdown run still
+  reads as the full amount the total moved by), and a jump with no
+  touchdown in the window lapses. The stat lines are fetched every poll
+  while games are on (30s, the proxy holds them 30s) so the confirmation
+  lands within one. **Fallback:** while the lines are unavailable, stale or
+  not yet arrived, or for a player with no Sleeper join, the jump alone
+  raises the card, as before; a pending jump that lapses while the lines
+  have gone stale is raised too. Sleeper is a second provider, but a
+  touchdown is not a judgment call the way a tackle is. The points are
+  never recomputed from stats.
 - **MFL counts special-teams tackles toward IDP totals**; Sleeper breaks them
   out as `st_tkl_solo`. Adding that field lifts escalator agreement from 93.0%
   to 96.1% across four weeks. The residue is provider disagreement on tackle
@@ -490,8 +504,9 @@ element and scores are second.
   starter once the board is up (any starter when the team has none),
   and `?theme=light` stamps the light theme on load, both for checking. In the mockup a TD is a
   simulated event (6 + yardage); with the feed, MFL gives only fantasy
-  points, so the trigger would be one starter jumping a touchdown's worth
-  between polls.
+  points, so the trigger is one starter jumping a touchdown's worth
+  between polls, confirmed by Sleeper's stat line (see "What is already
+  settled").
 - **Spotlight card** under the hero, a between-days card: once a day's
   games are all final it shows that day's highest-scoring *starter*
   (headshot, logo, stat line, franchise, points) and goes away when the
@@ -591,9 +606,11 @@ bump. The line is context next to MFL's number and never feeds it.
 `stats` type fetches Sleeper's weekly stats (`/v1/stats/nfl/regular/<season>/<W>`,
 free, updates during games, ~570KB for every NFL player), cuts them to the
 league's rostered players (Sleeper ids from the playersMap join, remembered
-an hour) and to `STAT_KEYS`, and holds the ~10KB result a minute; the page
-asks once a minute in season and hands each player its line as `st`, so
-rows, the spotlight and the TD chip read real lines. The fetch runs
+an hour) and to `STAT_KEYS`, and holds the ~10KB result 30s; the page
+asks every poll while games are on (30s), once a minute otherwise, and
+hands each player its line as `st`, so rows, the spotlight and the TD chip
+read real lines, and the touchdown card's confirmation reads the same
+lines. The fetch runs
 **beside the poll, never in its path** (`fetchStats`: 5s timeout on the
 proxy's Sleeper call, 8s on the page's, fresh lines applied to the
 current rosters and re-rendered when they land), so Sleeper can never
