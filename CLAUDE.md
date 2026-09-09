@@ -228,9 +228,11 @@ element and scores are second.
   TOUCHDOWN, and a 5.5s hold (`TD_CHI_MS`) against 4s. Under reduced
   motion the page strobe is hidden, not frozen. "Bears TD" on the demo
   bar triggers one. In the mockup a TD is a
-  simulated event (6 + yardage); with the feed, MFL gives only fantasy
-  points, so the trigger would be one starter jumping a touchdown's worth
-  between polls.
+  simulated event (6 + yardage); with the feed (`main`), MFL gives only
+  fantasy points, so the trigger is one starter jumping a touchdown's
+  worth between polls, confirmed by Sleeper's stat line showing one more
+  touchdown (2026-09-08); the simulator raises cards directly, so the
+  gate does not exist here.
 - **Spotlight card** under the hero, a between-days card: once a day's
   games are all final it shows that day's highest-scoring *starter*
   (headshot, logo, stat line, franchise, points) and goes away when the

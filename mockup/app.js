@@ -858,7 +858,7 @@ const logoBadge = (tm) => LOGOS[tm] ? `<span class="plogo"><img src="${LOGOS[tm]
 
 // Touchdowns from the stat line (all kinds), so a simulated score adds the
 // chip live. IDP scores use the mockup's own idp_td key.
-const tdCount = (st) => (st ? (st.pass_td || 0) + (st.rush_td || 0) + (st.rec_td || 0) + (st.idp_td || 0) : 0);
+const tdCount = (st) => (st ? (st.pass_td || 0) + (st.rush_td || 0) + (st.rec_td || 0) + (st.idp_td || 0) + (st.idp_def_td || 0) + (st.st_td || 0) + (st.kr_td || 0) + (st.pr_td || 0) : 0);
 const tdBadge = (st) => { const n = tdCount(st); return n ? `<span class="ptd">${n > 1 ? n + " " : ""}TD</span>` : ""; };
 
 // Which rows are expanded, by slot key, so a tick's re-render keeps them open.
