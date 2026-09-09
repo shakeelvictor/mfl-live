@@ -866,10 +866,14 @@ function renderSpotlight() {
 const POS_CLASS = { QB: "QB", RB: "RB", WR: "WR", TE: "TE", K: "K" };
 const posClass = (pos) => "pos-" + (POS_CLASS[pos] || "IDP");
 
-// Lineup order -- reads like a lineup card, not a points ranking.
+// Lineup order -- reads like a lineup card, not a points ranking. Within a
+// position the order is fixed for the week (name, then id): it used to be
+// points, so two backs swapped rows every time one overtook the other,
+// and tied rows (0.00 before kickoff) fell back to MFL's array order,
+// which changes between polls (2026-09-08).
 const POS_ORDER = { QB: 0, RB: 1, WR: 2, TE: 3, K: 4, DE: 5, DT: 5, LB: 6, CB: 7, S: 7 };
 const byLineup = (a, b) =>
-  (POS_ORDER[a.pos] ?? 9) - (POS_ORDER[b.pos] ?? 9) || b.pts - a.pts;
+  (POS_ORDER[a.pos] ?? 9) - (POS_ORDER[b.pos] ?? 9) || a.n.localeCompare(b.n) || String(a.id).localeCompare(String(b.id));
 // Position groups in the Team view, in lineup order: one labelled hairline
 // opens each. Every defender is IDP, the league's one defensive slot type.
 const posGroup = (pos) => (POS_CLASS[pos] ? pos : "IDP");
