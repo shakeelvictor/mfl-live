@@ -1318,7 +1318,7 @@ function checkTouchdown(tm) {
    that time the board gives way to a ten-second full-screen take on the
    RedZone graphic, in three cuts (a tilted close-up with the hands
    racing, the clock upright as they settle on 2:30, then WITCHING HOUR
-   stacked over the clock on a neon-lit wall), then fades back. A click or Escape skips it. */
+   stacked over the clock on a neon-lit wall), then fades back. Only Escape skips it. */
 
 const WITCH_MS = 10000;
 const WITCH_CUTS = [2500, 5000];   // when cuts 2 and 3 begin
@@ -1394,7 +1394,9 @@ function endWitchingHour() {
   // Tracked, so a replay during the exit is not wiped by the old exit's end.
   witchTimers.push(setTimeout(() => { witch.dataset.open = "false"; witchScene.innerHTML = ""; }, WITCH_EXIT_MS));
 }
-witch.addEventListener("click", endWitchingHour);
+// No click-to-skip: a stray tap on a full-screen takeover is far likelier
+// than a wish to skip it (2026-09-08). Escape (above) is the deliberate way
+// out; the touchdown card keeps its tap-to-skip.
 // No demo bar on main: ?witch=1 plays it once the board is up, for checking.
 
 // Scheduling. Sunday 2:30 PM in Chicago's zone, whatever the viewer's

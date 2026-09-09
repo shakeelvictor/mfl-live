@@ -542,8 +542,11 @@ element and scores are second.
   resolved through Intl so DST is right; once per Sunday per browser,
   remembered in localStorage `mfl-live-witch`; a hidden tab plays it
   when shown again within the hour). On `main` `?witch=1` plays it on
-  load for checking; on `poc` the demo bar has a button. Click or Escape
-  skips it. Literal red in both themes; reduced motion holds the card
+  load for checking; on `poc` the demo bar has a button. **Only Escape
+  skips it** (2026-09-08): a tap anywhere used to end it, and a stray
+  tap on a full-screen takeover is far likelier than a wish to skip it,
+  so the overlay ignores clicks; the touchdown card keeps its
+  tap-to-skip. Literal red in both themes; reduced motion holds the card
   alone for 3.5s.
 - The **Demo bar** and simulator, the legend and the footnotes exist only
   on the `poc` branch. Its "View" tags (added 2026-09-05) switch the
