@@ -192,7 +192,8 @@ element and scores are second.
   whole board scrolled to the end. The leader hero gets the same tab
   treatment when selected, its gradient landing on the panel green. The
   phone layout below 1024px is untouched. Starters/Bench is a segmented
-  control; bench rows render at 75% opacity, 42% when scoreless.
+  control; bench rows render at full opacity (the 75% / 42% fade came
+  off 2026-09-08: the tab and the muted stat line already mark them).
 - The handoff's headshot placeholder (initials circle) is **replaced by real
   Sleeper headshots**; the initials circle is the fallback only.
 - **Live transitions** are in: changed values flash once and **roll** from

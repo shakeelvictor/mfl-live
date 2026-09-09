@@ -834,8 +834,8 @@ button.hero { cursor: pointer; }
 }
 .prow.top:hover { background-color: var(--surface-raised); }
 .prow.top .avatar, .prow.top .avatar-fb { border: 2px solid var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
-.prow.bench { opacity: .75; }
-.prow.bench.zero { opacity: .42; }
+/* Bench rows read at full strength (the 75% / 42% fade came off 2026-09-08);
+   the Bench tab and the muted stat line already say which side they are on. */
 
 /* Position group separator: a micro label in the position's colour and a
    hairline running out to the right. Kept shallow so twelve starters
