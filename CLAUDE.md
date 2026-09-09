@@ -212,9 +212,15 @@ element and scores are second.
   per-player `status: "starter"`; the simulator scores bench TDs now and
   then to exercise it). A Bears scorer adds
   "BEAR DOWN!" stomping in letter by letter in Bears orange with a navy
-  trim, and the whole card goes Bears: navy ground, orange glow, flash and
-  rays, orange-and-white portrait ring. Literal team colours on purpose,
-  identical in both themes. "Bears TD" on the demo bar triggers one. In the mockup a TD is a
+  trim. **The card wears the scorer's team colours** (2026-09-08):
+  `TEAM_COLORS` in `app.js` gives every team a dark ground and a bright
+  accent by MFL code (`--td-ground` / `--td-accent` on the modal,
+  `.td-team`): ground with an accent glow, flash and rays, an
+  accent-and-white portrait ring, accent points and bar, every alpha a
+  `color-mix` of the two. Literal on purpose and identical in both
+  themes; only the scrim differs, a darkened tint of the ground (76% in
+  dark, 52% in light). A free agent keeps the theme's own card. "Bears
+  TD" on the demo bar triggers one. In the mockup a TD is a
   simulated event (6 + yardage); with the feed, MFL gives only fantasy
   points, so the trigger would be one starter jumping a touchdown's worth
   between polls.

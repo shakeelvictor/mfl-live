@@ -1138,6 +1138,25 @@ document.addEventListener("keydown", (e) => {
    touchdown's worth of points between polls. */
 
 const TD_MS = 4000;
+// The card wears the scorer's team colours: a dark ground and a bright
+// accent per team, keyed by MFL's codes. Literal on purpose (they are the
+// team's, not the theme's) and the same in both themes, like the Bears
+// card always was. Grounds are the team's darker colour so white text
+// reads on them; where a team's brighter colour is too dull to glow (the
+// Ravens' and Giants' metallic gold and red) it is lifted a shade.
+const TEAM_COLORS = {
+  ARI: ["#97233f", "#ffb612"], ATL: ["#141414", "#a71930"], BAL: ["#241773", "#c9a227"],
+  BUF: ["#00338d", "#c60c30"], CAR: ["#101820", "#0085ca"], CHI: ["#0b162a", "#c83803"],
+  CIN: ["#151515", "#fb4f14"], CLE: ["#311d00", "#ff3c00"], DAL: ["#041e42", "#b0b7bc"],
+  DEN: ["#002244", "#fb4f14"], DET: ["#0076b6", "#c9cfd3"], GBP: ["#203731", "#ffb612"],
+  HOU: ["#03202f", "#c41e3a"], IND: ["#002c5f", "#dde3e6"], JAC: ["#006778", "#d7a22a"],
+  KCC: ["#e31837", "#ffb81c"], LVR: ["#111111", "#c4cacd"], LAC: ["#0080c6", "#ffc20e"],
+  LAR: ["#003594", "#ffa300"], MIA: ["#008e97", "#fc4c02"], MIN: ["#4f2683", "#ffc62f"],
+  NEP: ["#002244", "#c60c30"], NOS: ["#101820", "#d3bc8d"], NYG: ["#0b2265", "#c41e3a"],
+  NYJ: ["#125740", "#e8edea"], PHI: ["#004c54", "#c9cfd3"], PIT: ["#101820", "#ffb612"],
+  SFO: ["#aa0000", "#b3995d"], SEA: ["#002244", "#69be28"], TBB: ["#34302b", "#d50a0a"],
+  TEN: ["#0c2340", "#4b92db"], WAS: ["#5a1414", "#ffb612"],
+};
 const tdModal = document.getElementById("td-modal");
 const tdCard = document.getElementById("td-card");
 const tdQueue = [];
@@ -1170,7 +1189,10 @@ function showNextTouchdown() {
   tdShowing = true;
   const p = ev.player;
   tdCard.style.setProperty("--td-ms", `${TD_MS}ms`);
-  tdModal.classList.toggle("td-chi", p.tm === "CHI");
+  const colors = TEAM_COLORS[p.tm];   // a free agent's card keeps the theme's own
+  tdModal.classList.toggle("td-team", Boolean(colors));
+  tdModal.style.setProperty("--td-ground", colors ? colors[0] : "");
+  tdModal.style.setProperty("--td-accent", colors ? colors[1] : "");
   tdCard.innerHTML =
     `<span class="td-rays" aria-hidden="true"></span>` +
     `<span class="td-flash" aria-hidden="true"></span>` +
