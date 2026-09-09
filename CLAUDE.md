@@ -219,8 +219,15 @@ element and scores are second.
   accent-and-white portrait ring, accent points and bar, every alpha a
   `color-mix` of the two. Literal on purpose and identical in both
   themes; only the scrim differs, a darkened tint of the ground (76% in
-  dark, 52% in light). A free agent keeps the theme's own card. "Bears
-  TD" on the demo bar triggers one. In the mockup a TD is a
+  dark, 52% in light). A free agent keeps the theme's own card. **The
+  Bears sit a tier above every team** (`.td-chi`): an orange strobe
+  over the page on entry, orange rays turning at page scale behind the
+  card with a breathing orange halo under it (the scrim's
+  pseudo-elements, opacity and transform only), the card rumbling as
+  the letters land, its own rays brighter and faster, an orange glow on
+  TOUCHDOWN, and a 5.5s hold (`TD_CHI_MS`) against 4s. Under reduced
+  motion the page strobe is hidden, not frozen. "Bears TD" on the demo
+  bar triggers one. In the mockup a TD is a
   simulated event (6 + yardage); with the feed, MFL gives only fantasy
   points, so the trigger would be one starter jumping a touchdown's worth
   between polls.

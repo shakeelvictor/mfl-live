@@ -1138,6 +1138,7 @@ document.addEventListener("keydown", (e) => {
    touchdown's worth of points between polls. */
 
 const TD_MS = 4000;
+const TD_CHI_MS = 5500;   // the Bears card holds longer: the chant needs its moment
 // The card wears the scorer's team colours: a dark ground and a bright
 // accent per team, keyed by MFL's codes. Literal on purpose (they are the
 // team's, not the theme's) and the same in both themes, like the Bears
@@ -1188,9 +1189,11 @@ function showNextTouchdown() {
   if (!ev) { tdShowing = false; tdModal.dataset.open = "false"; return; }
   tdShowing = true;
   const p = ev.player;
-  tdCard.style.setProperty("--td-ms", `${TD_MS}ms`);
+  const ms = p.tm === "CHI" ? TD_CHI_MS : TD_MS;
+  tdCard.style.setProperty("--td-ms", `${ms}ms`);
   const colors = TEAM_COLORS[p.tm];   // a free agent's card keeps the theme's own
   tdModal.classList.toggle("td-team", Boolean(colors));
+  tdModal.classList.toggle("td-chi", p.tm === "CHI");
   tdModal.style.setProperty("--td-ground", colors ? colors[0] : "");
   tdModal.style.setProperty("--td-accent", colors ? colors[1] : "");
   tdCard.innerHTML =
@@ -1208,7 +1211,7 @@ function showNextTouchdown() {
   renderTdMore();
   tdModal.dataset.open = "true";
   clearTimeout(tdTimer);
-  tdTimer = setTimeout(dismissTouchdown, TD_MS);
+  tdTimer = setTimeout(dismissTouchdown, ms);
 }
 
 // Ends the current card early or on time; the next queued one follows
