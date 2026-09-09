@@ -1271,6 +1271,7 @@ button.hero { cursor: pointer; }
     grid-template-columns: minmax(0, 1fr) minmax(380px, 520px);
     gap: 0 var(--gutter);
     align-items: start;
+    --pane-pad: 16px;   /* the pane shell's side padding; the tab bridges run this far into the pane */
     padding: 16px 40px 48px;   /* room for the picked row's lift: it grows leftward about its right edge, up to 5% of the board */
     --gutter: 28px;
   }
@@ -1295,7 +1296,7 @@ button.hero { cursor: pointer; }
     transition: background .3s, border-color .3s;
   }
   .team-page .wash { display: none; }
-  .team-page > .shell { position: sticky; top: 16px; max-width: none; padding: 16px 16px 24px; animation: none; }
+  .team-page > .shell { position: sticky; top: 16px; max-width: none; padding: 16px var(--pane-pad) 24px; animation: none; }
   /* The pane never outgrows the window: the shell is capped at the
      viewport, the tabs stay put, and the roster card scrolls inside itself
      when the rows do not fit (a tall window never scrolls). A fade over the
@@ -1375,11 +1376,14 @@ button.hero { cursor: pointer; }
   .row.active .chev { opacity: 0; }
   .row.active::after {
     content: ""; position: absolute; top: 0; bottom: 0; left: 100%;
-    /* Runs a corner radius into the pane, not just over its border: the tab
-       for the last row meets the pane's rounded bottom corner, and a bridge
-       that stopped at the border left the corner's notch dark (2026-09-08).
-       Inside the pane it is invisible, being the pane's own colour there. */
-    width: calc(var(--gutter, 28px) + var(--radius-card));
+    /* Runs into the pane as far as its inner padding, not just over its
+       border: the tab for the last row meets the pane's rounded bottom
+       corner, and a bridge that stopped at the border left the corner's
+       notch dark (2026-09-08). Inside the pane it is invisible, being the
+       pane's own colour there, and it stops short of the roster card (a
+       full corner radius painted over the card). What the padding leaves
+       of the 24px arc is under a pixel deep. */
+    width: calc(var(--gutter, 28px) + var(--pane-pad));
     background: var(--join);
     box-shadow: inset 0 1px 0 var(--tab-line), inset 0 -1px 0 var(--tab-line);
     animation: fflr-fade-in .2s ease-out;
@@ -1408,7 +1412,7 @@ button.hero { cursor: pointer; }
   }
   .hero-wrap.active::after {
     content: ""; position: absolute; top: 0; bottom: 0; left: 100%;
-    width: calc(var(--gutter, 28px) + var(--radius-card));
+    width: calc(var(--gutter, 28px) + var(--pane-pad));
     background: var(--join);
     box-shadow: inset 0 1px 0 var(--tab-line), inset 0 -1px 0 var(--tab-line);
     animation: fflr-fade-in .2s ease-out;
