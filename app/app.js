@@ -171,8 +171,10 @@ const statusOf = (t) => phase === "preseason"
   ? `${t.bench.length} on roster`
   : t.bye
     ? `Bye &middot; plays ${nextRound()?.ref || "next week"}`
-  : t.side && t.starters.length === 0
-    ? "none in the lineup"
+  // No starters at all: MFL reports playersYetToPlay as 0 for a franchise
+  // that never set a lineup, which is not "all played".
+  : t.starters.length === 0
+    ? (t.side ? "none in the lineup" : "no lineup set")
   : t.toPlay === 0
     ? "all played"
     : `${t.toPlay} to play${rzCount(t) ? ` &middot; <span class="rzn" title="${rzCount(t)} in the red zone">${rzCount(t)} RZ</span>` : t.onNow ? " &middot; on now" : ""}`;
