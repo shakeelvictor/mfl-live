@@ -534,8 +534,10 @@ button.hero { cursor: pointer; }
 /* ---------- standings ---------- */
 
 .standings { display: flex; flex-direction: column; gap: 10px; }
-.standings-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 6px; }
-.standings-head h2 { margin: 0; font: 700 20px/1 var(--font-display); letter-spacing: -.01em; }
+/* Only the franchise count, right-aligned: the "Standings" heading came
+   off 2026-09-08 (the board is the standings; the section keeps its
+   aria-label). */
+.standings-head { display: flex; justify-content: flex-end; align-items: baseline; padding: 0 6px; }
 .standings-head span { font: 700 12px/1 var(--font-data); color: var(--text-muted); }
 
 /* One drop shadow for the whole standings shape, so a fused cluster casts
