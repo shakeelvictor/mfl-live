@@ -369,6 +369,17 @@ element and scores are second.
   `pickOnLoad()` lifts it once the cascade ends, since the cascade
   animates the same transform and a lift set earlier snapped in when
   the cascade's class came off. Reduced motion lands every lift at once.
+- **The leader card has depth on phones** (2026-09-10): `.hero-wrap` leans
+  toward the viewer (`perspective` with a degree or two of rotateX and
+  rotateY and a 1.2deg italic skewX) over a thick two-step edge on its
+  right and bottom (`--hero-edge`, `--hero-edge-2`, offset box-shadows
+  with no blur, so nothing repaints per frame). Under 1024px only: on
+  laptop the hero is a tab into the pane and its right edge must meet the
+  seam flat. The pick lift keeps the lean and adds its rise. The hero
+  strip's tier chip shows only for a coin flip or a close gap ("Settled"
+  and "Not started" said nothing), and the "11 franchises" count under
+  the capsules is gone (`.standings-head` stays, empty, as a cascade
+  target).
 - In dark the hero has **no border and no inset highlight** (`--hero-border`,
   `--hero-shadow`): its gradient fades to near-canvas, so either reads as a
   stray outline. Light keeps both.

@@ -291,11 +291,6 @@ function renderChrome() {
   sub.innerHTML = (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head &middot; ` : post ? `${roundBlurb()} &middot; ` : "") + `Updated ${esc(UPDATED)}` +
     (note ? ` &middot; <span class="stale">${note}</span>` : "");
   document.body.classList.toggle("stats-stale", note !== "");
-  const sizes = [...new Set(teams.map((t) => t.starters.length))];
-  document.getElementById("franchise-count").textContent = duel ? (sizes.length === 1 ? `${sizes[0]} a side` : teams.map((t) => t.starters.length).join(" v ") + " players")
-    : !post ? `${n} franchises`
-    : post.round.bowl ? `${n} play, 1 wins it`
-    : `${n} play, ${n - post.round.drop} advance`;
   renderRounds();
 }
 
@@ -446,7 +441,7 @@ function renderHero(changed, takeover) {
           `</div>`).join(`<span class="duel-v" aria-hidden="true">v</span>`) +
       `</div>` +
       `<div class="hero-strip">` +
-        `<span class="tier ${lt}">${TIER_LABEL[lt]}</span>` +
+        (hot(lt) ? `<span class="tier ${lt}">${TIER_LABEL[lt]}</span>` : "") +
         `<span class="leads"><b>${esc(lead.team)}</b> ${roundFinal() ? "beat" : "leads"} <b>${esc(chaser.team)}</b> by</span>` +
         `<span class="hero-gap${changed.has(lead.id) || changed.has(chaser.id) ? " flash" : ""}" data-tween="gap:${lead.id}:${chaser.id}">${fmt(gaps[0])}</span>` +
       `</div>`;
@@ -463,7 +458,7 @@ function renderHero(changed, takeover) {
       `<span class="hero-pts${fl(changed, lead.id)}" data-tween="pts:${lead.id}" data-delta>${fmt(lead.live)}</span>` +
     `</div>` +
     `<div class="hero-strip">` +
-      `<span class="tier ${lt}">${TIER_LABEL[lt]}</span>` +
+      (hot(lt) ? `<span class="tier ${lt}">${TIER_LABEL[lt]}</span>` : "") +
       `<span class="leads">${roundFinal() ? "Beat" : "Leads"} <b>${esc(chaser.team)}</b> by</span>` +
       `<span class="hero-gap${changed.has(lead.id) || changed.has(chaser.id) ? " flash" : ""}" data-tween="gap:${lead.id}:${chaser.id}">${fmt(gaps[0])}</span>` +
     `</div>`;
