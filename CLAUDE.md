@@ -488,7 +488,10 @@ element and scores are second.
 - **Live transitions** are in: changed values flash once and **roll** from
   old to new (every live number carries `data-tween="<key>"`; keys are
   shared across hero, row and team page so a value carries over when it
-  changes surface), team and player scores pop a floating delta chip, rows
+  changes surface; **player keys carry the MFL id**, `playerKey`, since
+  2026-09-09: they were the slot number, and MFL reorders its player array
+  between polls, so a flash, roll or chip landed on whoever sat in that
+  slot next, playing or not), team and player scores pop a floating delta chip, rows
   that change rank slide to their new slot (FLIP on the row elements, keyed
   by franchise id), and clusters re-fuse. **A roll survives a re-render**
   (2026-09-09, seen on the Week 1 opener): `snapshotShown` records what

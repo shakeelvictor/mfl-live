@@ -135,7 +135,7 @@ function derive() {
         live: r2(members.reduce((a, t) => a + t.live, 0)),
         toPlay: members.reduce((a, t) => a + t.toPlay, 0),
         onNow: members.some((t) => t.onNow),
-        starters: members.flatMap((t) => t.starters.map((p, k) => ({ ...p, key: `${t.id}:${k}`, from: t.team }))),
+        starters: members.flatMap((t) => t.starters.map((p, k) => ({ ...p, key: playerKey(t, p, k), from: t.team }))),
         bench: [],
         record: `${members.length} managers`,
       };
@@ -1068,14 +1068,18 @@ let picked = null;     // the team last opened: its row stays lifted on the boar
 let tab = "starters";
 let lastFocus = null;
 
-// Starters with any live bumps applied, in fixture order.
+// Starters with any live bumps applied, in fixture order. Keyed by player
+// id when the feed supplies one (2026-09-09): MFL's array order is not
+// stable between polls, so a slot-number key put one poll's flash, roll
+// and delta chip on whoever sat in that slot next, playing or not.
+const playerKey = (t, p, k, bench = false) => `${t.id}:${bench ? "b" : ""}${p.id ?? k}`;
 const liveStarters = (t, changed) => t.starters.map((p, k) => {
-  const key = p.key || `${t.id}:${k}`;
+  const key = p.key || playerKey(t, p, k);
   return { ...p, key, pts: r2(p.pts + (playerBump[key] || 0)), flash: changed.has(key), st: statsFor(t, k) };
 });
 
 const liveBench = (t, changed) => t.bench.map((p, k) => {
-  const key = `${t.id}:b${k}`;
+  const key = playerKey(t, p, k, true);
   return { ...p, key, pts: r2(p.pts + (benchBump[key] || 0)), flash: changed.has(key), st: statsFor(t, k, true) };
 });
 
@@ -1824,7 +1828,7 @@ async function refreshLive(first = false) {
       const prev = lastScores.get(key);
       next.set(key, p.pts);
       if (prev != null && p.pts !== prev) {
-        changed.add(f.id).add(`${f.id}:${k}`);
+        changed.add(f.id).add(key);   // the row's key, see playerKey
         // MFL gives points only, so a touchdown starts as a starter jumping
         // by at least six between polls; Sleeper's line confirms it (above).
         if (p.pts - prev >= 6) noteJump(team, p, p.pts - prev);
