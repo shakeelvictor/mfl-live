@@ -239,11 +239,6 @@ function renderChrome() {
       : post ? roundBlurb()
       : "All-play &middot; every team plays every other team") +
     ` &middot; updated ${esc(UPDATED)}`;
-  const sizes = [...new Set(teams.map((t) => t.starters.length))];
-  document.getElementById("franchise-count").textContent = duel ? (sizes.length === 1 ? `${sizes[0]} a side` : teams.map((t) => t.starters.length).join(" v ") + " players")
-    : !post ? `${n} franchises`
-    : post.round.bowl ? `${n} play, 1 wins it`
-    : `${n} play, ${n - post.round.drop} advance`;
   renderRounds();
 }
 
@@ -400,7 +395,7 @@ function renderHero(changed, takeover) {
       `<span class="hero-status">${statusOf(lead)}</span>` +
     `</div>` + mid +
     `<div class="hero-strip">` +
-      `<span class="tier ${lt}">${TIER_LABEL[lt]}</span>` +
+      (hot(lt) ? `<span class="tier ${lt}">${TIER_LABEL[lt]}</span>` : "") +
       (duel || bowl
         ? `<span class="leads"><b>${esc(lead.team)}</b> ${roundFinal() ? "beat" : "leads"} <b>${esc(chaser.team)}</b> by</span>`
         : `<span class="leads">${roundFinal() ? "Beat" : "Leads"} <b>${esc(chaser.team)}</b> by</span>`) +
