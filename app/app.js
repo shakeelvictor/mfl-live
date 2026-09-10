@@ -13,7 +13,9 @@ let rosters = [];              // [{ id, team, pts, toPlay, starters, bench }]
 let headshotSrc = () => null;  // (player) -> img src, or null for the initials fallback
 let logoSrc = () => null;      // (NFL team code) -> img src, or null
 let WEEK = 12;
-let UPDATED = "4:12 PM";
+let UPDATED = "4:12 PM";   // when MFL's snapshot last changed (scores, lineups), not when we last asked
+let CHECKED = "";          // when we last asked; shown beside it once the two drift apart (2026-09-09)
+let snapshotSig = "";
 let phase = "live";            // "live" | "preseason" (liveScoring not available yet)
 let kickoff = null;            // Date of the week's first game (live source)
 let games = new Map();         // NFL team -> { kickoff: Date, secs } from nflSchedule (live source)
@@ -265,7 +267,7 @@ function renderChrome() {
   const sub = document.getElementById("subhead");
   sub.hidden = phase === "preseason";
   const note = statsNote();
-  sub.innerHTML = (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head &middot; ` : post ? `${roundBlurb()} &middot; ` : "") + `Updated ${esc(UPDATED)}` +
+  sub.innerHTML = (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head &middot; ` : post ? `${roundBlurb()} &middot; ` : "") + `MFL updated ${esc(UPDATED)}` + (CHECKED && CHECKED !== UPDATED ? ` &middot; checked ${esc(CHECKED)}` : "") +
     (note ? ` &middot; <span class="stale">${note}</span>` : "");
   document.body.classList.toggle("stats-stale", note !== "");
   const sizes = [...new Set(teams.map((t) => t.starters.length))];
@@ -1885,6 +1887,15 @@ async function refreshLive(first = false) {
   if (first || Date.now() - statsAt > statsEvery()) fetchStats(WEEK);   // beside the poll, not in it
   if (first || gamesOn()) fetchSituation();                              // likewise
   const franchises = toArray(L.franchise);
+  // "Updated" is when MFL's snapshot last changed, not when we last polled:
+  // the export regenerates on MFL's own cycle (~200s on the Week 1 opener)
+  // and most polls bring back the same body, so a poll-time stamp read
+  // fresh while the scores stood still. Any score or lineup status moving
+  // counts; the check time sits beside it once they drift apart.
+  const sig = franchises.map((f) => `${f.id}:${f.score}:${toArray(f.players?.player).map((p) => `${p.id}:${p.score}:${p.status}`).join(",")}`).join(";");
+  const now = fmtTime(new Date());
+  if (sig !== snapshotSig) { snapshotSig = sig; UPDATED = now; }
+  CHECKED = now;
   await ensurePlayers([...rosterIds.values()].flat().concat(franchises.flatMap((f) => toArray(f.players?.player).map((p) => p.id))));
 
   const next = new Map();
@@ -1922,7 +1933,6 @@ async function refreshLive(first = false) {
   // mark is not read; the playoffs already use this rule). The MVP card and
   // the Week winner hero follow, and clear when MFL rolls the week.
   slate.weekFinal = slate.sunFinal;
-  UPDATED = fmtTime(new Date());
   return changed;
 }
 

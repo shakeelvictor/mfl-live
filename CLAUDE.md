@@ -653,7 +653,12 @@ element and scores are second.
   is a copy of `app/playoffs.js`; keep them the same), seeded from the
   real 2025 season and folded from the board's own points; see the `poc`
   branch's CLAUDE.md. On `main` they are removed, along with the subtitle
-  line; in season the subtitle slot shows only "Updated <time>".
+  line; in season the subtitle slot shows "MFL updated <time>", the time
+  MFL's snapshot last changed (any score or lineup status; `snapshotSig`
+  in `refreshLive`), with "checked <time>" beside it once the last poll
+  is a later minute (2026-09-09: the export regenerates on MFL's ~200s
+  cycle and most polls bring the same body back, so a poll-time stamp
+  read fresh while the scores stood still).
 
 Thresholds (`CRITICAL`, `LIVE`, `WITHIN`) live in one place in the script and
 the legend and capsules read them. The headline stats and the hero are derived
