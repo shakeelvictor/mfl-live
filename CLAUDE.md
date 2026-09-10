@@ -470,8 +470,18 @@ element and scores are second.
   news on a height tween (`growSheet`), never a snap. The row has no
   chevron (removed the same day; the tap is the affordance), and a row
   whose team has no schedule entry shows no game label ("Not started"
-  crowded the phone row). The scrim, the close button or Escape puts it away with
-  focus back on the row, and `closeTeam` closes it too. Still context
+  crowded the phone row). The scrim, the close button or Escape puts it away with focus back on
+  the row, and `closeTeam` closes it too. **On a phone a finger dragging
+  down closes it** (2026-09-10): from the band (a grab handle at the top
+  of the sheet says so; `touch-action: none` there so every move is ours
+  to cancel) or from the body while it is scrolled to the top, the sheet
+  follows the finger and the scrim dims in step (the drag scrubs a paused
+  Web Animation on each, since the entrance's fill would override an
+  inline transform); let go past a third of the sheet or with a flick
+  (`SWIPE_CLOSE`, `SWIPE_FLICK`) and it slides the rest of the way and
+  closes (a timer backs the finish: a backgrounded tab never finishes an
+  animation); short of that it springs back. A drag that starts upward
+  or in a scrolled body is a scroll and is left alone. Still context
   beside MFL's number: nothing on the card feeds a score. **Rows wear
   badges by the name** (`rowBadges`): Sleeper's injury status (Q and D
   orange, OUT, IR, PUP, SUS, NA red, the body part in the title) and a

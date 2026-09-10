@@ -1562,6 +1562,67 @@ function closePlayer(instant = false) {
   back?.focus({ preventScroll: true });
 }
 
+/* Swipe down to close, on the phone sheet (2026-09-10). A finger
+   dragging down from the band, or from the body while it is scrolled to
+   the top, carries the sheet with it and dims the scrim in step (the drag
+   scrubs a paused Web Animation on each: the entrance's fill would
+   override an inline transform); let go past a third of the sheet, or
+   with a flick, and it slides the rest of the way and closes; short of
+   that it springs back. A drag that starts upward, or in a scrolled
+   body, is a scroll and is left alone. */
+const phoneSheet = matchMedia("(max-width: 599px)");
+const pcScrim = document.getElementById("pc-scrim");
+const SWIPE_CLOSE = 1 / 3, SWIPE_FLICK = 0.6;   // of the sheet's height; px per ms
+let swipe = null;
+pcSheet.addEventListener("touchstart", (e) => {
+  swipe = null;
+  if (!phoneSheet.matches || pcard.dataset.open !== "true" || e.touches.length !== 1) return;
+  const body = pcSheet.querySelector(".pc-body");
+  const inBody = body && body.contains(e.target);
+  const y = e.touches[0].clientY, t = performance.now();
+  swipe = { y0: y, y, t, vy: 0, dy: 0, dragging: false, canDrag: !inBody || body.scrollTop <= 0 };
+}, { passive: true });
+pcSheet.addEventListener("touchmove", (e) => {
+  if (!swipe) return;
+  const y = e.touches[0].clientY, t = performance.now();
+  const dy = y - swipe.y0;
+  if (!swipe.dragging) {
+    if (dy < -8 || (!swipe.canDrag && Math.abs(dy) > 8)) { swipe = null; return; }   // a scroll
+    if (dy < 8) return;
+    swipe.dragging = true;
+    swipe.sheet = pcSheet.animate([{ transform: "translateY(0)" }, { transform: "translateY(1000px)" }], { duration: 1000, fill: "both" });
+    swipe.scrim = pcScrim.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 1000, fill: "both" });
+    swipe.sheet.pause(); swipe.scrim.pause();
+  }
+  if (e.cancelable) e.preventDefault();
+  if (t > swipe.t) swipe.vy = (y - swipe.y) / (t - swipe.t);
+  swipe.y = y; swipe.t = t;
+  swipe.dy = Math.max(0, dy);
+  swipe.sheet.currentTime = swipe.dy;
+  swipe.scrim.currentTime = Math.min(1000, (swipe.dy / pcSheet.offsetHeight) * 1000);
+}, { passive: false });
+const endSwipe = () => {
+  const sw = swipe; swipe = null;
+  if (!sw?.dragging) return;
+  const h = pcSheet.offsetHeight;
+  sw.sheet.cancel(); sw.scrim.cancel();
+  const from = { transform: `translateY(${sw.dy}px)` }, dim = Math.max(0, 1 - sw.dy / h);
+  if (sw.dy > h * SWIPE_CLOSE || sw.vy > SWIPE_FLICK) {
+    const ms = Math.max(120, 260 * (1 - sw.dy / h));
+    const a = pcSheet.animate([from, { transform: "translateY(100%)" }], { duration: ms, easing: "cubic-bezier(.4, 0, 1, 1)", fill: "forwards" });
+    const b = pcScrim.animate([{ opacity: dim }, { opacity: 0 }], { duration: ms, fill: "forwards" });
+    let done = false;
+    const finish = () => { if (done) return; done = true; closePlayer(true); a.cancel(); b.cancel(); };   // cancelled so nothing lingers on the next open
+    a.onfinish = finish;
+    setTimeout(finish, ms + 60);   // a backgrounded tab never finishes an animation
+  } else {
+    pcSheet.animate([from, { transform: "none" }], { duration: 280, easing: "cubic-bezier(.22, 1, .36, 1)" });
+    pcScrim.animate([{ opacity: dim }, { opacity: 1 }], { duration: 280 });
+  }
+};
+pcSheet.addEventListener("touchend", endSwipe);
+pcSheet.addEventListener("touchcancel", endSwipe);
+
 rosterEl.addEventListener("click", (e) => {
   const row = e.target.closest(".prow");
   if (row) openPlayer(row.dataset.pk, row);

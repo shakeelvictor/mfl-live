@@ -1440,6 +1440,13 @@ body.pcard-open { overflow: hidden; }
     will-change: transform;
   }
   .pcard[data-open="closing"] .pc-sheet { animation: fflr-pc-down .22s cubic-bezier(.4, 0, 1, 1) forwards; }
+  /* A grab handle at the top of the sheet: a finger dragging down closes it (the script). */
+  .pc-sheet::before {
+    content: ""; position: absolute; top: 8px; left: 50%; z-index: 5;
+    width: 36px; height: 4px; margin-left: -18px; border-radius: 2px;
+    background: rgba(255, 255, 255, 0.35); pointer-events: none;
+  }
+  .pc-hero { touch-action: none; }   /* the band is the handle: every touch move is ours to cancel */
   .pcard[data-open="true"] .pc-body { animation: none; }
   @keyframes fflr-pc-up { from { transform: translateY(100%); } to { transform: none; } }
   @keyframes fflr-pc-down { to { transform: translateY(100%); } }
