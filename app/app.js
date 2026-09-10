@@ -1022,10 +1022,12 @@ const gameStrip = (p) => {
   const secs = secsOf(p);
   const started = Date.now() >= g.kickoff || (secs != null && secs < 3600);
   const live = started && secs != null && secs > 0;
-  const state = !started ? fmtKick(g.kickoff) : secs == null || secs <= 0 ? "Final" : clockText(secs);
-  // With a fresh situation the ball, the red zone and the NFL score are
-  // its (the schedule's flags are not reliable; see inRedZone).
+  // With a fresh situation the ball, the red zone, the NFL score and the
+  // clock are its (the schedule's flags are not reliable, see inRedZone,
+  // and liveScoring's clock is as old as its points, minutes behind).
   const sit = live ? sitOf(p.tm) : null;
+  const sitClock = sit?.state === "in" && sit.period && sit.clock ? `${sit.period > 4 ? "OT" : `Q${sit.period}`} ${sit.clock}` : null;
+  const state = !started ? fmtKick(g.kickoff) : secs == null || secs <= 0 ? "Final" : sitClock || clockText(secs);
   const view = (s) => (sit ? { ...s, score: sit.scores?.[s.id] ?? s.score, poss: sit.poss === s.id, rz: sit.poss === s.id && sit.rz } : s);
   const spot = sit && sit.dd && sit.spot ? `${sit.dd} at ${sit.spot}` : sit?.spot ? `ball at ${sit.spot}` : "";
   const team = (s) =>

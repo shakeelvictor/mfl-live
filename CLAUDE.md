@@ -445,8 +445,9 @@ element and scores are second.
   on, beside the poll like the stat lines; `sitOf(tm)` hands it out
   while under two minutes old, after which the page falls back to MFL's
   flags. `inRedZone` is then "my team has the ball and ESPN says red
-  zone"; the game strip takes the ball, RZ and NFL score from it and adds
-  a line with the down, distance and spot (`.pg-spot`). Context only:
+  zone"; the game strip takes the ball, RZ, NFL score and the clock from it
+  (liveScoring's per-player clock is as old as its points, minutes
+  behind) and adds a line with the down, distance and spot (`.pg-spot`). Context only:
   nothing from ESPN touches a score, and `spike/` has nothing on it,
   because a fantasy point never depends on it.
   **Red zone** (2026-09-08): a live row whose player's offense is
