@@ -1430,7 +1430,7 @@ function showNextTouchdown() {
     `<span class="td-name">${esc(p.n)}</span>` +
     `<span class="td-meta"><span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span><span>${esc(p.tm)}</span></span>` +
     `<span class="td-for">for <b>${esc(ev.franchise)}</b></span>` +
-    `<span class="td-pts">+${fmt(ev.pts)}</span>` +
+    `<span class="td-pts${ev.est ? " est" : ""}"${ev.est ? ` title="Sleeper's line under the league's rules; MFL's points follow"` : ""}>${ev.est ? "S " : ""}+${fmt(ev.pts)}</span>` +
     `<span class="td-bar" aria-hidden="true"></span>`;
   renderTdMore();
   tdModal.dataset.open = "true";
@@ -1738,19 +1738,25 @@ const statsNote = () => {
   return Date.now() - statsAt > STATS_STALE_MS ? "stats delayed" : "";
 };
 
-/* Touchdown confirmation. MFL gives points only, so a 6-point jump could
-   as well be a long run or a 60-yard field goal. A jump is held until
-   Sleeper's stat line shows one more touchdown for the player (any
-   touchdown key: pass, rush, rec, defensive, special teams, kick or punt
-   return), within TD_WINDOW_MS either side: whichever signal lands second
-   raises the card, with MFL's delta as the points (two jumps in the window
-   add up). A jump with no touchdown in the window lapses silently.
-   Fallback: while the lines are unavailable or stale (statsNote), have not
-   arrived yet, or for a player with no Sleeper join, the jump alone raises
-   the card, as it did before (2026-09-08). */
+/* Touchdowns. Sleeper's stat line raises the card (2026-09-10): one more
+   touchdown on a starter's line than last time (any touchdown key: pass,
+   rush, rec, defensive, special teams, kick or punt return) raises it at
+   once, within a minute of the play, with the play's value from the
+   engine as the points (the line after minus the line before, shown as
+   Sleeper's number). MFL's 6-point jump, on its ~200s cycle, is then the
+   confirmation: a jump within TD_WINDOW_MS of a card already shown is
+   matched to it and raises nothing. It used to be the other way round, the
+   jump held until Sleeper confirmed it, which in practice meant every card
+   waited for MFL (2026-09-08 .. 09-10). When MFL's jump lands first (the
+   lines running late but not yet stale) the touchdown raises the card
+   with MFL's delta, as before. A jump with no touchdown in the window
+   lapses silently. Fallback: while the lines are unavailable or stale
+   (statsNote), have not arrived yet, or for a player with no Sleeper join,
+   the jump alone raises the card. */
 const TD_WINDOW_MS = 3 * 60e3;
 const tdBase = new Map();        // sid -> touchdowns on the last stat line
-const tdConfirmed = new Map();   // sid -> times a new touchdown was seen, not yet matched to a jump
+const tdEstBase = new Map();     // sid -> the engine's points for the last stat line
+const tdConfirmed = new Map();   // sid -> times a touchdown was announced from the line, its jump not yet seen
 const tdPending = new Map();     // "fid:pid" -> { ev, at }: a jump waiting for its touchdown
 const statsConfirm = () => statsAt !== 0 && statsNote() === "";
 
@@ -1758,33 +1764,45 @@ function noteJump(team, p, delta) {
   const ev = { player: p, franchise: team.team, pts: r2(delta), starter: true };
   if (!p.sid || !statsConfirm()) { announceTouchdown(ev); return; }
   const seen = tdConfirmed.get(p.sid);
-  if (seen?.length) { seen.shift(); announceTouchdown(ev); return; }   // Sleeper got there first
+  if (seen?.length) { seen.shift(); return; }   // the line got there first and the card has shown
   const key = `${team.id}:${p.id}`, prev = tdPending.get(key);
   tdPending.set(key, prev ? { ev: { ...ev, pts: r2(prev.ev.pts + delta) }, at: prev.at } : { ev, at: Date.now() });
 }
+// The starter carrying a Sleeper id, and his franchise, on the current
+// rosters; a bench player gets no card.
+const starterBySid = (sid) => { for (const t of rosters) for (const p of t.starters) if (p.sid === sid) return { t, p }; return null; };
 // On every stat arrival: one more touchdown on a player's line than last
-// time is a confirmation. The first arrival only sets the baselines; a
-// player with no line before counts from zero.
+// time raises the card, unless MFL's jump is already waiting for it, in
+// which case the jump's card goes up. The first arrival only sets the
+// baselines; a player with no line before counts from zero.
 function confirmTouchdowns(first) {
   const now = Date.now();
   for (const [sid, st] of Object.entries(statsBySid)) {
     const n = tdCount(st), was = tdBase.get(sid) ?? 0;
-    tdBase.set(sid, n);
+    const est = r2(Scoring.scoreLine(st)), estWas = tdEstBase.get(sid) ?? 0;
+    tdBase.set(sid, n); tdEstBase.set(sid, est);
     if (first || n <= was) continue;
-    const seen = tdConfirmed.get(sid) || [];
-    for (let i = was; i < n; i++) seen.push(now);
-    tdConfirmed.set(sid, seen);
+    const hit = starterBySid(sid);
+    for (let i = was; i < n; i++) {
+      const key = hit ? `${hit.t.id}:${hit.p.id}` : null, waiting = key && tdPending.get(key);
+      if (waiting) { tdPending.delete(key); announceTouchdown(waiting.ev); continue; }   // MFL got there first
+      if (hit) announceTouchdown({ player: hit.p, franchise: hit.t.team, pts: r2(Math.max(0, est - estWas)), est: true, starter: true });
+      const seen = tdConfirmed.get(sid) || [];
+      seen.push(now);
+      tdConfirmed.set(sid, seen);
+    }
   }
   settleTouchdowns();
 }
-// Match waiting jumps to confirmations and let old signals lapse. Runs on
-// every stat arrival and every poll, so a jump still lapses when the lines
-// stop coming; if they have gone stale by then, the fallback raises it.
+// Match waiting jumps to cards already shown and let old signals lapse.
+// Runs on every stat arrival and every poll, so a jump still lapses when
+// the lines stop coming; if they have gone stale by then, the fallback
+// raises it.
 function settleTouchdowns() {
   const now = Date.now();
   for (const [key, { ev, at }] of tdPending) {
     const seen = tdConfirmed.get(ev.player.sid);
-    if (seen?.length) { seen.shift(); tdPending.delete(key); announceTouchdown(ev); }
+    if (seen?.length) { seen.shift(); tdPending.delete(key); }
     else if (now - at > TD_WINDOW_MS) { tdPending.delete(key); if (!statsConfirm()) announceTouchdown(ev); }
   }
   for (const [sid, seen] of tdConfirmed) {

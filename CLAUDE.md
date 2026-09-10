@@ -236,14 +236,18 @@ Each of these was verified against real 2025 data, not inferred:
   passing value too. The jump alone cannot tell a touchdown from any other
   6-point jump: a 45-yard run (0.13333/yd), a 60-yard catch (6 + 0.5) or a
   60-yard field goal also clear it, and two plays landing in the same 30s
-  poll add up. So since 2026-09-08 **the card waits for Sleeper's line to
-  confirm** (`noteJump` / `confirmTouchdowns` / `settleTouchdowns` in
-  `app.js`): a jump is held until the player's touchdown count on the stat
-  line (pass, rush, rec, `idp_def_td`, `st_td`, `kr_td`, `pr_td`) rises,
-  within a three-minute window either side; whichever signal lands second
-  raises the card, with MFL's delta as the points (so a touchdown run still
-  reads as the full amount the total moved by), and a jump with no
-  touchdown in the window lapses. The stat lines are fetched every poll
+  poll add up. So the two signals are paired (`noteJump` /
+  `confirmTouchdowns` / `settleTouchdowns` in `app.js`), and **since
+  2026-09-10 Sleeper's line raises the card**: the player's touchdown
+  count on the stat line (pass, rush, rec, `idp_def_td`, `st_td`,
+  `kr_td`, `pr_td`) rising raises it at once, within a minute of the
+  play, with the play's value from `app/scoring.js` as the points, shown
+  as Sleeper's number ("S +10.40"); MFL's jump within the three-minute
+  window is matched to it and raises nothing. From 2026-09-08 to 09-10 it
+  was the other way round, the jump held until the line confirmed it,
+  which meant every card waited for MFL's ~200s cycle. When the jump lands
+  first (lines late but not stale) the touchdown raises the card with
+  MFL's delta. A jump with no touchdown in the window lapses. The stat lines are fetched every poll
   while games are on (30s, the proxy holds them 30s) so the confirmation
   lands within one. **Fallback:** while the lines are unavailable, stale or
   not yet arrived, or for a player with no Sleeper join, the jump alone

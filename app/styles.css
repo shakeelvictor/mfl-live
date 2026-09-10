@@ -963,6 +963,7 @@ button.hero { cursor: pointer; }
 .est { padding: 3px 7px; border-radius: var(--radius-pill); background: var(--surface-raised); }
 .est b, .pest b { font-weight: 800; color: var(--text-secondary); }
 .pest.off b { color: var(--gap-live); }
+.td-pts.est { letter-spacing: .02em; }   /* the card's points from Sleeper's line: "S +10.40" */
 .hero-est { font: 700 11px/1 var(--font-data); color: var(--hero-muted); }
 .hero-est b { color: var(--hero-text); font-weight: 800; }
 .row.active .est { background: color-mix(in srgb, var(--hero-text) 12%, transparent); color: var(--hero-muted); }
