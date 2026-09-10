@@ -650,6 +650,7 @@ const TWEEN_MS = 700;
 const liveNumberEls = () => [
   ...document.querySelectorAll("#app [data-tween]"),
   ...(open !== null ? page.querySelectorAll("[data-tween]") : []),
+  ...(pcKey !== null ? pcSheet.querySelectorAll("[data-tween]") : []),
 ];
 
 // What each key shows right now, and the value it last settled on. Mid-roll
@@ -816,7 +817,7 @@ const gameLabel = (p) => {
   if (secs == null) return "\u2014";
   if (secs <= 0) return "Final";
   const g = games.get(p.tm);
-  return g ? `${g.kickoff.toLocaleDateString([], { weekday: "short" })} ${fmtTime(g.kickoff)}` : "Not started";
+  return g ? `${g.kickoff.toLocaleDateString([], { weekday: "short" })} ${fmtTime(g.kickoff)}` : "";   // no schedule entry: nothing to say (a "Not started" crowded the phone row)
 };
 
 const liveStats = {};   // `${teamId}:${index}` (bench: `b${index}`) -> mutated copy of st
@@ -1048,12 +1049,7 @@ const logoBadge = (tm) => logoSrc(tm) ? `<span class="plogo"><img src="${logoSrc
 const tdCount = (st) => (st ? (st.pass_td || 0) + (st.rush_td || 0) + (st.rec_td || 0) + (st.idp_td || 0) + (st.idp_def_td || 0) + (st.st_td || 0) + (st.kr_td || 0) + (st.pr_td || 0) : 0);
 const tdBadge = (st) => { const n = tdCount(st); return n ? `<span class="ptd">${n > 1 ? n + " " : ""}TD</span>` : ""; };
 
-// Which rows are expanded, by player (MFL id when the feed supplies one,
-// the slot key on the fixture), so a poll's re-render keeps them open.
-const expanded = new Set();
-const detailKey = (p) => (p.id ? `pid:${p.id}` : p.key);
-
-// What an expanded row says when there is no line to break out.
+// What the player card says when there is no line to break out.
 const noStats = (p) => phase === "preseason" ? "No stats until kickoff"
   : secsOf(p) == null && !FIXTURE ? "Game not started"
   : "No stats yet";
@@ -1064,18 +1060,26 @@ const noStats = (p) => phase === "preseason" ? "No stats until kickoff"
 // and the state: kickoff day and time, the clock, or Final. Scores are
 // the schedule's (a minute old at most while games are on); the clock is
 // the player's own from liveScoring, which every poll refreshes.
-const gameStrip = (p) => {
+// Where the player's game stands: not started (kickoff day and time), on
+// (the clock) or Final. With a fresh situation the clock is ESPN's (the
+// schedule's flags are not reliable, see inRedZone, and liveScoring's
+// clock is as old as its points, minutes behind). Shared by the game
+// strip and the card's Game vital, so the two agree.
+const gameState = (p) => {
   const g = games.get(p.tm)?.match;
-  if (!g) return "";
+  if (!g) return null;
   const secs = secsOf(p);
   const started = Date.now() >= g.kickoff || (secs != null && secs < 3600);
   const live = started && secs != null && secs > 0;
-  // With a fresh situation the ball, the red zone, the NFL score and the
-  // clock are its (the schedule's flags are not reliable, see inRedZone,
-  // and liveScoring's clock is as old as its points, minutes behind).
   const sit = live ? sitOf(p.tm) : null;
   const sitClock = sit?.state === "in" && sit.period && sit.clock ? `${sit.period > 4 ? "OT" : `Q${sit.period}`} ${sit.clock}` : null;
   const state = !started ? fmtKick(g.kickoff) : secs == null || secs <= 0 ? "Final" : sitClock || clockText(secs);
+  return { g, started, live, sit, state };
+};
+const gameStrip = (p) => {
+  const gs = gameState(p);
+  if (!gs) return "";
+  const { g, started, live, sit, state } = gs;
   const view = (s) => (sit ? { ...s, score: sit.scores?.[s.id] ?? s.score, poss: sit.poss === s.id, rz: sit.poss === s.id && sit.rz } : s);
   const spot = sit && sit.dd && sit.spot ? `${sit.dd} at ${sit.spot}` : sit?.spot ? `ball at ${sit.spot}` : "";
   const team = (s) =>
@@ -1092,39 +1096,51 @@ const gameStrip = (p) => {
   `</div>`;
 };
 
-const detailHtml = (p) => {
+// The stat tiles, the player card's middle (they used to expand under
+// the row); the game strip sits in the card's hero.
+const tilesHtml = (p) => {
   const tiles = Object.keys(p.st || {}).length ? statTiles(p.pos, p.st) : [];
-  return `<div class="pdetail" aria-hidden="${expanded.has(detailKey(p)) ? "false" : "true"}"><div>` +
-    gameStrip(p) +
-    (tiles.length
-      ? `<div class="ptiles">${tiles.map((t) => `<span class="ptile${t.zero ? " zero" : ""}"><b>${esc(t.v)}</b><span>${esc(t.l)}</span></span>`).join("")}</div>`
-      : `<p class="pnone">${esc(noStats(p))}</p>`) +
-  `</div></div>`;
+  return tiles.length
+    ? `<div class="ptiles">${tiles.map((t) => `<span class="ptile${t.zero ? " zero" : ""}"><b>${esc(t.v)}</b><span>${esc(t.l)}</span></span>`).join("")}</div>`
+    : `<p class="pnone">${esc(noStats(p))}</p>`;
+};
+
+// Small badges by a player's name (rowBadges): Sleeper's injury status
+// and a newspaper while there is news from the last day (rosterStatus,
+// fetched for the open team's whole roster in one batched query).
+const INJ_CHIP = { Questionable: ["Q", "soft"], Doubtful: ["D", "soft"], Out: ["OUT", ""], IR: ["IR", ""], PUP: ["PUP", ""], Sus: ["SUS", ""], NA: ["NA", ""], COV: ["COV", ""] };
+const NEWS_FRESH_MS = 24 * 3600e3;
+const NEWS_ICON = `<svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><path fill="currentColor" d="M1.5 2.5h10v9.25a1.25 1.25 0 0 0 2.5 0V5h-1.25V3.5H15.5v8.25A2.75 2.75 0 0 1 12.75 14.5H3.5a2 2 0 0 1-2-2v-10Zm2 2v3h3v-3h-3Zm4.5 0v1.5h2.5v-1.5H8Zm0 2.25v1.5h2.5v-1.5H8ZM3.5 9v1.5h7V9h-7Z"/></svg>`;
+const rowBadges = (p) => {
+  const st = p.sid && rosterStatus.get(p.sid);
+  if (!st) return "";
+  let out = "";
+  const chip = st.inj && (INJ_CHIP[st.inj] || [st.inj.toUpperCase().slice(0, 3), ""]);
+  if (chip) out += `<span class="pinj${chip[1] ? ` ${chip[1]}` : ""}" title="${escq([st.inj, st.part].filter(Boolean).join(" · "))}">${esc(chip[0])}</span>`;
+  if (st.newsAt && Date.now() - st.newsAt < NEWS_FRESH_MS) out += `<span class="pnew" title="News ${esc(timeAgo(st.newsAt))}">${NEWS_ICON}</span>`;
+  return out;
 };
 
 // top: the team's highest-scoring starter gets a gold ring (MVP echo).
-// The row is a button: tap (or Enter/Space) opens the stat breakdown
-// under it; the chevron under the points says so.
+// The row is a button: tap (or Enter/Space) opens the player's card (the
+// game so far, injury status, the latest news).
 const playerRow = (p, bench, top = false, enter = -1) => {
   const dim = bench && phase !== "preseason";   // pre-season the roster is nobody's bench
-  const isOpen = expanded.has(detailKey(p));
-  return `<div class="prow${dim ? " bench" : ""}${dim && p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${inRedZone(p) ? " rz" : ""}${top ? " top" : ""}${enter >= 0 ? " enter" : ""}${isOpen ? " open" : ""}"${enter >= 0 ? ` style="--i:${enter}"` : ""}` +
-    ` role="button" tabindex="0" aria-expanded="${isOpen}" data-pk="${esc(detailKey(p))}"${inRedZone(p) ? ` title="In the red zone"` : ""}>` +
+  return `<div class="prow${dim ? " bench" : ""}${dim && p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${inRedZone(p) ? " rz" : ""}${top ? " top" : ""}${enter >= 0 ? " enter" : ""}"${enter >= 0 ? ` style="--i:${enter}"` : ""}` +
+    ` role="button" tabindex="0" aria-haspopup="dialog" data-pk="${esc(p.key)}"${inRedZone(p) ? ` title="In the red zone"` : ""}>` +
     `<span class="pface">${avatar(p)}${logoBadge(p.tm)}${tdBadge(p.st)}</span>` +
     `<span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span>` +
-    `<span class="pname"><b>${esc(p.n)}</b>` +
-      `<span class="pmeta">${esc(p.tm)}<span aria-hidden="true">·</span>` +
-        (isLive(p) ? `<span class="clock"><span class="dot"></span>${clockFor(p)}</span>` : `<span>${esc(gameLabel(p))}</span>`) +
-
-        (p.from ? `<span aria-hidden="true">·</span><span class="pfrom">${esc(p.from)}</span>` : "") +
-      `</span>` +
+    `<span class="pname"><b><span class="pn">${esc(p.n)}</span>${rowBadges(p)}</b>` +
+      `<span class="pmeta">${[
+        esc(p.tm),
+        isLive(p) ? `<span class="clock"><span class="dot"></span>${clockFor(p)}</span>` : gameLabel(p) ? `<span>${esc(gameLabel(p))}</span>` : "",
+        p.from ? `<span class="pfrom">${esc(p.from)}</span>` : "",
+      ].filter(Boolean).join(`<span aria-hidden="true">·</span>`)}</span>` +
       `<span class="pstat">${esc(statLine(p.pos, p.st))}</span>` +
     `</span>` +
     `<span class="pright">` +
       `<span class="ppts${p.pts === 0 ? " zero" : ""}${p.flash ? " flash" : ""}"${p.key ? ` data-tween="p:${p.key}" data-delta` : ""}>${phase === "preseason" ? "&mdash;" : fmt(p.pts)}</span>` +
-      `<span class="pchev" aria-hidden="true"></span>` +
     `</span>` +
-    detailHtml(p) +
   `</div>`;
 };
 
@@ -1136,6 +1152,7 @@ let picked = null;     // the team last opened: its row stays lifted on the boar
                        // after the page closes too, so the board shows where you have been)
 let tab = "starters";
 let lastFocus = null;
+let teamView = null;   // the open team as last rendered ({ t, starters, bench }): the player card reads from it
 
 // Starters with any live bumps applied, in fixture order. Keyed by player
 // id when the feed supplies one (2026-09-09): MFL's array order is not
@@ -1156,6 +1173,8 @@ function renderTeam(changed = new Set()) {
   const t = byId(open);
   const starters = liveStarters(t, changed);
   const bench = liveBench(t, changed);
+  teamView = { t, starters, bench };
+  fetchRosterStatus(t);
 
   const pre = phase === "preseason";
   document.getElementById("team-rank").textContent = pre ? t.team.trim()[0] || "?" : t.bye ? "Bye" : t.rank ?? t.team.trim()[0];
@@ -1203,6 +1222,7 @@ function renderTeam(changed = new Set()) {
   if (rosterEnter) rosterEl.scrollTop = 0;   // new contents start at the top
   rosterEnter = false;
   markMore();
+  refreshPlayerCard();
 }
 
 // Laptop and up: the team panel is always in view, so "opening" a team is
@@ -1259,6 +1279,7 @@ function openTeam(id, pick = true) {
 function closeTeam() {
   if (desktop.matches) return;   // nothing to close; the panel stays
   if (page.dataset.open !== "true") return;
+  closePlayer(true);
   page.dataset.open = "closing";   // fades out, then unmounts below
   document.body.classList.remove("team-open");
   open = null;
@@ -1287,62 +1308,277 @@ document.getElementById("back").addEventListener("click", closeTeam);
 // real Starters/Bench pick, so the flip to live still lands on Starters.
 tabs.forEach((b) => b.addEventListener("click", () => { if (!b.hidden && !tabs.some((o) => o.hidden)) tab = b.dataset.tab; rosterEnter = true; renderTeam(); }));
 
-// Expand or collapse a player's stat breakdown in place (no re-render, so
-// the panel's height transition plays); the next render keeps the state.
-// The panel's height cannot transition to auto, so the script tweens it
-// to its measured height (or back to 0) and, once there, clears the
-// inline size: an open panel is then a plain block, natural height, no
-// overflow clip, nothing for a browser's paint cache to get wrong (Safari
-// left the tile labels unpainted inside an animated, clipped grid track).
-function setPlayer(row, on) {
-  if (row.classList.contains("open") === on) return;
-  const d = row.querySelector(".pdetail");
-  const tween = d && !reducedMotion.matches;
-  if (tween) { d.classList.add("tween"); d.style.height = `${on ? 0 : d.scrollHeight}px`; d.getBoundingClientRect(); }
-  row.classList.toggle("open", on);
-  row.setAttribute("aria-expanded", String(on));
-  d?.setAttribute("aria-hidden", String(!on));
-  if (tween) d.style.height = `${on ? d.scrollHeight : 0}px`;
-  if (on) expanded.add(row.dataset.pk); else expanded.delete(row.dataset.pk);
-  markMore();
+/* ---------------- player card ----------------
+   A tap on a roster row opens the player's card over the page
+   (2026-09-10; it replaced the breakdown that expanded under the row):
+   the game so far (the game strip and the stat tiles), the points rolling
+   on the shared tween key, Sleeper's injury status, and the latest news,
+   the same RotoWire / FantasyPros / RotoBaller items Sleeper's own app
+   shows, read straight from sleeper.app/graphql (it answers with
+   access-control-allow-origin: *, so no proxy), fetched once per open,
+   remembered a few minutes, never on the poll. A poll's re-render refills
+   the hero and the game from the current roster and leaves the news
+   alone. Every item names its source and links to it: that attribution is
+   the condition of using the feed (fantasy-draft-assistant, Aug 2026).
+   Context beside the number, as the stat lines are: nothing here feeds a
+   score. */
+const pcard = document.getElementById("pcard");
+const pcSheet = document.getElementById("pc-sheet");
+let pcKey = null;      // the open player's key (playerKey); null while closed
+let pcFocus = null;    // the row that opened it, for focus on close
+let pcInjury = null;   // Sleeper's injury fields for the open player, once they land
+let pcTimer = 0;
+const PC_IN_MS = 480;   // the sheet's entrance (styles.css: fflr-pc-in / fflr-pc-up)
+
+const PROFILE_TTL_MS = 3 * 60e3;
+const profiles = new Map();   // Sleeper id -> { at, news: Promise, injury: Promise }
+
+async function sleeperGql(query) {
+  const res = await fetch("https://sleeper.app/graphql", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ query }), signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error(`sleeper graphql ${res.status}`);
+  const json = await res.json();
+  if (json.errors?.length) throw new Error(json.errors[0].message);
+  return json.data;
 }
-// One breakdown at a time: opening a row closes whichever was open.
-function togglePlayer(row) {
-  const on = !row.classList.contains("open");
-  if (on) for (const other of rosterEl.querySelectorAll(".prow.open")) if (other !== row) setPlayer(other, false);
-  setPlayer(row, on);
+
+const NEWS_SOURCES = { fantasy_pros: "FantasyPros", rotowire: "RotoWire", rotoballer: "RotoBaller", sleeper: "Sleeper", nfl: "NFL.com", espn: "ESPN" };
+const sourceLabel = (src) => NEWS_SOURCES[src] || String(src || "Report").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+const timeAgo = (ms) => {
+  const secs = Math.max(0, (Date.now() - ms) / 1000);
+  if (secs < 90) return "just now";
+  if (secs < 3600) return `${Math.round(secs / 60)}m ago`;
+  if (secs < 86400) return `${Math.round(secs / 3600)}h ago`;
+  const days = Math.round(secs / 86400);
+  return days < 30 ? `${days}d ago` : `${Math.round(days / 30)}mo ago`;
+};
+// RotoBaller's `published` is Eastern wall-clock written as UTC: on the
+// Week 1 opener its "exits the game" item read an hour BEFORE kickoff, and
+// RotoWire's equivalent came four hours after it (2026-09-10). So it is
+// shifted by Eastern's offset at that instant (DST through Intl), and the
+// items sort on the corrected time. The other two sources are right.
+const ET_OFFSET = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", timeZoneName: "longOffset" });
+const etOffsetMs = (ms) => {
+  const name = ET_OFFSET.formatToParts(ms).find((x) => x.type === "timeZoneName")?.value || "";
+  const m = /GMT([+-])(\d{2}):(\d{2})/.exec(name);
+  return m ? (m[1] === "-" ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) * 60e3 : -5 * 3600e3;
+};
+const newsItem = (n) => {
+  const m = n.metadata || {};
+  let at = Number(n.published) || 0;
+  if (n.source === "rotoballer" && at) at -= etOffsetMs(at);   // 20:45 "Z" that was 20:45 ET (-04:00) -> 00:45Z
+  return { at, source: n.source, title: m.title || "", desc: m.description || "", analysis: m.analysis || "", url: m.url || "" };
+};
+
+function profileOf(sid) {
+  const id = String(sid).replace(/[^A-Za-z0-9]/g, "");
+  const have = profiles.get(id);
+  if (have && Date.now() - have.at < PROFILE_TTL_MS) return have;
+  const prof = {
+    at: Date.now(),
+    news: sleeperGql(`{get_player_news(sport:"nfl",player_id:"${id}",limit:8){metadata published source}}`)
+      .then((d) => (d.get_player_news || []).map(newsItem).sort((a, b) => b.at - a.at))
+      .catch(() => null),   // null: the fetch failed; []: no news
+    injury: sleeperGql(`{get_player(sport:"nfl",player_id:"${id}"){injury_status injury_body_part injury_notes practice_participation}}`)
+      .then((d) => d.get_player || null)
+      .catch(() => null),
+  };
+  profiles.set(id, prof);
+  return prof;
 }
-function closePlayers() {
-  for (const row of rosterEl.querySelectorAll(".prow.open")) setPlayer(row, false);
-  expanded.clear();   // a poll's re-render must not bring it back
+
+// The open player as the roster shows him now (points, line, flash), from
+// the open team's last render: starters or bench, whichever tab.
+const pcPlayer = () => {
+  if (pcKey === null || !teamView) return null;
+  const p = teamView.starters.find((x) => x.key === pcKey);
+  if (p) return { p, t: teamView.t, bench: false };
+  const b = teamView.bench.find((x) => x.key === pcKey);
+  return b ? { p: b, t: teamView.t, bench: true } : null;
+};
+
+const escq = (v) => esc(v).replace(/"/g, "&quot;");
+const INJ_SOFT = new Set(["Questionable", "Doubtful"]);
+const injuryChip = (inj) => {
+  if (!inj?.injury_status) return "";
+  const bits = [inj.injury_status, inj.injury_body_part].filter(Boolean).join(" · ");
+  const practice = inj.practice_participation ? ` · ${inj.practice_participation} practice` : "";
+  return `<span class="pc-inj${INJ_SOFT.has(inj.injury_status) ? " soft" : ""}"${inj.injury_notes ? ` title="${escq(inj.injury_notes)}"` : ""}>${esc(bits + practice)}</span>`;
+};
+// The hero band: the team's colours (TEAM_COLORS, as on the touchdown
+// card; the theme's own for a free agent), its logo ghosted behind the
+// headshot, the name, the franchise as a kicker, and the vitals: the
+// points (rolling) and the game strip (the fixture has no schedule, so
+// there the row's own label).
+function pcHeroHtml(p, t) {
+  const [ground, accent] = TEAM_COLORS[p.tm] || [];
+  const rs = p.sid && rosterStatus.get(p.sid);
+  const inj = pcInjury || (rs ? { injury_status: rs.inj, injury_body_part: rs.part } : null);
+  const strip = gameStrip(p) || `<b>${esc(phase === "preseason" ? "Pre-season" : gameLabel(p))}</b>`;
+  return `<div class="pc-hero"${ground ? ` style="--pc-ground:${ground};--pc-accent:${accent}"` : ""}>` +
+    (logoSrc(p.tm) ? `<img class="pc-mark" src="${logoSrc(p.tm)}" alt="" aria-hidden="true">` : "") +
+    `<span class="pface pc-face">${avatar(p)}${logoBadge(p.tm)}${tdBadge(p.st)}</span>` +
+    `<div class="pc-main">` +
+      `<span class="pc-kicker">${esc(p.from || t.team)} · Week ${WEEK}</span>` +
+      `<h2 class="pc-name" id="pc-name">${esc(p.n)}</h2>` +
+      `<div class="pc-sub"><span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span><span>${esc(p.tm || "FA")}</span>` +
+        `<span id="pc-inj-slot">${injuryChip(inj)}</span>` +
+      `</div>` +
+    `</div>` +
+    `<div class="pc-vitals">` +
+      `<span class="pc-vital"><i>Points</i><b class="pc-pts${p.flash ? " flash" : ""}" data-tween="p:${esc(p.key)}" data-delta>${phase === "preseason" ? "&mdash;" : fmt(p.pts)}</b></span>` +
+      `<span class="pc-vital game"><i>Game</i>${strip}</span>` +
+    `</div>` +
+  `</div>`;
 }
+// Three ghost stories hold the news' place while it loads, so the card
+// reads as full from the first frame instead of filling in.
+const NEWS_SKELETON = Array.from({ length: 3 }, () =>
+  `<div class="pnews skel" aria-hidden="true"><i style="width:74%"></i><i style="width:34%"></i><i></i><i style="width:88%"></i></div>`).join("");
+
+// The laptop card is as tall as its content, so when the news lands it
+// grows to fit on a tween, not a snap. The phone sheet is a fixed height
+// (the news loads inside it), so there the heights match and nothing
+// moves.
+function growSheet(fill) {
+  const h0 = pcSheet.offsetHeight;   // layout height: the entrance's scale would shrink a client rect
+  fill();
+  if (reducedMotion.matches) return;
+  const h1 = pcSheet.offsetHeight;
+  if (Math.abs(h1 - h0) < 1) return;
+  for (const a of pcSheet.getAnimations()) if (a.id === "grow") a.cancel();
+  const a = pcSheet.animate([{ height: `${h0}px` }, { height: `${h1}px` }], { duration: 400, easing: "cubic-bezier(.22, 1, .36, 1)", id: "grow" });
+  a.onfinish = a.oncancel = () => a.cancel();   // back to its natural height, nothing inline left behind
+}
+
+function newsHtml(items, p) {
+  if (items === null) return `<p class="pc-meta">Couldn't load the news. <a href="https://news.google.com/search?q=${encodeURIComponent(`${p.n} ${p.tm || ""}`.trim())}" target="_blank" rel="noopener">Search the news &#8599;</a></p>`;
+  if (!items.length) return `<p class="pc-meta">No recent news for ${esc(p.n)}.</p>`;
+  return items.slice(0, 6).map((n) => `<article class="pnews">` +
+    `<h5>${esc(n.title || "Update")}</h5>` +
+    `<div class="pnews-meta"><b>${esc(sourceLabel(n.source))}</b>${n.at ? ` · ${esc(timeAgo(n.at))}` : ""}</div>` +
+    (n.desc ? `<p>${esc(n.desc)}</p>` : "") +
+    (n.analysis ? `<div class="pnews-analysis"><b>Analysis:</b> ${esc(n.analysis)}</div>` : "") +
+    (n.url ? `<a href="${escq(n.url)}" target="_blank" rel="noopener">Read at ${esc(sourceLabel(n.source))} &#8599;</a>` : "") +
+  `</article>`).join("");
+}
+
+function openPlayer(key, row) {
+  pcKey = key; pcInjury = null;
+  const hit = pcPlayer();
+  if (!hit) { pcKey = null; return; }
+  clearTimeout(pcTimer);
+  pcFocus = row || null;
+  const { p, t } = hit;
+  const openedAt = performance.now();
+  pcSheet.innerHTML =
+    `<button class="pc-close" id="pc-close" type="button" aria-label="Close">&#x2715;</button>` +
+    `<div id="pc-hero">${pcHeroHtml(p, t)}</div>` +
+    `<div class="pc-body">` +
+      `<section class="pc-game" id="pc-game">${tilesHtml(p)}</section>` +
+      `<section class="pc-news"><div class="pc-news-inner"><h4>News</h4>` +
+        `<div class="pc-news-list" id="pc-news-list">${p.sid ? NEWS_SKELETON : `<p class="pc-meta">No news feed for this player.</p>`}</div>` +
+      `</div></section>` +
+    `</div>`;
+  pcard.dataset.open = "true";
+  document.body.classList.add("pcard-open");
+  document.getElementById("pc-close").focus({ preventScroll: true });
+  if (!p.sid) return;
+  const prof = profileOf(p.sid);
+  const still = () => pcKey === key && pcard.dataset.open === "true";   // not closed, or another player since
+  // The news lands once the sheet has landed: the sheet is as tall as
+  // its content, and a phone slides it up by its own height, so stories
+  // arriving mid-slide made it jump (2026-09-10).
+  const settle = (fn) => {
+    const wait = reducedMotion.matches ? 0 : Math.max(0, PC_IN_MS - (performance.now() - openedAt));
+    wait ? setTimeout(fn, wait) : fn();
+  };
+  prof.news.then((items) => settle(() => {
+    const list = still() && document.getElementById("pc-news-list");
+    if (list) growSheet(() => { list.innerHTML = newsHtml(items, p); });
+  }));
+  prof.injury.then((inj) => {
+    if (!still()) return;
+    pcInjury = inj;
+    const slot = document.getElementById("pc-inj-slot");
+    if (slot) slot.innerHTML = injuryChip(inj);
+  });
+}
+
+// A render while the card is up: the hero and the game refill from the
+// current roster (the number rolls, since the card is among the live
+// surfaces); the news stays. Called by renderTeam, so a tab switch and a
+// poll both land here.
+function refreshPlayerCard() {
+  if (pcKey === null || pcard.dataset.open !== "true") return;
+  const hit = pcPlayer();
+  if (!hit) { closePlayer(); return; }   // no longer on the open team
+  const { p, t } = hit;
+  document.getElementById("pc-hero").innerHTML = pcHeroHtml(p, t);
+  document.getElementById("pc-game").innerHTML = tilesHtml(p);
+}
+
+/* Roster status: for every player on the open team, Sleeper's injury
+   status and the date of his latest news item, in one batched GraphQL
+   query (aliases; about a second and 2KB for twenty players), asked for
+   when a team is shown and again every few minutes while it is. Rows
+   wear them as badges by the name (rowBadges) and the card's injury
+   chip reads them before its own fetch lands. */
+const rosterStatus = new Map();    // Sleeper id -> { inj, part, newsAt }
+const statusAskedAt = new Map();   // team id -> when its roster was last asked for
+const STATUS_EVERY_MS = 3 * 60e3;
+let statusPending = null;
+function fetchRosterStatus(t) {
+  if (!t || FIXTURE || statusPending) return;
+  if (Date.now() - (statusAskedAt.get(t.id) || 0) < STATUS_EVERY_MS) return;
+  const sids = [...new Set([...t.starters, ...(t.bench || [])].map((p) => p.sid).filter(Boolean))].map((id) => String(id).replace(/[^A-Za-z0-9]/g, ""));
+  if (!sids.length) return;
+  statusAskedAt.set(t.id, Date.now());
+  const q = "{" + sids.map((id) =>
+    `p${id}:get_player(sport:"nfl",player_id:"${id}"){injury_status injury_body_part} n${id}:get_player_news(sport:"nfl",player_id:"${id}",limit:1){published source}`).join(" ") + "}";
+  statusPending = sleeperGql(q).then((d) => {
+    for (const id of sids) {
+      const inj = d[`p${id}`] || {}, n = (d[`n${id}`] || [])[0];
+      rosterStatus.set(id, { inj: inj.injury_status || null, part: inj.injury_body_part || null, newsAt: n ? newsItem(n).at : 0 });
+    }
+    rerenderSoon();   // the badges, after the last render's flash and rolls
+  }).catch(() => statusAskedAt.delete(t.id)).finally(() => { statusPending = null; });
+}
+
+function closePlayer(instant = false) {
+  if (pcard.dataset.open !== "true") return;
+  clearTimeout(pcTimer);
+  const key = pcKey;
+  pcKey = null; pcInjury = null;
+  document.body.classList.remove("pcard-open");
+  const finish = () => { pcard.dataset.open = "false"; pcSheet.innerHTML = ""; };
+  if (instant || reducedMotion.matches) finish();
+  else { pcard.dataset.open = "closing"; pcTimer = setTimeout(finish, 220); }
+  // Back to the row that opened it (a poll may have rebuilt it: find it by key).
+  const back = pcFocus?.isConnected ? pcFocus : rosterEl.querySelector(`[data-pk="${CSS.escape(key)}"]`);
+  pcFocus = null;
+  back?.focus({ preventScroll: true });
+}
+
 rosterEl.addEventListener("click", (e) => {
   const row = e.target.closest(".prow");
-  if (row) togglePlayer(row);
+  if (row) openPlayer(row.dataset.pk, row);
 });
-// A tap anywhere else puts the open breakdown away. Capture phase, so it
-// runs before a tab or a row handler re-renders the roster: those rows
-// then render closed instead of opening and closing.
-document.addEventListener("click", (e) => {
-  if (expanded.size && !e.target.closest(".prow")) closePlayers();
-}, true);
 rosterEl.addEventListener("keydown", (e) => {
   if (e.key !== "Enter" && e.key !== " ") return;
   const row = e.target.closest(".prow");
   if (!row) return;
   e.preventDefault();   // Space would scroll the roster
-  togglePlayer(row);
+  openPlayer(row.dataset.pk, row);
 });
-rosterEl.addEventListener("transitionend", (e) => {
-  if (!e.target.classList.contains("pdetail") || e.propertyName !== "height") return;
-  e.target.style.height = "";
-  e.target.classList.remove("tween");
-  markMore();
+pcard.addEventListener("click", (e) => {
+  if (e.target.closest("#pc-close") || e.target.id === "pc-scrim") closePlayer();
 });
 // Once a row's swing has settled, drop .enter: its will-change and
 // backface-visibility keep the row on its own compositor layer, and in
-// Safari text opened inside such a layer later (the breakdown's tile
-// labels) went unpainted.
+// Safari text painted inside such a layer later went unpainted.
 rosterEl.addEventListener("animationend", (e) => {
   if (e.animationName !== "fflr-sway") return;
   e.target.classList.remove("enter");
@@ -1352,6 +1588,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
   if (witch.dataset.open === "true") endWitchingHour();
   else if (tdModal.dataset.open === "true") dismissTouchdown();
+  else if (pcard.dataset.open === "true") closePlayer();
   else if (page.dataset.open === "true") closeTeam();
 });
 
@@ -1867,7 +2104,7 @@ async function refreshLive(first = false) {
       opener = away && home ? `${away.id} at ${home.id}` : "";
     }
     // The game itself (both scores, who has the ball, red zone) for the
-    // expanded row's game strip.
+    // player card's game strip.
     const side = (t) => ({ id: t.id, score: Number(t.score) || 0, poss: t.hasPossession === "1", rz: t.inRedZone === "1" });
     const match = away && home ? { kickoff: k, away: side(away), home: side(home) } : null;
     for (const t of toArray(m.team)) games.set(t.id, { kickoff: k, secs: Number.isFinite(secs) ? secs : 3600, match });

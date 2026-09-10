@@ -350,18 +350,11 @@ element and scores are second.
   (`picked` outlives `open`), so the board shows where you have been. A
   FLIP move rides `--dy` inside the same transform, not an inline
   `transform`, so a lifted row keeps its lift while it slides to a new
-  rank. An **open player row** comes forward the same way (`.prow.open`:
-  `scale: 1.05`, the individual property so the swing-in's transform
-  animation cannot override it, raised surface, the lift shadow; the
-  laptop roster's side padding is 14px so the scaled row clears the
-  card's overflow clip). **One breakdown at a time**: opening a row
-  closes the open one (`togglePlayer` -> `setPlayer`), and a tap
-  anywhere outside a row (`closePlayers`, a capture-phase document
-  listener so it runs before a tab or row handler re-renders) puts it
-  away and clears `expanded`. **The lift shadows are pseudo-elements
-  fading in** (`.row::before`, `.prow::before`, `.hero-wrap::before`,
-  each element `isolation: isolate` so the z -1 pseudo stays in its
-  own stack): a transitioning `box-shadow` repainted its blur every
+  rank. (A player row came forward the same way while its breakdown was open
+  under it; since 2026-09-10 a tap raises the player card instead, see
+  "Roster rows".) **The lift shadows are pseudo-elements fading in**
+  (`.row::before`, `.hero-wrap::before`, each element `isolation:
+  isolate` so the z -1 pseudo stays in its own stack): a transitioning `box-shadow` repainted its blur every
   frame and stuttered on phones; the easing is a plain decelerate
   (`cubic-bezier(.2, .8, .2, 1)`, .45s, the panel's height tween in
   step), no overshoot. **On laptop the leader's hero is the load's own
@@ -428,24 +421,68 @@ element and scores are second.
   settled. `.enter` (and `--i`) come off at the swing's `animationend`
   (2026-09-08), so the compositor hints do not linger on settled rows
   until the next render. A poll's re-render leaves them still.
-  **Each row expands** (2026-09-08): the row is a button (tap, Enter or
-  Space; `role="button"`, `aria-expanded`) and opens a breakdown under
-  it, `.pdetail`, a grid of stat tiles (`statTiles()`: the position's
-  core counts always, zeros muted, the rest once they count, a rate
-  where the volume supports one; "No stats yet" / "Game not started" /
-  "No stats until kickoff" when there is no line). The chevron under
-  the points flips. Opened in place, not by re-render, so the panel's
-  height transition plays (the script tweens the panel to its measured
-  height, then clears the inline size, so an open panel is a plain
-  block: natural height, no overflow clip; Safari left the tile labels
-  unpainted in the first cut, a `0fr -> 1fr` grid track with a clipped
-  inner div, and the labels lost their own overflow clip for the same
-  reason, 2026-09-08) and the rows below slide; the open set is remembered by player (`expanded`, MFL id when
-  the feed supplies one, slot key on the fixture) so a poll's re-render
-  keeps them open. `.prow` has no row gap so the closed panel sits
-  flush; the laptop pane refreshes `markMore()` when a panel finishes
-  opening. Still context beside MFL's number. **The game strip** heads
-  the card (`gameStrip()`): away @ home with both scores once kicked off
+  **Each row opens the player card** (2026-09-10; from 09-08 to 09-10 a
+  breakdown expanded under the row instead): the row is a button (tap,
+  Enter or Space; `role="button"`) and raises `#pcard` over the page, the
+  shape of the draft assistant's player card. A hero band in the team's
+  colours (`TEAM_COLORS`, the touchdown card's table; the club mark
+  ghosted behind the headshot; dark in both themes, as Sleeper's own
+  card is) carries the name, the franchise and week as a kicker, the
+  position and, when Sleeper has one, an **injury chip** (`get_player`
+  on `sleeper.app/graphql`: status and body part, Out/IR red,
+  Questionable/Doubtful orange), then two vitals: the points (rolling,
+  on the row's own tween key: the card is among `liveNumberEls`) and the
+  game, which is **the game strip itself**, restyled for the dark band
+  (a "Game" text vital and a "This game" section and a Lineup vital were
+  cut the same day as redundant). Under it, one column: the stat tiles
+  (`tilesHtml()`, `statTiles()`: the position's core counts always,
+  zeros muted, the rest once they count, a rate where the volume
+  supports one; "No stats yet" / "Game not started" / "No stats until
+  kickoff" when there is no line) and then **the latest news** (`get_player_news`, the
+  same RotoWire, FantasyPros and RotoBaller items Sleeper's app shows;
+  the six newest, each with title, source, age, description, analysis
+  and a link to the source, since that attribution is the condition of
+  using the feed). Both Sleeper calls go straight from the browser (the
+  endpoint answers with `access-control-allow-origin: *`), once per
+  open, remembered three minutes (`profiles`), never on the poll; a
+  failure reads "Couldn't load the news" with a news search link. On
+  the Week 1 opener the in-game items (questionable to return, ruled
+  out) landed 25 to 80 minutes after kickoff, so the card explains a
+  quiet stat line within the half hour, not the minute. **RotoBaller's
+  `published` is Eastern wall-clock written as UTC** (its "exits the
+  game" item read an hour before kickoff; RotoWire's came four hours
+  after), so `newsItem` shifts it by Eastern's offset at that instant
+  (DST through Intl) and the list sorts on the corrected time. A poll's
+  re-render refills the hero and the game from the current roster
+  (`refreshPlayerCard`, called by `renderTeam`, reading `teamView`, the
+  open team's last render) and leaves the news alone; the card is keyed
+  by the player's tween key (`pcKey`). A centred 600px card on a laptop (a two-column cut with a news rail
+  lasted a day: the stats sat beside a lot of nothing), a bottom sheet
+  under 600px (the band stays put, the body scrolls). **The phone's slide is the sheet's transform alone** (2026-09-10, it
+  stuttered and jumped): the body's own entrance and the scrim's blur
+  are off, the sheet rides its own layer, and **the phone sheet is a
+  fixed height** (90dvh): a content-sized sheet slid up by its own
+  height and then grew when the news landed, and holding the news back
+  until it had landed only turned the jump into a snap. Three ghost
+  stories (`NEWS_SKELETON`) hold the news' place, so the card reads as
+  full from the first frame; the news still waits for the entrance
+  (`PC_IN_MS`). The laptop card stays content-sized and grows to the
+  news on a height tween (`growSheet`), never a snap. The row has no
+  chevron (removed the same day; the tap is the affordance), and a row
+  whose team has no schedule entry shows no game label ("Not started"
+  crowded the phone row). The scrim, the close button or Escape puts it away with
+  focus back on the row, and `closeTeam` closes it too. Still context
+  beside MFL's number: nothing on the card feeds a score. **Rows wear
+  badges by the name** (`rowBadges`): Sleeper's injury status (Q and D
+  orange, OUT, IR, PUP, SUS, NA red, the body part in the title) and a
+  newspaper while there is news from the last day (`NEWS_FRESH_MS`).
+  They come from `rosterStatus`, filled by `fetchRosterStatus` when a
+  team is rendered and every three minutes while it is: one batched
+  GraphQL query with an alias per player for `get_player` and
+  `get_player_news(limit: 1)` (about a second and 2KB for twenty
+  players), re-rendered through `rerenderSoon`. The card's injury chip
+  reads the same map before its own fetch lands. **The game
+  strip** heads the game (`gameStrip()`): away @ home with both scores once kicked off
   (from `nflSchedule`'s per-team `score`, kept on each `games` entry as
   `match`), the player's team bright, a football after the score of the
   side with `hasPossession`, RZ in the coin-flip red for `inRedZone`,
