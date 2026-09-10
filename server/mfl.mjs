@@ -39,6 +39,7 @@ const TYPES = {
   playersMap:    { params: ['PLAYERS'], maxAge: 3600 },   // built here, see below
   seasonScores:  { params: [], maxAge: 600 },             // built here: every week's franchise scores, for the playoffs
   stats:         { params: ['W'], maxAge: 30 },           // built here: Sleeper's live stat lines for rostered players; context, and the touchdown confirmation
+  situation:     { params: [], maxAge: 15, noLeague: true },  // built here: ESPN's live game situations (possession, red zone, ball spot); context only
 };
 
 // MFL asks clients to cache and back off, not retry. A 429 puts the whole
@@ -174,6 +175,53 @@ async function stats(params) {
   return { data: { week: Number(week), stats: out } };
 }
 
+/* ---------------- game situations (ESPN) ----------------
+   MFL's nflSchedule carries hasPossession and inRedZone per team, but on
+   the Week 1 opener (2026-09-09) consecutive calls returned different
+   snapshots (a team in the red zone at 6 points, then at 7 with the other
+   side in possession, both during halftime), so the flags cannot say who
+   is in the red zone now. ESPN's public scoreboard carries the live
+   situation for every game: who has the ball, the ball spot, down and
+   distance and a red-zone flag computed on the right side of the field.
+   Context beside MFL's numbers, never a score: the page reads possession
+   and the red zone from here and falls back to MFL's flags without it.
+   ~5s timeout; the page keeps its last situation for a while. */
+
+const ESPN_SCOREBOARD = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
+// ESPN abbreviations that differ from MFL's team codes.
+const ESPN_TO_MFL = { WSH: 'WAS', JAX: 'JAC', LV: 'LVR', NE: 'NEP', GB: 'GBP', KC: 'KCC', TB: 'TBB', NO: 'NOS', SF: 'SFO' };
+const mflCode = (abbr) => ESPN_TO_MFL[abbr] || abbr;
+
+async function situation() {
+  const res = await fetch(ESPN_SCOREBOARD, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(5000) });
+  if (!res.ok) throw new Error(`ESPN scoreboard: HTTP ${res.status}`);
+  const j = await res.json();
+  const games = {};
+  for (const e of toArray(j.events)) {
+    const c = toArray(e.competitions)[0];
+    if (!c) continue;
+    const sides = toArray(c.competitors).map((x) => ({ espnId: String(x.id), code: mflCode(x.team?.abbreviation), home: x.homeAway === 'home', score: Number(x.score) || 0 }));
+    if (sides.length !== 2) continue;
+    const st = c.status?.type || {}, sit = c.situation || {};
+    const possSide = sit.possession ? sides.find((x) => x.espnId === String(sit.possession)) : null;
+    const g = {
+      away: sides.find((x) => !x.home)?.code, home: sides.find((x) => x.home)?.code,
+      state: st.state || null,            // pre | in | post
+      detail: st.shortDetail || st.detail || null,
+      period: c.status?.period ?? null, clock: c.status?.displayClock || null,
+      scores: Object.fromEntries(sides.map((x) => [x.code, x.score])),
+      poss: possSide?.code || null,
+      rz: sit.isRedZone === true,
+      yardLine: sit.yardLine ?? null,     // ESPN's absolute spot, 0-100
+      spot: sit.possessionText || null,   // "SEA 24"
+      dd: sit.shortDownDistanceText || sit.downDistanceText || null,
+      lastPlay: sit.lastPlay?.text?.slice(0, 120) || null,
+    };
+    for (const x of sides) games[x.code] = g;
+  }
+  return { data: { at: Date.now(), games } };
+}
+
 /* ---------------- request handler ---------------- */
 
 const json = (status, body, maxAge = 0, extra = {}) => ({
@@ -266,6 +314,7 @@ async function fetchFresh(type, spec, params) {
     const r = type === 'playersMap' ? await playersMap(params)
       : type === 'seasonScores' ? await seasonScores()
       : type === 'stats' ? await stats(params)
+      : type === 'situation' ? await situation()
       : await mfl(type, params, { noLeague: spec.noLeague });
     if (r.error) return json(200, { ok: false, type, error: r.error }, Math.min(spec.maxAge, 60));
 

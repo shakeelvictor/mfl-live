@@ -97,6 +97,13 @@ never come from them. See "Player images and stats".)
   franchises that set one (3 of 11 today). They show by the name in the hero
   and team page and badged on the rank circle in the list (in its place
   pre-season). Plain `<img>` from MFL's host; a failed load removes itself.
+- **The Week 1 opener measured MFL's liveScoring export refreshing on a
+  fixed ~200s cycle** (2026-09-09, `spike/log-cadence.mjs` at 30s: every
+  gap between changes was 183s or 214s, zero 429s). The page cannot be
+  fresher than that, and polling faster than the proxy's 15s cache buys
+  nothing; the schedule (`nflSchedule`) and ESPN's situation move faster
+  than the points do. Sunday's eight-game window is the measurement the
+  spike was designed around; see spike/README.md for the bars.
 - **`MFL_FAKE_LIVE=<liveScoring json>`** on the dev server serves a file as
   the live feed, so the in-season path can be exercised before kickoff
   (`.claude/launch.json` has an `app-fake-live` entry using the 2025 W12
@@ -422,6 +429,26 @@ element and scores are second.
   `spike/fake-round.mjs` stages the home side with the ball in both
   live games and in the red zone in the first, so `app-2025-w15-live`
   shows every RZ marker.
+  **The red zone and the ball come from ESPN, not MFL** (2026-09-09,
+  the Week 1 opener): MFL's `nflSchedule` carries `hasPossession` and
+  `inRedZone` per team, but consecutive calls that night returned
+  different snapshots (a team in the red zone at 6 points, then at 7
+  with the other side in possession, then both sides in possession, all
+  during halftime), so the flags cannot say who is in the red zone now.
+  The proxy's **`situation`** type reads ESPN's public scoreboard
+  (`site.api.espn.com/.../scoreboard`, no key, held 15s, 5s timeout;
+  ESPN's abbreviations mapped to MFL codes in `ESPN_TO_MFL`) into one
+  record per game keyed by both teams: state, period and clock, NFL
+  scores, who has the ball, the ball spot ("SEA 24"), down and
+  distance, a red-zone flag computed on the right side of the field, and
+  the last play. `fetchSituation` asks with every poll while games are
+  on, beside the poll like the stat lines; `sitOf(tm)` hands it out
+  while under two minutes old, after which the page falls back to MFL's
+  flags. `inRedZone` is then "my team has the ball and ESPN says red
+  zone"; the game strip takes the ball, RZ and NFL score from it and adds
+  a line with the down, distance and spot (`.pg-spot`). Context only:
+  nothing from ESPN touches a score, and `spike/` has nothing on it,
+  because a fantasy point never depends on it.
   **Red zone** (2026-09-08): a live row whose player's offense is
   inside the 20 (offensive positions only; IDP get nothing, a defender
   facing a red-zone drive is a different signal) wears a faint red

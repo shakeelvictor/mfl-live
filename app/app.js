@@ -17,6 +17,8 @@ let UPDATED = "4:12 PM";
 let phase = "live";            // "live" | "preseason" (liveScoring not available yet)
 let kickoff = null;            // Date of the week's first game (live source)
 let games = new Map();         // NFL team -> { kickoff: Date, secs } from nflSchedule (live source)
+let situations = new Map();    // NFL team -> its game's live situation from ESPN through the proxy (possession, red zone, ball spot); context only
+let situationAt = 0;
 let dayTeams = { early: new Set(), days: [] };   // the week's game days from the schedule: [{ key, name, teams }] in kickoff order, in NFL (Eastern) dates; `early` is the first day's teams
 
 // Playoffs (Weeks 15-17): the round's field, folded from the season's
@@ -735,13 +737,24 @@ const isLive = (p) => !slate.sunFinal && (FIXTURE
   ? LIVE_NFL.has(p.tm)
   : (secsOf(p) != null && secsOf(p) > 0 && secsOf(p) < 3600));
 const clockFor = (p) => (FIXTURE ? LIVE_NFL.get(p.tm) : clockText(secsOf(p)));
-// Red zone, from the schedule's per-team flags (inRedZone, hasPossession):
-// an offensive player's own team inside the 20. Live players only, not
-// IDP (a defender facing a red-zone drive is not the same signal), and
-// not when the flags say the other side clearly has the ball.
+// Red zone: an offensive player's own team, with the ball, inside the
+// other side's 20. Live players only, not IDP (a defender facing a
+// red-zone drive is not the same signal). The game situation (ESPN,
+// through the proxy; see fetchSituation) decides when there is a fresh
+// one: it carries possession and a red-zone flag computed on the right
+// side of the field. Without one, the schedule's per-team flags
+// (inRedZone, hasPossession), which on the Week 1 opener (2026-09-09)
+// came back as inconsistent snapshots: both teams in possession, a team
+// in the red zone at halftime. Then only when the other side does not
+// clearly have the ball.
+const SITUATION_STALE_MS = 2 * 60e3;
+const sitOf = (tm) => (Date.now() - situationAt < SITUATION_STALE_MS ? situations.get(tm) : null) || null;
 const inRedZone = (p) => {
+  if (!isLive(p) || !POS_CLASS[p.pos]) return false;
+  const sit = sitOf(p.tm);
+  if (sit) return sit.state === "in" && sit.poss === p.tm && sit.rz;
   const m = games.get(p.tm)?.match;
-  if (!m || !isLive(p) || !POS_CLASS[p.pos]) return false;
+  if (!m) return false;
   const mine = m.away.id === p.tm ? m.away : m.home, other = mine === m.away ? m.home : m.away;
   return mine.rz && !(other.poss && !mine.poss);
 };
@@ -1010,6 +1023,11 @@ const gameStrip = (p) => {
   const started = Date.now() >= g.kickoff || (secs != null && secs < 3600);
   const live = started && secs != null && secs > 0;
   const state = !started ? fmtKick(g.kickoff) : secs == null || secs <= 0 ? "Final" : clockText(secs);
+  // With a fresh situation the ball, the red zone and the NFL score are
+  // its (the schedule's flags are not reliable; see inRedZone).
+  const sit = live ? sitOf(p.tm) : null;
+  const view = (s) => (sit ? { ...s, score: sit.scores?.[s.id] ?? s.score, poss: sit.poss === s.id, rz: sit.poss === s.id && sit.rz } : s);
+  const spot = sit && sit.dd && sit.spot ? `${sit.dd} at ${sit.spot}` : sit?.spot ? `ball at ${sit.spot}` : "";
   const team = (s) =>
     `<span class="pg-team${s.id === p.tm ? " mine" : ""}${live && s.poss ? " poss" : ""}">` +
       (logoSrc(s.id) ? `<img src="${logoSrc(s.id)}" alt="" loading="lazy">` : "") +
@@ -1018,8 +1036,9 @@ const gameStrip = (p) => {
       (live && s.rz ? `<span class="pg-rz">RZ</span>` : "") +
     `</span>`;
   return `<div class="pgame${live ? " live" : ""}">` +
-    team(g.away) + `<span class="pg-at">${started ? "@" : "at"}</span>` + team(g.home) +
+    team(view(g.away)) + `<span class="pg-at">${started ? "@" : "at"}</span>` + team(view(g.home)) +
     `<span class="pg-state">${live ? `<span class="dot"></span>` : ""}${esc(state)}</span>` +
+    (spot ? `<span class="pg-spot">${esc(spot)}</span>` : "") +
   `</div>`;
 };
 
@@ -1617,6 +1636,34 @@ const statsEvery = () => (gamesOn() ? 30e3 : 60e3);   // every poll while games 
 const applyStats = () => {
   for (const t of rosters) for (const p of [...t.starters, ...t.bench]) p.st = (p.sid && statsBySid[p.sid]) || {};
 };
+// Re-render from beside the poll once the last render's flash and rolls
+// (.9s) have played out, not over them. A poll in flight picks the new
+// data up itself.
+function rerenderSoon() {
+  const wait = Math.max(0, 1000 - (performance.now() - renderedAt));
+  setTimeout(() => { if (!polling && teams.length) { derive(); render(); } }, wait);
+}
+
+// The live game situations (ESPN, through the proxy's `situation` type,
+// held 15s there): who has the ball, the ball spot, down and distance and
+// the red zone, for every game on. Fetched with every poll while games
+// are on, beside it, never in its path; a failure keeps the last one, and
+// after two minutes without a fresh one (sitOf) the page falls back to
+// MFL's schedule flags. Context only: nothing here touches a score.
+let situationPending = null;
+function fetchSituation() {
+  if (situationPending) return;
+  situationPending = api("situation", {}, 6000)
+    .then((r) => {
+      if (!r.ok) throw new Error(r.error);
+      situations = new Map(Object.entries(r.data.games || {}));
+      situationAt = Date.now();
+      if (!polling && teams.length) rerenderSoon();
+    })
+    .catch((e) => console.warn("game situations unavailable, keeping the last ones:", e))
+    .finally(() => { situationPending = null; });
+}
+
 function fetchStats(week) {
   if (statsPending) return;
   statsPending = api("stats", { W: String(week) }, STATS_TIMEOUT_MS)
@@ -1628,11 +1675,7 @@ function fetchStats(week) {
       statsFailed = false;
       confirmTouchdowns(first);
       applyStats();
-      // A poll in flight picks them up itself. Otherwise re-render once the
-      // last render's flash and rolls (.9s) have played out, not over them:
-      // the lines land within a second of the poll and used to cut both short.
-      const wait = Math.max(0, 1000 - (performance.now() - renderedAt));
-      setTimeout(() => { if (!polling && teams.length) { derive(); render(); } }, wait);
+      if (!polling && teams.length) rerenderSoon();
     })
     .catch((e) => { statsFailed = true; console.warn("stat lines unavailable, keeping the last ones:", e); })
     .finally(() => { statsPending = null; });
@@ -1806,6 +1849,7 @@ async function refreshLive(first = false) {
   await loadPlayoffs();
   await loadSeason();
   if (first || Date.now() - statsAt > statsEvery()) fetchStats(WEEK);   // beside the poll, not in it
+  if (first || gamesOn()) fetchSituation();                              // likewise
   const franchises = toArray(L.franchise);
   await ensurePlayers([...rosterIds.values()].flat().concat(franchises.flatMap((f) => toArray(f.players?.player).map((p) => p.id))));
 

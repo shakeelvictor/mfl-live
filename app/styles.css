@@ -984,6 +984,8 @@ button.hero { cursor: pointer; }
 .pg-at { font-weight: 600; }
 .pg-state { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
 .pgame.live .pg-state { color: var(--accent); }
+/* The ball spot from the live situation ("2nd & 7 at SEA 24"): its own line under the strip. */
+.pg-spot { flex-basis: 100%; font: 600 11px/1 var(--font-data); color: var(--text-muted); letter-spacing: .02em; }
 .pgame + .ptiles, .pgame + .pnone { padding-top: 8px; }
 
 .ptiles {
