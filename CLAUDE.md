@@ -728,6 +728,23 @@ last lines stay, never a missing score: MFL's points are untouched. The drift fi
 stay context: a line beside MFL's number, never feeding it. Headshots are
 static files off the live path; a headshot cannot contradict a score.
 
+## The Sleeper-computed number beside MFL's (2026-09-10)
+
+Shakeel wants to see, live, how far a Sleeper-computed score sits from
+MFL's before deciding whether an unofficial live estimate can front MFL's
+~200s cycle (see the spike README's replay note and the memory
+"mfl-live-estimator-plan"). So `app/scoring.js` (a copy of
+`fantasy-draft-assistant/public/scoring.js`, the fflr rules over
+Sleeper's stat vocabulary, plus `scoreLine()`: exact mode, special-teams
+tackles folded into the solo count, the measured better match) scores
+each player's line as it stands, and the page shows it as **"S 12.40"**
+under the player's points, a chip after the record on the board row, a
+line in the hero and on the team page (`estOf`, `estTeam`, `t.est`).
+Once a player's game is final and the two differ, the number goes warm
+(`.pest.off`): that is the residue the drift finding is about. **It
+never feeds a score, a rank, a record or a card.** The proxy's
+`STAT_KEYS` were widened to every key the engine reads.
+
 ## Licensing a faster stat feed does not help
 
 Asked and answered (Sep 2026). Cheap live NFL stat feeds do exist -- Tank01

@@ -141,7 +141,8 @@ async function seasonScores() {
    the keys a stat line is built from: ~10KB, held a minute. */
 
 const STAT_KEYS = ['pass_cmp', 'pass_att', 'pass_yd', 'pass_td', 'pass_int', 'rush_att', 'rush_yd', 'rush_td',
-  'rec', 'rec_tgt', 'rec_yd', 'rec_td', 'fum_lost', 'fgm', 'fga', 'xpm', 'xpa',
+  'rec', 'rec_tgt', 'rec_yd', 'rec_td', 'fum_lost', 'fum_rec_td', 'fgm', 'fga', 'xpm', 'xpa',
+  'pass_2pt', 'rush_2pt', 'rec_2pt', 'fgm_0_19', 'fgm_20_29', 'fgm_30_39', 'fgm_40_49', 'fgm_50_59', 'fgm_50p', 'kr_yd', 'pr_yd',   // every key app/scoring.js reads (2026-09-10)
   'idp_tkl', 'idp_tkl_solo', 'idp_tkl_ast', 'idp_sack', 'idp_int', 'idp_ff', 'idp_fum_rec', 'idp_pass_def', 'idp_tkl_loss',
   'idp_blk_kick', 'idp_safe', 'idp_def_td', 'st_tkl_solo', 'st_ff', 'st_fum_rec', 'st_td', 'kr_td', 'pr_td'];   // special teams counts toward IDP in MFL; every touchdown key confirms a card
 

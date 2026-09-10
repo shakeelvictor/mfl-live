@@ -116,10 +116,21 @@ let gapTiers = [];   // gapTiers[i] is that gap's tier: critical / live / settle
 // In a playoff round only the franchises playing it are ranked; the seed
 // chip replaces the week's record, and a tie goes to the higher seed (the
 // same order app/playoffs.js folds by, so the cut line is the fold's).
+// The Sleeper-computed number (2026-09-10): the player's Sleeper line, as
+// it stands, under the league's rules (app/scoring.js). Shown beside MFL's
+// number on every surface so the two feeds can be compared through a
+// game; it never feeds a score, a rank or a record. null while the player
+// has no line at all. A team's is the sum over its starters.
+const estOf = (p) => (p.st && Object.keys(p.st).length ? r2(Scoring.scoreLine(p.st)) : null);
+const estTeam = (starters) => { const e = starters.map(estOf); return e.some((x) => x != null) ? r2(e.reduce((a, x) => a + (x || 0), 0)) : null; };
+// Final and not MFL's number: the two feeds disagree on this player.
+const estOff = (p, est) => est != null && secsOf(p) === 0 && Math.abs(est - p.pts) >= 0.05;
+
 function derive() {
   const withLive = (t) => ({
     ...t,
     live: r2(t.pts + (teamBump[t.id] || 0)),
+    est: phase === "live" ? estTeam(t.starters) : null,
     toPlay: slate.sunFinal ? 0 : (FIXTURE ? (YET_TO_PLAY[t.team] ?? 0) : (t.toPlay ?? 0)),
     onNow: t.starters.some(isLive),
     seed: post ? post.seedOf.get(t.id) : null,
@@ -138,6 +149,7 @@ function derive() {
         id: s.id, team: s.name, icon: null, isSide: true, members,
         pts: r2(members.reduce((a, t) => a + t.pts, 0)),
         live: r2(members.reduce((a, t) => a + t.live, 0)),
+        est: members.some((t) => t.est != null) ? r2(members.reduce((a, t) => a + (t.est || 0), 0)) : null,
         toPlay: members.reduce((a, t) => a + t.toPlay, 0),
         onNow: members.some((t) => t.onNow),
         starters: members.flatMap((t) => t.starters.map((p, k) => ({ ...p, key: playerKey(t, p, k), from: t.team }))),
@@ -438,6 +450,7 @@ function renderHero(changed, takeover) {
       `<div class="hero-id">` +
         `<span class="hero-name">${franchiseIcon(lead, "hero-icon")}${esc(lead.team)}</span>` +
         `<span class="hero-rec">${post ? `#${lead.seed} seed &middot; ${lead.season}` : `${lead.record} all-play`}</span>` +
+        (lead.est != null ? `<span class="hero-est" title="Sleeper's lines under the league's rules; MFL's number is the score">Sleeper <b>${fmt(lead.est)}</b></span>` : "") +
       `</div>` +
       `<span class="hero-pts${fl(changed, lead.id)}" data-tween="pts:${lead.id}" data-delta>${fmt(lead.live)}</span>` +
     `</div>` +
@@ -551,7 +564,7 @@ function renderRows(changed) {
         `<span class="who">` +
           `<span class="name">${esc(t.team)}</span>` +
           `<span class="sub">` +
-            `<span class="rec">${t.record}</span>` + fate +
+            `<span class="rec">${t.record}</span>` + (t.est != null ? `<span class="est" title="Sleeper's lines under the league's rules; MFL's number is the score">S <b>${fmt(t.est)}</b></span>` : "") + fate +
             `<span class="status${t.onNow ? " on" : ""}">` +
               (t.onNow ? `<span class="dot"></span>` : "") + statusOf(t) +
             `</span>` +
@@ -1106,6 +1119,7 @@ const playerRow = (p, bench, top = false, enter = -1) => {
     `</span>` +
     `<span class="pright">` +
       `<span class="ppts${p.pts === 0 ? " zero" : ""}${p.flash ? " flash" : ""}"${p.key ? ` data-tween="p:${p.key}" data-delta` : ""}>${phase === "preseason" ? "&mdash;" : fmt(p.pts)}</span>` +
+      (phase === "live" && estOf(p) != null ? `<span class="pest${estOff(p, estOf(p)) ? " off" : ""}" title="Sleeper's line under the league's rules; MFL's number is the score">S <b>${fmt(estOf(p))}</b></span>` : "") +
       `<span class="pchev" aria-hidden="true"></span>` +
     `</span>` +
     detailHtml(p) +
@@ -1156,6 +1170,7 @@ function renderTeam(changed = new Set()) {
     : t.isSide ? `${t.members.length} managers \u00b7 one super lineup`
     : t.side ? `${t.starters.length} in the ${t.side.name} lineup`
     : `${t.record} all-play`;
+  if (!pre && t.est != null) document.getElementById("team-rec").textContent += ` \u00b7 Sleeper ${fmt(t.est)}`;
   const ptsEl = document.getElementById("team-pts");
   ptsEl.textContent = pre || t.bye ? "\u2014" : fmt(t.live);
   ptsEl.dataset.tween = `pts:${t.id}`;
