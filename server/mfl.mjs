@@ -92,7 +92,7 @@ async function sleeperByRotowire() {
 
 const nm = (s) => { const [l, f] = String(s ?? '').split(',').map((x) => x.trim()); return f ? `${f} ${l}` : l; };
 
-async function playersMap(params = {}) {
+export async function playersMap(params = {}) {   // exported for spike/log-cadence.mjs (the MFL -> Sleeper join)
   let ids;
   if (params.PLAYERS) {
     ids = [...new Set(String(params.PLAYERS).split(',').map((s) => s.trim()).filter((s) => /^\d+$/.test(s)))];

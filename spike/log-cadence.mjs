@@ -29,6 +29,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { canonical, toArray } from './canonical.mjs';
+import { playersMap } from '../server/mfl.mjs';   // the MFL -> Sleeper join the proxy uses, so the replay needs no network
 
 const LEAGUE = '19716';
 
@@ -134,6 +135,26 @@ async function fetchMfl() {
   return { status: res.status, ms, bytes: body.length, body };
 }
 
+// The league's players, MFL id -> { sid, pos, tm, n }, for cutting Sleeper's
+// lines to the roster and for the offline replay (2026-09-09: the log now
+// carries every poll's per-player MFL points and, whenever they move, the
+// rostered players' full Sleeper lines, so an estimator -- MFL's last
+// official points plus what Sleeper's line has added since -- can be
+// replayed against a real day before it is trusted live). Refreshed hourly
+// for waiver moves; written to the log as its own row each time.
+let leagueMap = { at: 0, byMfl: null, sids: null };
+async function refreshLeagueMap() {
+  if (leagueMap.byMfl && Date.now() - leagueMap.at < 3600e3) return leagueMap;
+  const pm = await playersMap();
+  if (pm.error) throw new Error(`playersMap: ${pm.error}`);
+  const byMfl = pm.data.players;
+  const sids = new Map();   // sid -> mfl id
+  for (const [id, info] of Object.entries(byMfl)) if (info.sid) sids.set(String(info.sid), id);
+  leagueMap = { at: Date.now(), byMfl, sids };
+  record({ at: new Date().toISOString(), event: 'playersMap', players: byMfl });
+  return leagueMap;
+}
+
 // Sleeper is polled at a lower cadence purely to measure PROVIDER LAG: when a
 // scoring event lands in each feed. It is not a scoring source — that question
 // is already settled (recomputing from Sleeper produced wrong all-play records).
@@ -154,12 +175,22 @@ async function fetchSleeperHash() {
     const idp = Number(s.pts_idp ?? 0);
     if (pts || idp) rows.push(`${pid}:${pts}:${idp}`);
   }
+  // The league's own players, every key Sleeper gives (not the proxy's cut),
+  // hashed on their own so a line is stored only when one of them moved.
+  const lines = {};
+  const map = leagueMap.sids;
+  if (map) for (const [sid, st] of Object.entries(d)) if (map.has(sid) && st && typeof st === 'object') lines[sid] = st;
+  const rosteredHash = crypto.createHash('sha1').update(JSON.stringify(Object.keys(lines).sort().map((k) => [k, lines[k]]))).digest('hex').slice(0, 12);
   return {
     status: res.status,
     hash: crypto.createHash('sha1').update(rows.sort().join(',')).digest('hex').slice(0, 12),
     scoringPlayers: rows.length,
+    rosteredHash,
+    rosteredPlayers: Object.keys(lines).length,
+    lines,
   };
 }
+let prevRosteredHash = null;
 
 let sleeperWeekCache = null;
 async function currentSleeperWeek() {
@@ -269,6 +300,9 @@ while (Date.now() < deadline && !stopping) {
         yetToPlay: c.yetToPlay,
         franchises: c.franchiseCount,
         scores: c.byFranchise,
+        // Every player's MFL points, for the replay; with the first poll and
+        // whenever any score moved (the rows between repeat the last one).
+        ...(changed || prev === null ? { players: Object.fromEntries(toArray(parsed.liveScoring?.franchise).flatMap((f) => toArray(f.players?.player).map((p) => [p.id, Number(p.score) || 0]))) } : {}),
         updatedStatsPlayers: us.populated,
         ...(us.populated ? { updatedStatsSamples: us.samples } : {}),
       };
@@ -300,8 +334,15 @@ while (Date.now() < deadline && !stopping) {
   // Sleeper comparison, at a lower cadence.
   if (!NO_SLEEPER && polls % SLEEPER_EVERY === 0) {
     try {
+      await refreshLeagueMap().catch((err) => console.log(`${at}  playersMap failed: ${err.message}`));
       const s = await fetchSleeperHash();
-      if (s) row.sleeper = s;
+      if (s) {
+        // The lines ride along only when a rostered player's line moved.
+        const moved = s.rosteredHash !== prevRosteredHash;
+        prevRosteredHash = s.rosteredHash;
+        const { lines, ...rest } = s;
+        row.sleeper = moved ? { ...rest, linesChanged: true, lines } : { ...rest, linesChanged: false };
+      }
     } catch (err) {
       row.sleeper = { error: String(err?.message || err) };
     }

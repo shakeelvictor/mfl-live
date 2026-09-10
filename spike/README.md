@@ -82,6 +82,30 @@ Then:
 node spike/analyze.mjs spike/data/<newest>.jsonl
 ```
 
+## What the log holds for the estimator replay (2026-09-09)
+
+The Week 1 opener measured the export refreshing on a fixed ~200s cycle
+(median gap 213s over 150 minutes, zero 429s). The next question is
+whether an **unofficial live estimate** can sit in front of it: MFL's last
+official points for a player plus what Sleeper's line has added since,
+run through the league's rules, re-anchored every time a new MFL snapshot
+lands. So the logger now also writes:
+
+- a `playersMap` row at start and hourly (MFL id -> Sleeper id, position,
+  team, name), so the replay needs no network;
+- `players` (every player's MFL points) on the first poll and whenever a
+  score moved;
+- the rostered players' **full** Sleeper lines under `sleeper.lines`
+  whenever one of them moved (`sleeper.linesChanged`), hashed on their
+  own as `rosteredHash`.
+
+Replaying a day from that answers, offline, how often the estimated delta
+would have been wrong, by how much and for which positions, before the
+estimate is shown to anyone. Scheduled on this Mac's crontab (dated
+entries, `crontab -l`) for the Thu Sep 10 game, the whole of Sun Sep 13
+and Mon Sep 14 night; the Mac must be awake (`caffeinate -i` holds off
+idle sleep, not a closed lid).
+
 ## The side question it also answers
 
 Every player in `liveScoring` carries an `updatedStats` field. It is an empty
