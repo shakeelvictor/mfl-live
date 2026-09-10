@@ -368,6 +368,13 @@ element and scores are second.
   radius, shadow dropped); the rank circle takes the hotter of its two gaps.
 - **Position chips** use `--pos-qb/rb/wr/te/k/lb`; every defensive position
   maps to `--pos-lb`, matching the league's "3 IDP, any combination" rule.
+- **A franchise's status names who is on the field** (2026-09-09): its
+  live starters by last name in lineup order, two of them and a count for
+  the rest, "Mahomes, Kelce +3 · on now" (`onNowNames`, `lastName` drops
+  Jr./III suffixes); the red-zone pill takes the place of "on now" as
+  before. "11 to play · on now" said nothing about which starters were
+  playing. "N to play" still shows while none of them is on, and "all
+  played" once every game is.
 - **Roster rows** are grouped by position in lineup order (QB, RB, WR,
   TE, K, IDP), and **within a position the order is fixed for the week**
   (name, then id; 2026-09-08). It used to be points, so two backs swapped
@@ -483,7 +490,17 @@ element and scores are second.
   shared across hero, row and team page so a value carries over when it
   changes surface), team and player scores pop a floating delta chip, rows
   that change rank slide to their new slot (FLIP on the row elements, keyed
-  by franchise id), and clusters re-fuse. The "Simulate live scoring" toggle under the
+  by franchise id), and clusters re-fuse. **A roll survives a re-render**
+  (2026-09-09, seen on the Week 1 opener): `snapshotShown` records what
+  each key shows *and* the value it last settled on (a roll in flight
+  keeps its target in `tweens`), so a render mid-roll, which is what the
+  stat lines landing beside the poll did, no longer reads the half-rolled
+  number as a change and rolls it again to the same total with a chip
+  for the remainder. An unchanged key with a roll in flight carries on in
+  the rebuilt element on its own curve; a changed one chips the delta from
+  the settled value. One frame loop per key drives every surface showing
+  it. The stats re-render itself now waits out the last render's flash
+  and rolls (`renderedAt`, 1s) instead of landing over them. The "Simulate live scoring" toggle under the
   footnote exercises this by bumping one starter at a time -- it is a mockup
   affordance, not a feed, and it keeps team total == starters sum.
 - **Lead change** fires a takeover on the hero (mint strobe, lightning

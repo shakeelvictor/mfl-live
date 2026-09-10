@@ -177,6 +177,19 @@ const tier = (g) => (g < CRITICAL ? "critical" : g < LIVE ? "live" : "settled");
 const hot = (g) => g !== undefined && tier(g) !== "settled";
 const TIER_LABEL = { critical: "Coin flip", live: "Live", settled: "Settled" };
 
+// Who is on the field for a franchise: its live starters by last name, in
+// lineup order, two of them and a count for the rest ("Mahomes, Kelce +3").
+// Replaced "N to play · on now" on 2026-09-09: the count said nothing about
+// which of the starters were playing.
+const lastName = (n) => {
+  const w = String(n).trim().split(/\s+/).filter((x) => !/^(jr\.?|sr\.?|ii|iii|iv|v)$/i.test(x));
+  return w[w.length - 1] || String(n);
+};
+const onNowNames = (t) => {
+  const live = t.starters.filter(isLive).sort(byLineup);
+  return live.slice(0, 2).map((p) => esc(lastName(p.n))).join(", ") + (live.length > 2 ? ` +${live.length - 2}` : "");
+};
+
 const statusOf = (t) => phase === "preseason"
   ? `${t.bench.length} on roster`
   : t.bye
@@ -187,7 +200,9 @@ const statusOf = (t) => phase === "preseason"
     ? (t.side ? "none in the lineup" : "no lineup set")
   : t.toPlay === 0
     ? "all played"
-    : `${t.toPlay} to play${rzCount(t) ? ` &middot; <span class="rzn" title="${rzCount(t)} in the red zone">${rzCount(t)} RZ</span>` : t.onNow ? " &middot; on now" : ""}`;
+  : t.onNow
+    ? `${onNowNames(t)}${rzCount(t) ? ` &middot; <span class="rzn" title="${rzCount(t)} in the red zone">${rzCount(t)} RZ</span>` : " &middot; on now"}`
+    : `${t.toPlay} to play`;
 
 const fmtDay = (d) => d ? d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) : "";
 const fmtTime = (d) => d ? d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
@@ -594,7 +609,10 @@ function renderRows(changed) {
    carries over when it changes surface (a takeover moves the ex-leader
    from the hero into the list). */
 
-const tweens = new Map();   // key -> rAF handle
+// key -> { from, to, t0, nodes: [Text], handle }: one loop per key drives
+// every surface showing it (a franchise's score in the hero, its row and
+// the team page are all "pts:<id>").
+const tweens = new Map();
 const TWEEN_MS = 700;
 
 // Only surfaces that are actually showing; a closed team page holds
@@ -604,45 +622,74 @@ const liveNumberEls = () => [
   ...(open !== null ? page.querySelectorAll("[data-tween]") : []),
 ];
 
+// What each key shows right now, and the value it last settled on. Mid-roll
+// the two differ: the roll's target is the settled value. So a re-render
+// while a roll is in flight (the stat lines landing beside the poll) does
+// not read the half-rolled number as a change and roll it again, with a
+// chip for the remainder, up to the same total (2026-09-09).
 function snapshotShown() {
   const shown = new Map();
-  for (const el of liveNumberEls()) shown.set(el.dataset.tween, parseFloat(el.textContent));
+  for (const el of liveNumberEls()) {
+    const key = el.dataset.tween, now = parseFloat(el.textContent);
+    const run = tweens.get(key);
+    shown.set(key, { now, settled: run ? run.to : now });
+  }
   return shown;
 }
 
+const easeOut = (p) => 1 - Math.pow(1 - Math.min(1, Math.max(0, p)), 3);
+const tweenValue = (t, now) => t.from + (t.to - t.from) * easeOut((now - t.t0) / TWEEN_MS);
+
+// Bind a text node to the key's roll, starting one if there is none.
+function joinTween(key, text, from, to, t0) {
+  let t = tweens.get(key);
+  if (!t) { t = { from, to, t0, nodes: [], handle: 0 }; tweens.set(key, t); }
+  t.nodes.push(text);
+  text.nodeValue = fmt(tweenValue(t, performance.now()));
+}
+
 function rollNumbers(shown) {
-  for (const h of tweens.values()) cancelAnimationFrame(h);
+  const prior = new Map(tweens);
+  for (const t of prior.values()) cancelAnimationFrame(t.handle);
   tweens.clear();
   for (const el of liveNumberEls()) {
     const key = el.dataset.tween;
-    const from = shown.get(key), to = parseFloat(el.textContent);
-    if (from === undefined || !Number.isFinite(from) || Math.abs(to - from) < 0.005) continue;
-
+    const s = shown.get(key), to = parseFloat(el.textContent);
+    if (!s || !Number.isFinite(s.now) || !Number.isFinite(to)) continue;
+    const text = el.firstChild;   // the number's text node; a chip sits after it
+    if (Math.abs(to - s.settled) < 0.005) {
+      // Unchanged. A roll still in flight carries on in the rebuilt element
+      // from where it was, on its own curve, and pops no chip.
+      const run = prior.get(key);
+      if (run && Math.abs(to - s.now) >= 0.005) joinTween(key, text, run.from, to, run.t0);
+      continue;
+    }
     if ("delta" in el.dataset) {
-      const d = r2(to - from);
+      const d = r2(to - s.settled);
       const chip = document.createElement("span");
       chip.className = "delta" + (d < 0 ? " neg" : "");
-      chip.textContent = (d > 0 ? "+" : "\u2212") + fmt(Math.abs(d));
+      chip.textContent = (d > 0 ? "+" : "−") + fmt(Math.abs(d));
       chip.addEventListener("animationend", () => chip.remove(), { once: true });
       el.appendChild(chip);
     }
     if (reducedMotion.matches) continue;
-
-    const text = el.firstChild;   // the number's text node; the chip sits after it
-    const t0 = performance.now();
-    const step = (now) => {
-      const p = Math.min(1, (now - t0) / TWEEN_MS);
-      const e = 1 - Math.pow(1 - p, 3);
-      text.nodeValue = fmt(from + (to - from) * e);
-      if (p < 1) tweens.set(key, requestAnimationFrame(step));
+    joinTween(key, text, s.now, to, performance.now());
+  }
+  for (const [key, t] of tweens) {
+    const frame = (now) => {
+      if (tweens.get(key) !== t) return;   // superseded by a later render
+      const v = fmt(tweenValue(t, now));
+      for (const n of t.nodes) n.nodeValue = v;
+      if (now - t.t0 < TWEEN_MS) t.handle = requestAnimationFrame(frame);
       else tweens.delete(key);
     };
-    text.nodeValue = fmt(from);
-    tweens.set(key, requestAnimationFrame(step));
+    t.handle = requestAnimationFrame(frame);
   }
 }
 
+let renderedAt = 0;
 function render(changed = new Set()) {
+  renderedAt = performance.now();
   renderChrome();
   const shown = snapshotShown();
   // Pre-season rows are alphabetical, so nobody "leads": the first live
@@ -1577,7 +1624,11 @@ function fetchStats(week) {
       statsFailed = false;
       confirmTouchdowns(first);
       applyStats();
-      if (!polling && teams.length) { derive(); render(); }   // a poll in flight picks them up itself
+      // A poll in flight picks them up itself. Otherwise re-render once the
+      // last render's flash and rolls (.9s) have played out, not over them:
+      // the lines land within a second of the poll and used to cut both short.
+      const wait = Math.max(0, 1000 - (performance.now() - renderedAt));
+      setTimeout(() => { if (!polling && teams.length) { derive(); render(); } }, wait);
     })
     .catch((e) => { statsFailed = true; console.warn("stat lines unavailable, keeping the last ones:", e); })
     .finally(() => { statsPending = null; });
