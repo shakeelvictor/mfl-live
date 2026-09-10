@@ -182,7 +182,7 @@ async function stats(params) {
    side in possession, both during halftime), so the flags cannot say who
    is in the red zone now. ESPN's public scoreboard carries the live
    situation for every game: who has the ball, the ball spot, down and
-   distance and a red-zone flag computed on the right side of the field.
+   distance and the ball spot, from which the red zone follows (see below).
    Context beside MFL's numbers, never a score: the page reads possession
    and the red zone from here and falls back to MFL's flags without it.
    ~5s timeout; the page keeps its last situation for a while. */
@@ -204,6 +204,15 @@ async function situation() {
     if (sides.length !== 2) continue;
     const st = c.status?.type || {}, sit = c.situation || {};
     const possSide = sit.possession ? sides.find((x) => x.espnId === String(sit.possession)) : null;
+    // The red zone from the ball spot, not ESPN's isRedZone: that flag is
+    // also up during a kickoff after a score, with nobody in possession
+    // (seen 2026-09-09). yardLine is measured from the HOME team's goal
+    // line (0 there, 100 at the visitors'; verified the same night: the
+    // visitors at the home 32 read 32, the home side at its own 42 read
+    // 42), so the home offense is in the red zone at 80 and beyond, the
+    // visitors at 20 and under. No possession, no red zone.
+    const yl = Number.isFinite(Number(sit.yardLine)) ? Number(sit.yardLine) : null;
+    const rz = !possSide ? false : yl != null ? (possSide.home ? yl >= 80 : yl <= 20) : sit.isRedZone === true;
     const g = {
       away: sides.find((x) => !x.home)?.code, home: sides.find((x) => x.home)?.code,
       state: st.state || null,            // pre | in | post
@@ -211,7 +220,8 @@ async function situation() {
       period: c.status?.period ?? null, clock: c.status?.displayClock || null,
       scores: Object.fromEntries(sides.map((x) => [x.code, x.score])),
       poss: possSide?.code || null,
-      rz: sit.isRedZone === true,
+      rz,
+      rzFlag: sit.isRedZone === true,   // ESPN's own flag, for reference
       yardLine: sit.yardLine ?? null,     // ESPN's absolute spot, 0-100
       spot: sit.possessionText || null,   // "SEA 24"
       dd: sit.shortDownDistanceText || sit.downDistanceText || null,

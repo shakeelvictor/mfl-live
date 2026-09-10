@@ -440,8 +440,12 @@ element and scores are second.
   ESPN's abbreviations mapped to MFL codes in `ESPN_TO_MFL`) into one
   record per game keyed by both teams: state, period and clock, NFL
   scores, who has the ball, the ball spot ("SEA 24"), down and
-  distance, a red-zone flag computed on the right side of the field, and
-  the last play. `fetchSituation` asks with every poll while games are
+  distance, the last play, and a red-zone flag the proxy derives from
+  the spot (ESPN's own `isRedZone` is also up during the kickoff after a
+  score, with nobody in possession): `yardLine` is yards from the home
+  team's goal line, verified that night, so the home offense is in at 80
+  and beyond, the visitors at 20 and under, and no possession means no
+  red zone. `fetchSituation` asks with every poll while games are
   on, beside the poll like the stat lines; `sitOf(tm)` hands it out
   while under two minutes old, after which the page falls back to MFL's
   flags. `inRedZone` is then "my team has the ball and ESPN says red
