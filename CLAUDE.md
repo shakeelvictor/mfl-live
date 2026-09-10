@@ -732,6 +732,20 @@ last lines stay, never a missing score: MFL's points are untouched. The drift fi
 stay context: a line beside MFL's number, never feeding it. Headshots are
 static files off the live path; a headshot cannot contradict a score.
 
+## TEST PERIOD: Sleeper's number is in front (2026-09-10)
+
+Shakeel's call for the test games (Thu Sep 10, Sun Sep 13, Mon Sep 14):
+**`PRIMARY = "sleeper"`** in `app.js` puts the Sleeper-computed points in
+front. `ptsOf(p)` is the player's number on the page (Sleeper's when he
+has a line, MFL's otherwise), a franchise's `live` is the sum of those,
+so ranks, gaps, records, the hero, the rolls and the spotlight follow the
+faster feed, and MFL's official points ride along as the **"M"**
+secondary (`t.official`, `p.mfl`; the subtitle says "Sleeper live ·
+MFL updated <time>"). `?pts=mfl` restores the settled design for a
+side-by-side look. The "What is already settled" section still holds
+for the official number: this is a test of how the app feels, and the
+league knows the numbers are unofficial until MFL's land.
+
 ## The Sleeper-computed number beside MFL's (2026-09-10)
 
 Shakeel wants to see, live, how far a Sleeper-computed score sits from

@@ -7,6 +7,14 @@
    it; the bundle sets window.MFL_FIXTURE. */
 
 const QUERY = new URLSearchParams(location.search);
+// TEST PERIOD (2026-09-10, Shakeel's call): which feed's number is the
+// number on the page. "sleeper" puts the Sleeper-computed points (the
+// line under the league's rules, app/scoring.js, within a minute of the
+// play) in front: ranks, gaps, records, the hero, the rolls all follow
+// it, and MFL's official points ride along as the "M" secondary. "mfl" is
+// the settled design (MFL's points are the points, Sleeper's the "S"
+// secondary). ?pts=mfl flips it back for a side-by-side look.
+const PRIMARY = QUERY.get("pts") === "mfl" ? "mfl" : "sleeper";
 let FIXTURE = QUERY.get("source") === "fixture" || window.MFL_FIXTURE === true;
 
 let rosters = [];              // [{ id, team, pts, toPlay, starters, bench }]
@@ -124,12 +132,22 @@ let gapTiers = [];   // gapTiers[i] is that gap's tier: critical / live / settle
 const estOf = (p) => (p.st && Object.keys(p.st).length ? r2(Scoring.scoreLine(p.st)) : null);
 const estTeam = (starters) => { const e = starters.map(estOf); return e.some((x) => x != null) ? r2(e.reduce((a, x) => a + (x || 0), 0)) : null; };
 // Final and not MFL's number: the two feeds disagree on this player.
-const estOff = (p, est) => est != null && secsOf(p) === 0 && Math.abs(est - p.pts) >= 0.05;
+const estOff = (p, est) => est != null && secsOf(p) === 0 && Math.abs(est - (p.mfl ?? p.pts)) >= 0.05;
+// The player's number on the page: Sleeper's when it is the primary and
+// the player has a line, MFL's otherwise (no line yet, no Sleeper join).
+const ptsOf = (p) => (PRIMARY === "sleeper" && estOf(p) != null ? estOf(p) : p.pts);
+// The other feed's number, for the secondary beside it; null when there is
+// nothing to compare (no line).
+const secondaryOf = (p) => (estOf(p) == null ? null : PRIMARY === "sleeper" ? (p.mfl ?? p.pts) : estOf(p));
+const SECONDARY_TAG = PRIMARY === "sleeper" ? "M" : "S";
+const SECONDARY_NAME = PRIMARY === "sleeper" ? "MFL" : "Sleeper";
+const SECONDARY_TITLE = PRIMARY === "sleeper" ? "MFL's official points, on its own cycle" : "Sleeper's line under the league's rules; MFL's number is the score";
 
 function derive() {
   const withLive = (t) => ({
     ...t,
-    live: r2(t.pts + (teamBump[t.id] || 0)),
+    live: r2((PRIMARY === "sleeper" && phase === "live" ? t.starters.reduce((a, p) => a + ptsOf(p), 0) : t.pts) + (teamBump[t.id] || 0)),
+    official: t.pts,   // MFL's franchise total, whichever feed is in front
     est: phase === "live" ? estTeam(t.starters) : null,
     toPlay: slate.sunFinal ? 0 : (FIXTURE ? (YET_TO_PLAY[t.team] ?? 0) : (t.toPlay ?? 0)),
     onNow: t.starters.some(isLive),
@@ -150,6 +168,7 @@ function derive() {
         pts: r2(members.reduce((a, t) => a + t.pts, 0)),
         live: r2(members.reduce((a, t) => a + t.live, 0)),
         est: members.some((t) => t.est != null) ? r2(members.reduce((a, t) => a + (t.est || 0), 0)) : null,
+        official: r2(members.reduce((a, t) => a + t.pts, 0)),
         toPlay: members.reduce((a, t) => a + t.toPlay, 0),
         onNow: members.some((t) => t.onNow),
         starters: members.flatMap((t) => t.starters.map((p, k) => ({ ...p, key: playerKey(t, p, k), from: t.team }))),
@@ -279,7 +298,7 @@ function renderChrome() {
   const sub = document.getElementById("subhead");
   sub.hidden = phase === "preseason";
   const note = statsNote();
-  sub.innerHTML = (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head &middot; ` : post ? `${roundBlurb()} &middot; ` : "") + `MFL updated ${esc(UPDATED)}` + (CHECKED && CHECKED !== UPDATED ? ` &middot; checked ${esc(CHECKED)}` : "") +
+  sub.innerHTML = (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head &middot; ` : post ? `${roundBlurb()} &middot; ` : "") + (PRIMARY === "sleeper" && phase === "live" ? "Sleeper live &middot; " : "") + `MFL updated ${esc(UPDATED)}` + (CHECKED && CHECKED !== UPDATED ? ` &middot; checked ${esc(CHECKED)}` : "") +
     (note ? ` &middot; <span class="stale">${note}</span>` : "");
   document.body.classList.toggle("stats-stale", note !== "");
   const sizes = [...new Set(teams.map((t) => t.starters.length))];
@@ -450,7 +469,7 @@ function renderHero(changed, takeover) {
       `<div class="hero-id">` +
         `<span class="hero-name">${franchiseIcon(lead, "hero-icon")}${esc(lead.team)}</span>` +
         `<span class="hero-rec">${post ? `#${lead.seed} seed &middot; ${lead.season}` : `${lead.record} all-play`}</span>` +
-        (lead.est != null ? `<span class="hero-est" title="Sleeper's lines under the league's rules; MFL's number is the score">Sleeper <b>${fmt(lead.est)}</b></span>` : "") +
+        (lead.est != null ? `<span class="hero-est" title="${SECONDARY_TITLE}">${SECONDARY_NAME} <b>${fmt(PRIMARY === "sleeper" ? lead.official : lead.est)}</b></span>` : "") +
       `</div>` +
       `<span class="hero-pts${fl(changed, lead.id)}" data-tween="pts:${lead.id}" data-delta>${fmt(lead.live)}</span>` +
     `</div>` +
@@ -564,7 +583,7 @@ function renderRows(changed) {
         `<span class="who">` +
           `<span class="name">${esc(t.team)}</span>` +
           `<span class="sub">` +
-            `<span class="rec">${t.record}</span>` + (t.est != null ? `<span class="est" title="Sleeper's lines under the league's rules; MFL's number is the score">S <b>${fmt(t.est)}</b></span>` : "") + fate +
+            `<span class="rec">${t.record}</span>` + (t.est != null ? `<span class="est" title="${SECONDARY_TITLE}">${SECONDARY_TAG} <b>${fmt(PRIMARY === "sleeper" ? t.official : t.est)}</b></span>` : "") + fate +
             `<span class="status${t.onNow ? " on" : ""}">` +
               (t.onNow ? `<span class="dot"></span>` : "") + statusOf(t) +
             `</span>` +
@@ -1119,7 +1138,7 @@ const playerRow = (p, bench, top = false, enter = -1) => {
     `</span>` +
     `<span class="pright">` +
       `<span class="ppts${p.pts === 0 ? " zero" : ""}${p.flash ? " flash" : ""}"${p.key ? ` data-tween="p:${p.key}" data-delta` : ""}>${phase === "preseason" ? "&mdash;" : fmt(p.pts)}</span>` +
-      (phase === "live" && estOf(p) != null ? `<span class="pest${estOff(p, estOf(p)) ? " off" : ""}" title="Sleeper's line under the league's rules; MFL's number is the score">S <b>${fmt(estOf(p))}</b></span>` : "") +
+      (phase === "live" && secondaryOf(p) != null ? `<span class="pest${estOff(p, estOf(p)) ? " off" : ""}" title="${SECONDARY_TITLE}">${SECONDARY_TAG} <b>${fmt(secondaryOf(p))}</b></span>` : "") +
       `<span class="pchev" aria-hidden="true"></span>` +
     `</span>` +
     detailHtml(p) +
@@ -1142,12 +1161,12 @@ let lastFocus = null;
 const playerKey = (t, p, k, bench = false) => `${t.id}:${bench ? "b" : ""}${p.id ?? k}`;
 const liveStarters = (t, changed) => t.starters.map((p, k) => {
   const key = p.key || playerKey(t, p, k);
-  return { ...p, key, pts: r2(p.pts + (playerBump[key] || 0)), flash: changed.has(key), st: statsFor(t, k) };
+  return { ...p, key, mfl: p.pts, pts: r2(ptsOf(p) + (playerBump[key] || 0)), flash: changed.has(key), st: statsFor(t, k) };
 });
 
 const liveBench = (t, changed) => t.bench.map((p, k) => {
   const key = playerKey(t, p, k, true);
-  return { ...p, key, pts: r2(p.pts + (benchBump[key] || 0)), flash: changed.has(key), st: statsFor(t, k, true) };
+  return { ...p, key, mfl: p.pts, pts: r2(ptsOf(p) + (benchBump[key] || 0)), flash: changed.has(key), st: statsFor(t, k, true) };
 });
 
 function renderTeam(changed = new Set()) {
@@ -1170,7 +1189,7 @@ function renderTeam(changed = new Set()) {
     : t.isSide ? `${t.members.length} managers \u00b7 one super lineup`
     : t.side ? `${t.starters.length} in the ${t.side.name} lineup`
     : `${t.record} all-play`;
-  if (!pre && t.est != null) document.getElementById("team-rec").textContent += ` \u00b7 Sleeper ${fmt(t.est)}`;
+  if (!pre && t.est != null) document.getElementById("team-rec").textContent += ` \u00b7 ${SECONDARY_NAME} ${fmt(PRIMARY === "sleeper" ? t.official : t.est)}`;
   const ptsEl = document.getElementById("team-pts");
   ptsEl.textContent = pre || t.bye ? "\u2014" : fmt(t.live);
   ptsEl.dataset.tween = `pts:${t.id}`;
