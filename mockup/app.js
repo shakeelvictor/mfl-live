@@ -14,7 +14,7 @@ const YET_TO_PLAY = {
 
 // Gap urgency thresholds. The legend reads these same values.
 const CRITICAL = 0.25;  // a boundary this thin is a coin flip
-const LIVE = 2.5;       // still genuinely in play
+const LIVE = 3.0;       // close: within three points, the gap pulses (2026-09-09; was 2.5)
 const WITHIN = 3.0;     // the headline "within" band
 
 const r2 = (x) => Math.round(x * 100) / 100;
@@ -42,6 +42,7 @@ function bump(t, k, pts) {
 
 let teams = [];   // sorted, with rank/record/live
 let gaps = [];    // gaps[i] is the gap below row i (between rank i+1 and rank i+2)
+let gapTiers = [];   // gapTiers[i] is that gap's tier: critical / live / settled, or idle while neither side has begun
 
 /* ---------------- postseason (the demo bar's view tags) ----------------
    The same model as the app on main. In a playoff week `post` holds the
@@ -142,6 +143,7 @@ function derive() {
     }).sort((a, b) => b.live - a.live || a.team.localeCompare(b.team))
       .map((t, i) => ({ ...t, rank: i + 1, through: null }));
     gaps = teams.slice(0, -1).map((t, i) => r2(t.live - teams[i + 1].live));
+    gapTiers = gaps.map((g, i) => gapTier(g, teams[i], teams[i + 1]));
     n = teams.length; cutAt = -1; byeTeams = [];
     return;
   }
@@ -155,6 +157,7 @@ function derive() {
       through: post ? i < arr.length - post.round.drop : null,
     }));
   gaps = teams.slice(0, -1).map((t, i) => r2(t.live - teams[i + 1].live));
+    gapTiers = gaps.map((g, i) => gapTier(g, teams[i], teams[i + 1]));
   n = teams.length;
   cutAt = post ? n - post.round.drop - 1 : -1;
   byeTeams = post ? ROSTERS.filter((t) => post.bye.includes(t.id)).map(withLive).map((t) => ({ ...t, bye: true, record: `#${t.seed} seed` })) : [];
@@ -181,8 +184,16 @@ function pickLineup(pool) {
 let n = ROSTERS.length;
 const byId = (id) => teams.find((t) => t.id === id) || byeTeams.find((t) => t.id === id) || duelMembers.find((t) => t.id === id);
 const tier = (g) => (g < CRITICAL ? "critical" : g < LIVE ? "live" : "settled");
-const hot = (g) => g !== undefined && tier(g) !== "settled";
-const TIER_LABEL = { critical: "Coin flip", live: "Live", settled: "Settled" };
+// A gap between two franchises that have not begun (nothing scored, nobody
+// on the field, no starter kicked off) is idle, not a coin flip: early in
+// a week most of the board is 0.00 against 0.00, and a red "Coin flip"
+// under every one of them said nothing (2026-09-09). An idle gap keeps its
+// number in a plain divider and counts for no capsule; the rank circle
+// and fusing ignore it.
+const started = (t) => t.live !== 0 || t.onNow || (t.starters.length > 0 && t.toPlay < t.starters.length);
+const gapTier = (g, a, b) => (!started(a) && !started(b) ? "idle" : tier(g));
+const hot = (tr) => tr === "critical" || tr === "live";
+const TIER_LABEL = { critical: "Coin flip", live: "Close", settled: "Settled", idle: "Not started" };
 
 // Who is on the field for a franchise: its live starters by last name, in
 // lineup order, two of them and a count for the rest ("Mahomes, Kelce +3").
@@ -276,14 +287,14 @@ const fl = (changed, key) => (changed.has(key) ? " flash" : "");
 
 function renderCapsules() {
   const caps = document.getElementById("capsules");
-  const within = new Set(gaps.flatMap((g, i) => (g < WITHIN ? [i, i + 1] : []))).size;
-  const atStake = gaps.filter((g) => g < WITHIN).length;
+  const within = new Set(gaps.flatMap((g, i) => (gapTiers[i] !== "idle" && g < WITHIN ? [i, i + 1] : []))).size;
+  const atStake = gaps.filter((g, i) => gapTiers[i] !== "idle" && g < WITHIN).length;
   const startersLeft = teams.reduce((s, t) => s + t.toPlay, 0);
   const left = `<span class="capsule"><b class="accent">${startersLeft}</b>starters left</span>`;
   // Pakistan vs. the World: the margin, in the gap's tier.
   if (duel) {
     caps.innerHTML =
-      `<span class="capsule"><b class="${tier(gaps[0])}">${fmt(gaps[0])}</b>margin</span>` + left +
+      `<span class="capsule"><b class="${gapTiers[0]}">${fmt(gaps[0])}</b>margin</span>` + left +
       `<span class="capsule"><b class="gold">$${EXHIBITION.perHead}</b>a head</span>`;
     return;
   }
@@ -299,7 +310,7 @@ function renderCapsules() {
     const cut = gaps[cutAt];
     caps.innerHTML =
       `<span class="capsule"><b class="accent">${n - post.round.drop}</b>of ${n} advance</span>` +
-      (cut === undefined ? "" : `<span class="capsule"><b class="${tier(cut)}">${fmt(cut)}</b>cut line</span>`) + left;
+      (cut === undefined ? "" : `<span class="capsule"><b class="${gapTiers[cutAt]}">${fmt(cut)}</b>cut line</span>`) + left;
     return;
   }
   caps.innerHTML =
@@ -347,7 +358,7 @@ function fitNames() {
 addEventListener("resize", fitNames);
 
 function renderHero(changed, takeover) {
-  const lead = teams[0], chaser = teams[1], lt = tier(gaps[0]);
+  const lead = teams[0], chaser = teams[1], lt = gapTiers[0];
   // Playoffs: the round's leader; the Bowl's leader is the champion once
   // the games are done, and only the Bowl gets the gold (the rounds before
   // it pay nothing). Week 18: both sides face to face under their flags.
@@ -461,10 +472,10 @@ function renderRows(changed) {
   rowsEl.innerHTML = teams.map((t, i) => {
     if (i === 0 && !bowl) return "";
     const above = gaps[i - 1], below = gaps[i];
-    const fuseTop = i > 1 && hot(above), fuseBottom = hot(below);
+    const fuseTop = i > 1 && hot(gapTiers[i - 1]), fuseBottom = hot(gapTiers[i]);
 
     // Rank circle takes the hotter of the two gaps the row touches.
-    const tiers = [above, below].filter((g) => g !== undefined).map(tier);
+    const tiers = [gapTiers[i - 1], gapTiers[i]].filter(Boolean);
     const rankTier = tiers.includes("critical") ? "critical" : tiers.includes("live") ? "live" : "";
 
     // Playoffs: rows under the cut line are "out" and every row says which
@@ -496,16 +507,15 @@ function renderRows(changed) {
       `</button>`;
 
     if (below === undefined || bowl) return row;
-    const gt = tier(below);
+    const gt = gapTiers[i];
     const cut = i === cutAt;
     // A coin-flip pill flashes when either score beside it moved.
     const pillFlash = gt === "critical" && (changed.has(t.id) || changed.has(teams[i + 1].id));
     return row +
-      `<div class="gap ${gt}${cut ? " cut" : ""}" aria-label="${cut ? "Cut line, " : ""}Gap ${fmt(below)}${gt === "critical" ? ", coin flip" : ""}">` +
+      `<div class="gap ${gt}${cut ? " cut" : ""}" aria-label="${cut ? "Cut line, " : ""}Gap ${fmt(below)}${gt === "critical" ? ", coin flip" : gt === "idle" ? ", neither has played" : ""}">` +
         `<span class="line"></span>` +
         `<span class="pill${pillFlash ? " flash" : ""}"><span data-tween="gap:${t.id}:${teams[i + 1].id}">${fmt(below)}</span>` +
-          (cut ? `<span class="flip">${gt === "critical" ? "Cut &middot; coin flip" : "Cut line"}</span>`
-            : gt === "critical" ? `<span class="flip">Coin flip</span>` : "") +
+          (cut ? `<span class="flip">Cut line</span>` : "") +   // the number alone; a close gap pulses instead of saying so
         `</span>` +
         `<span class="line"></span>` +
       `</div>`;
