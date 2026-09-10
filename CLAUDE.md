@@ -112,27 +112,34 @@ element and scores are second.
   settled. `.enter` (and `--i`) come off at the swing's `animationend`
   (2026-09-08), so the compositor hints do not linger on settled rows
   until the next render. A poll's re-render leaves them still.
-  **Each row expands** (ported from `main`, 2026-09-08): the row is a
-  button (tap, Enter or Space; `role="button"`, `aria-expanded`) and
-  opens a card under it, `.pdetail`: a **game strip** across the top
-  (`gameStrip()`: away @ home with both scores from the staged `GAMES`
-  slate, the real 2025 Week 12 finals re-paired around the two staged
-  live games, the player's team bright, a football by the side with
-  the ball, RZ in the coin-flip red, the clock or Final on the right;
-  a simulated touchdown adds seven to the scorer's side, `scoreNfl`),
-  then a grid of stat tiles (`statTiles()`, kept the same as `main`'s:
-  the position's core counts always, zeros muted, the rest once they
-  count, a rate where the volume supports one). The chevron under the
-  points flips. Opened in place, not by re-render, so the panel's
-  height transition plays (the script tweens the panel to its measured
-  height, then clears the inline size, so an open panel is a plain
-  block: natural height, no overflow clip; Safari left the tile labels
-  unpainted in the first cut, a `0fr -> 1fr` grid track with a clipped
-  inner div, and the labels lost their own overflow clip for the same
-  reason, 2026-09-08) and the rows below slide; the open set is remembered by slot key (`expanded`) so a tick's
-  re-render keeps them open. `.prow` has no row gap so the closed panel
-  sits flush; the laptop pane refreshes `markMore()` when a panel
-  finishes opening.
+  **Each row opens the player card** (ported from `main`, 2026-09-10;
+  from 09-08 to 09-10 a breakdown expanded under the row instead): the
+  row is a button (tap, Enter or Space; `role="button"`) and raises
+  `#pcard` over the page, the shape of the draft assistant's player
+  card. A hero band in the team's colours (`TEAM_COLORS`, the touchdown
+  card's table; the club mark ghosted behind the headshot; dark in both
+  themes) carries the name, the franchise and week as a kicker, the
+  position and, when Sleeper has one, an **injury chip**, then two
+  vitals: the points (rolling, on the row's own tween key: the card is
+  among `liveNumberEls`) and **the game strip** (`gameStrip()`: away @
+  home with both scores from the staged `GAMES` slate, the real 2025
+  Week 12 finals re-paired around the two staged live games, the
+  player's team bright, a football by the side with the ball, RZ in the
+  coin-flip red, the clock or Final on the right; a simulated touchdown
+  adds seven to the scorer's side, `scoreNfl`). Under it, one column:
+  the stat tiles (`tilesHtml()`, `statTiles()` kept the same as
+  `main`'s) and **the latest news** from `sleeper.app/graphql`
+  (`get_player_news`, straight from the browser, once per open,
+  remembered three minutes; RotoBaller's timestamps are Eastern written
+  as UTC and are corrected). Rows wear **badges by the name**
+  (`rowBadges`): the injury status and a newspaper for news from the
+  last day, from one batched query per roster (`fetchRosterStatus`).
+  On the mockup site this all works; **in the Artifact bundle the CSP
+  blocks sleeper.app**, so the news reads "Couldn't load the news" and
+  no badges show. A centred 600px card on a laptop, a fixed-height
+  bottom sheet on a phone with ghost stories while the news loads; the
+  scrim, the close button or Escape puts it away. No chevron on the
+  row. The mechanics and the traps are in `main`'s CLAUDE.md.
   **Red zone** (2026-09-08): a live row whose player's offense is
   inside the 20 (offensive positions only; IDP get nothing, a defender
   facing a red-zone drive is a different signal) wears a faint red
