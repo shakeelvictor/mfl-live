@@ -7,22 +7,13 @@
    it; the bundle sets window.MFL_FIXTURE. */
 
 const QUERY = new URLSearchParams(location.search);
-// TEST PERIOD (2026-09-10, Shakeel's call): which feed's number is the
-// number on the page. "sleeper" puts the Sleeper-computed points (the
-// line under the league's rules, app/scoring.js, within a minute of the
-// play) in front: ranks, gaps, records, the hero, the rolls all follow
-// it, and MFL's official points ride along as the "M" secondary. "mfl" is
-// the settled design (MFL's points are the points, Sleeper's the "S"
-// secondary). ?pts=mfl flips it back for a side-by-side look.
-const PRIMARY = QUERY.get("pts") === "mfl" ? "mfl" : "sleeper";
 let FIXTURE = QUERY.get("source") === "fixture" || window.MFL_FIXTURE === true;
 
 let rosters = [];              // [{ id, team, pts, toPlay, starters, bench }]
 let headshotSrc = () => null;  // (player) -> img src, or null for the initials fallback
 let logoSrc = () => null;      // (NFL team code) -> img src, or null
 let WEEK = 12;
-let UPDATED = "4:12 PM";   // when MFL's snapshot last changed (scores, lineups), not when we last asked
-let CHECKED = "";          // when we last asked; shown beside it once the two drift apart (2026-09-09)
+let UPDATED = "4:12 PM";   // when a number on the page last changed: MFL's snapshot (scores, lineups) or Sleeper's lines
 let snapshotSig = "";
 let phase = "live";            // "live" | "preseason" (liveScoring not available yet)
 let kickoff = null;            // Date of the week's first game (live source)
@@ -124,31 +115,31 @@ let gapTiers = [];   // gapTiers[i] is that gap's tier: critical / live / settle
 // In a playoff round only the franchises playing it are ranked; the seed
 // chip replaces the week's record, and a tie goes to the higher seed (the
 // same order app/playoffs.js folds by, so the cut line is the fold's).
-// The Sleeper-computed number (2026-09-10): the player's Sleeper line, as
-// it stands, under the league's rules (app/scoring.js). Shown beside MFL's
-// number on every surface so the two feeds can be compared through a
-// game; it never feeds a score, a rank or a record. null while the player
-// has no line at all. A team's is the sum over its starters.
+/* Which number is the number (2026-09-10, Shakeel's call for the test
+   games). While a day's games are on, a player's points are his Sleeper
+   line under the league's rules (app/scoring.js), within a minute of the
+   play. Once the day's games are all done AND MFL has closed his game
+   (its own per-player clock at 0, which lands minutes after the whistle,
+   with the final points in the same snapshot), MFL's official points take
+   over and stay. The switch is per player, so a franchise's total mixes a
+   Thursday starter on MFL's number with Sunday starters on Sleeper's, and
+   a residue at the switch (a tackle MFL credits differently) is the
+   stat-correction the league expects. A player with no line yet, or no
+   Sleeper join, is on MFL's number throughout. Ranks, gaps, records, the
+   hero, the rolls and the spotlight all follow this number; nothing on
+   the page says which feed it came from. */
 const estOf = (p) => (p.st && Object.keys(p.st).length ? r2(Scoring.scoreLine(p.st)) : null);
-const estTeam = (starters) => { const e = starters.map(estOf); return e.some((x) => x != null) ? r2(e.reduce((a, x) => a + (x || 0), 0)) : null; };
-// Final and not MFL's number: the two feeds disagree on this player.
-const estOff = (p, est) => est != null && secsOf(p) === 0 && Math.abs(est - (p.mfl ?? p.pts)) >= 0.05;
-// The player's number on the page: Sleeper's when it is the primary and
-// the player has a line, MFL's otherwise (no line yet, no Sleeper join).
-const ptsOf = (p) => (PRIMARY === "sleeper" && estOf(p) != null ? estOf(p) : p.pts);
-// The other feed's number, for the secondary beside it; null when there is
-// nothing to compare (no line).
-const secondaryOf = (p) => (estOf(p) == null ? null : PRIMARY === "sleeper" ? (p.mfl ?? p.pts) : estOf(p));
-const SECONDARY_TAG = PRIMARY === "sleeper" ? "M" : "S";
-const SECONDARY_NAME = PRIMARY === "sleeper" ? "MFL" : "Sleeper";
-const SECONDARY_TITLE = PRIMARY === "sleeper" ? "MFL's official points, on its own cycle" : "Sleeper's line under the league's rules; MFL's number is the score";
+let doneTeams = new Set();   // NFL teams whose game day is over (every game on it final); refreshed by derive()
+const dayDoneTeams = () => new Set(dayStates().filter((d) => d.final).flatMap((d) => [...d.teams]));
+const onOfficial = (p) => doneTeams.has(p.tm) && p.secs === 0;   // MFL has closed his game and the day is done
+const ptsOf = (p) => (estOf(p) != null && !onOfficial(p) ? estOf(p) : p.pts);
 
 function derive() {
+  doneTeams = phase === "live" && !FIXTURE ? dayDoneTeams() : new Set();
   const withLive = (t) => ({
     ...t,
-    live: r2((PRIMARY === "sleeper" && phase === "live" ? t.starters.reduce((a, p) => a + ptsOf(p), 0) : t.pts) + (teamBump[t.id] || 0)),
-    official: t.pts,   // MFL's franchise total, whichever feed is in front
-    est: phase === "live" ? estTeam(t.starters) : null,
+    live: r2((phase === "live" ? t.starters.reduce((a, p) => a + ptsOf(p), 0) : t.pts) + (teamBump[t.id] || 0)),
+    official: t.pts,   // MFL's franchise total
     toPlay: slate.sunFinal ? 0 : (FIXTURE ? (YET_TO_PLAY[t.team] ?? 0) : (t.toPlay ?? 0)),
     onNow: t.starters.some(isLive),
     seed: post ? post.seedOf.get(t.id) : null,
@@ -167,7 +158,6 @@ function derive() {
         id: s.id, team: s.name, icon: null, isSide: true, members,
         pts: r2(members.reduce((a, t) => a + t.pts, 0)),
         live: r2(members.reduce((a, t) => a + t.live, 0)),
-        est: members.some((t) => t.est != null) ? r2(members.reduce((a, t) => a + (t.est || 0), 0)) : null,
         official: r2(members.reduce((a, t) => a + t.pts, 0)),
         toPlay: members.reduce((a, t) => a + t.toPlay, 0),
         onNow: members.some((t) => t.onNow),
@@ -298,7 +288,7 @@ function renderChrome() {
   const sub = document.getElementById("subhead");
   sub.hidden = phase === "preseason";
   const note = statsNote();
-  sub.innerHTML = (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head &middot; ` : post ? `${roundBlurb()} &middot; ` : "") + (PRIMARY === "sleeper" && phase === "live" ? "Sleeper live &middot; " : "") + `MFL updated ${esc(UPDATED)}` + (CHECKED && CHECKED !== UPDATED ? ` &middot; checked ${esc(CHECKED)}` : "") +
+  sub.innerHTML = (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head &middot; ` : post ? `${roundBlurb()} &middot; ` : "") + `Updated ${esc(UPDATED)}` +
     (note ? ` &middot; <span class="stale">${note}</span>` : "");
   document.body.classList.toggle("stats-stale", note !== "");
   const sizes = [...new Set(teams.map((t) => t.starters.length))];
@@ -469,7 +459,6 @@ function renderHero(changed, takeover) {
       `<div class="hero-id">` +
         `<span class="hero-name">${franchiseIcon(lead, "hero-icon")}${esc(lead.team)}</span>` +
         `<span class="hero-rec">${post ? `#${lead.seed} seed &middot; ${lead.season}` : `${lead.record} all-play`}</span>` +
-        (lead.est != null ? `<span class="hero-est" title="${SECONDARY_TITLE}">${SECONDARY_NAME} <b>${fmt(PRIMARY === "sleeper" ? lead.official : lead.est)}</b></span>` : "") +
       `</div>` +
       `<span class="hero-pts${fl(changed, lead.id)}" data-tween="pts:${lead.id}" data-delta>${fmt(lead.live)}</span>` +
     `</div>` +
@@ -583,7 +572,7 @@ function renderRows(changed) {
         `<span class="who">` +
           `<span class="name">${esc(t.team)}</span>` +
           `<span class="sub">` +
-            `<span class="rec">${t.record}</span>` + (t.est != null ? `<span class="est" title="${SECONDARY_TITLE}">${SECONDARY_TAG} <b>${fmt(PRIMARY === "sleeper" ? t.official : t.est)}</b></span>` : "") + fate +
+            `<span class="rec">${t.record}</span>` + fate +
             `<span class="status${t.onNow ? " on" : ""}">` +
               (t.onNow ? `<span class="dot"></span>` : "") + statusOf(t) +
             `</span>` +
@@ -1138,7 +1127,6 @@ const playerRow = (p, bench, top = false, enter = -1) => {
     `</span>` +
     `<span class="pright">` +
       `<span class="ppts${p.pts === 0 ? " zero" : ""}${p.flash ? " flash" : ""}"${p.key ? ` data-tween="p:${p.key}" data-delta` : ""}>${phase === "preseason" ? "&mdash;" : fmt(p.pts)}</span>` +
-      (phase === "live" && secondaryOf(p) != null ? `<span class="pest${estOff(p, estOf(p)) ? " off" : ""}" title="${SECONDARY_TITLE}">${SECONDARY_TAG} <b>${fmt(secondaryOf(p))}</b></span>` : "") +
       `<span class="pchev" aria-hidden="true"></span>` +
     `</span>` +
     detailHtml(p) +
@@ -1189,7 +1177,6 @@ function renderTeam(changed = new Set()) {
     : t.isSide ? `${t.members.length} managers \u00b7 one super lineup`
     : t.side ? `${t.starters.length} in the ${t.side.name} lineup`
     : `${t.record} all-play`;
-  if (!pre && t.est != null) document.getElementById("team-rec").textContent += ` \u00b7 ${SECONDARY_NAME} ${fmt(PRIMARY === "sleeper" ? t.official : t.est)}`;
   const ptsEl = document.getElementById("team-pts");
   ptsEl.textContent = pre || t.bye ? "\u2014" : fmt(t.live);
   ptsEl.dataset.tween = `pts:${t.id}`;
@@ -1449,7 +1436,7 @@ function showNextTouchdown() {
     `<span class="td-name">${esc(p.n)}</span>` +
     `<span class="td-meta"><span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span><span>${esc(p.tm)}</span></span>` +
     `<span class="td-for">for <b>${esc(ev.franchise)}</b></span>` +
-    `<span class="td-pts${ev.est ? " est" : ""}"${ev.est ? ` title="Sleeper's line under the league's rules; MFL's points follow"` : ""}>${ev.est ? "S " : ""}+${fmt(ev.pts)}</span>` +
+    `<span class="td-pts">+${fmt(ev.pts)}</span>` +
     `<span class="td-bar" aria-hidden="true"></span>`;
   renderTdMore();
   tdModal.dataset.open = "true";
@@ -1738,7 +1725,9 @@ function fetchStats(week) {
   statsPending = api("stats", { W: String(week) }, STATS_TIMEOUT_MS)
     .then((st) => {
       if (!st.ok) throw new Error(st.error);
-      statsBySid = st.data.stats || {};
+      const next = st.data.stats || {};
+      if (JSON.stringify(next) !== JSON.stringify(statsBySid)) UPDATED = fmtTime(new Date());
+      statsBySid = next;
       const first = statsAt === 0;
       statsAt = Date.now();
       statsFailed = false;
@@ -1945,9 +1934,7 @@ async function refreshLive(first = false) {
   // fresh while the scores stood still. Any score or lineup status moving
   // counts; the check time sits beside it once they drift apart.
   const sig = franchises.map((f) => `${f.id}:${f.score}:${toArray(f.players?.player).map((p) => `${p.id}:${p.score}:${p.status}`).join(",")}`).join(";");
-  const now = fmtTime(new Date());
-  if (sig !== snapshotSig) { snapshotSig = sig; UPDATED = now; }
-  CHECKED = now;
+  if (sig !== snapshotSig) { snapshotSig = sig; UPDATED = fmtTime(new Date()); }
   await ensurePlayers([...rosterIds.values()].flat().concat(franchises.flatMap((f) => toArray(f.players?.player).map((p) => p.id))));
 
   const next = new Map();

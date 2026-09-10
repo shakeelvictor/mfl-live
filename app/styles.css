@@ -956,18 +956,6 @@ button.hero { cursor: pointer; }
 .pright { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
 .ppts { font: 800 17px/1 var(--font-data); letter-spacing: -.01em; text-align: right; transition: color .4s; }
 .ppts.zero { color: var(--text-muted); }
-/* The Sleeper-computed number beside MFL's (2026-09-10): the same line
-   under the league's rules, so the two feeds can be compared through a
-   game. Never a score. .off: the game is final and it is not MFL's number. */
-.est, .pest { font: 700 10.5px/1 var(--font-data); color: var(--text-muted); letter-spacing: .02em; white-space: nowrap; }
-.est { padding: 3px 7px; border-radius: var(--radius-pill); background: var(--surface-raised); }
-.est b, .pest b { font-weight: 800; color: var(--text-secondary); }
-.pest.off b { color: var(--gap-live); }
-.td-pts.est { letter-spacing: .02em; }   /* the card's points from Sleeper's line: "S +10.40" */
-.hero-est { font: 700 11px/1 var(--font-data); color: var(--hero-muted); }
-.hero-est b { color: var(--hero-text); font-weight: 800; }
-.row.active .est { background: color-mix(in srgb, var(--hero-text) 12%, transparent); color: var(--hero-muted); }
-.row.active .est b { color: var(--hero-text); }
 /* The chevron under the points: a tap opens the breakdown. Points down
    closed, up open. */
 .pchev {

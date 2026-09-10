@@ -732,36 +732,33 @@ last lines stay, never a missing score: MFL's points are untouched. The drift fi
 stay context: a line beside MFL's number, never feeding it. Headshots are
 static files off the live path; a headshot cannot contradict a score.
 
-## TEST PERIOD: Sleeper's number is in front (2026-09-10)
+## Which number is the number (2026-09-10)
 
-Shakeel's call for the test games (Thu Sep 10, Sun Sep 13, Mon Sep 14):
-**`PRIMARY = "sleeper"`** in `app.js` puts the Sleeper-computed points in
-front. `ptsOf(p)` is the player's number on the page (Sleeper's when he
-has a line, MFL's otherwise), a franchise's `live` is the sum of those,
-so ranks, gaps, records, the hero, the rolls and the spotlight follow the
-faster feed, and MFL's official points ride along as the **"M"**
-secondary (`t.official`, `p.mfl`; the subtitle says "Sleeper live ·
-MFL updated <time>"). `?pts=mfl` restores the settled design for a
-side-by-side look. The "What is already settled" section still holds
-for the official number: this is a test of how the app feels, and the
-league knows the numbers are unofficial until MFL's land.
-
-## The Sleeper-computed number beside MFL's (2026-09-10)
-
-Shakeel wants to see, live, how far a Sleeper-computed score sits from
-MFL's before deciding whether an unofficial live estimate can front MFL's
-~200s cycle (see the spike README's replay note and the memory
-"mfl-live-estimator-plan"). So `app/scoring.js` (a copy of
+Shakeel's call for the test games (Thu Sep 10, Sun Sep 13, Mon Sep 14),
+and the league is told the numbers are unofficial until MFL's land:
+**during a game day a player's points are his Sleeper line under the
+league's rules**, `app/scoring.js` (a copy of
 `fantasy-draft-assistant/public/scoring.js`, the fflr rules over
 Sleeper's stat vocabulary, plus `scoreLine()`: exact mode, special-teams
-tackles folded into the solo count, the measured better match) scores
-each player's line as it stands, and the page shows it as **"S 12.40"**
-under the player's points, a chip after the record on the board row, a
-line in the hero and on the team page (`estOf`, `estTeam`, `t.est`).
-Once a player's game is final and the two differ, the number goes warm
-(`.pest.off`): that is the residue the drift finding is about. **It
-never feeds a score, a rank, a record or a card.** The proxy's
-`STAT_KEYS` were widened to every key the engine reads.
+tackles folded into the solo count, the measured better match), within
+a minute of the play. **Once the day's games are all done and MFL has
+closed his game** (`onOfficial`: the team is in `doneTeams`, the day's
+teams from `dayStates`, and MFL's own per-player clock `p.secs` is 0,
+which lands minutes after the whistle with the final points in the same
+snapshot) **MFL's official points take over and stay.** `ptsOf(p)` is
+the player's number, a franchise's `live` is the sum over its starters,
+so ranks, gaps, records, the hero, the rolls, the spotlight and the
+record chip's week all follow it; `t.official` keeps MFL's franchise
+total for whoever wants it. A player with no line yet, or no Sleeper
+join, is on MFL's number throughout. Nothing on the page says which
+feed a number came from: no "S"/"M" secondaries (removed the same day
+after one evening), and the subtitle is plain "Updated <time>", the
+last time a number on the page changed from either feed. The "What is
+already settled" section still holds for the official number: the
+switch at day's end is exactly the reconciliation it asks for, and the
+residue at the switch (a tackle MFL credits differently) is the
+stat-correction the league expects. The proxy's `STAT_KEYS` carry every
+key the engine reads.
 
 ## Licensing a faster stat feed does not help
 
