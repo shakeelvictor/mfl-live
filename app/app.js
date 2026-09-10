@@ -728,7 +728,27 @@ const LIVE_NFL = new Map([
 ]);
 // Live source: a player's game clock comes from liveScoring (per player) or,
 // failing that, the schedule (per NFL team). 3600 = not started, 0 = final.
-const secsOf = (p) => (p.secs ?? games.get(p.tm)?.secs ?? null);
+// The situation's clock as seconds remaining (2026-09-09): a fresh one
+// beats liveScoring's per-player clock, which refreshes with the points on
+// MFL's cycle and, at the end of a game, sat on "Q4 0:26" for ten minutes
+// after the final whistle until MFL marked the game final. In play the
+// number is never 0 (a tied 4th quarter at 0:00 is heading to overtime),
+// and overtime counts down its own clock.
+const sitSecs = (tm) => {
+  const sit = sitOf(tm);
+  if (!sit) return null;
+  if (sit.state === "post") return 0;
+  if (sit.state === "pre") return 3600;
+  if (sit.state !== "in" || !sit.period) return null;
+  const [m, sec] = String(sit.clock || "0:00").split(":").map(Number);
+  const left = (Number.isFinite(m) ? m * 60 : 0) + (Number.isFinite(sec) ? sec : 0);
+  return Math.max(1, sit.period <= 4 ? (4 - sit.period) * 900 + left : left);
+};
+// Lay the situations over the schedule's game clocks, so the day's and the
+// week's "final" (slate, dayStates) follow ESPN's whistle too. After the
+// schedule is rebuilt and whenever a situation lands.
+const overlaySituations = () => { for (const [tm, g] of games) { const secs = sitSecs(tm); if (secs != null) g.secs = secs; } };
+const secsOf = (p) => (sitSecs(p.tm) ?? p.secs ?? games.get(p.tm)?.secs ?? null);
 const clockText = (secs) => {
   const q = 4 - Math.floor((secs - 1) / 900), left = ((secs - 1) % 900) + 1;
   return `Q${q} ${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
@@ -1660,6 +1680,7 @@ function fetchSituation() {
       if (!r.ok) throw new Error(r.error);
       situations = new Map(Object.entries(r.data.games || {}));
       situationAt = Date.now();
+      overlaySituations();
       if (!polling && teams.length) rerenderSoon();
     })
     .catch((e) => console.warn("game situations unavailable, keeping the last ones:", e))
@@ -1803,6 +1824,7 @@ async function refreshLive(first = false) {
     const match = away && home ? { kickoff: k, away: side(away), home: side(home) } : null;
     for (const t of toArray(m.team)) games.set(t.id, { kickoff: k, secs: Number.isFinite(secs) ? secs : 3600, match });
   }
+  overlaySituations();
   kickoff = firstKick;
   // The week's game days, each its own spotlight day. Grouped by the NFL's
   // own date (Eastern), not the viewer's: a Sunday afternoon kickoff is

@@ -450,8 +450,13 @@ element and scores are second.
   while under two minutes old, after which the page falls back to MFL's
   flags. `inRedZone` is then "my team has the ball and ESPN says red
   zone"; the game strip takes the ball, RZ, NFL score and the clock from it
-  (liveScoring's per-player clock is as old as its points, minutes
-  behind) and adds a line with the down, distance and spot (`.pg-spot`). Context only:
+  and adds a line with the down, distance and spot (`.pg-spot`). **Every
+  player's clock, "live" and "final" follow the situation too**
+  (`sitSecs`, first in `secsOf`; `overlaySituations` lays it over the
+  schedule's game clocks so the day's and week's final follow ESPN's
+  whistle): liveScoring's per-player clock refreshes with the points on
+  MFL's cycle and sat on "Q4 0:26" for ten minutes after the opener
+  ended, until MFL marked the game final. Context only:
   nothing from ESPN touches a score, and `spike/` has nothing on it,
   because a fantasy point never depends on it.
   **Red zone** (2026-09-08): a live row whose player's offense is
