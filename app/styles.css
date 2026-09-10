@@ -667,6 +667,23 @@ button.hero { cursor: pointer; }
 .gap.critical .line { background: var(--gap-critical); }
 .gap.critical .pill { padding: 7px 13px; background: var(--gap-critical); border-color: transparent; color: var(--gap-critical-ink); }
 
+/* A close gap pulses (2026-09-09): a ring breathing out of the pill,
+   faster and red for a coin flip. Transform and opacity only, so phones
+   do not repaint a blur every frame. An idle gap (neither side has
+   begun) is the plain divider above. */
+.gap.live .pill, .gap.critical .pill { position: relative; isolation: isolate; }
+.gap.live .pill::after, .gap.critical .pill::after {
+  content: ""; position: absolute; inset: -1px; z-index: -1;
+  border-radius: inherit;
+  border: 2px solid var(--gap-live);
+  animation: fflr-gap-ring 2.2s ease-out infinite;
+}
+.gap.critical .pill::after { border-color: var(--gap-critical); animation-duration: 1.4s; }
+@keyframes fflr-gap-ring {
+  0% { transform: scale(1); opacity: .85; }
+  70%, 100% { transform: scale(1.45, 1.9); opacity: 0; }
+}
+
 /* ---------- team page: full-screen route over the board ---------- */
 
 .team-page {
@@ -1618,6 +1635,7 @@ button.hero { cursor: pointer; }
   .prow.enter { animation: none; }
   .pdetail, .pchev { transition: none; }
   .prow.rz::after, .rzn { animation: none; }
+  .gap .pill::after { display: none; }
   h1 { animation: none; background-position: 50% 50%; }   /* the band held mid-title */
   .flash { animation: none; }
   .hero.takeover, .hero.takeover * { animation: none !important; }

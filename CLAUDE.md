@@ -370,9 +370,20 @@ element and scores are second.
   stray outline. Light keeps both.
 - **Accent is mint** and carries "live / on now", the selected segment and the
   leader's badge -- never urgency. Urgency is a separate warm scale:
-  `--gap-critical` (< 0.25, coin flip) -> `--gap-live` (< 2.5) ->
-  `--gap-settled`. Rows adjacent to a hot gap **fuse into one card** (per-edge
-  radius, shadow dropped); the rank circle takes the hotter of its two gaps.
+  `--gap-critical` (< 0.25, coin flip) -> `--gap-live` (< 3.0, close; was
+  2.5 until 2026-09-09) -> `--gap-settled`. Rows adjacent to a hot gap
+  **fuse into one card** (per-edge radius, shadow dropped); the rank circle
+  takes the hotter of its two gaps. **The divider's pill is the number
+  alone, and a close gap pulses** (2026-09-09): the "Coin flip" word came
+  off the pill, and instead a ring breathes out of it (`.gap.live
+  .pill::after`, transform and opacity only; faster and red for a coin
+  flip). **A gap between two franchises that have not begun is idle**
+  (`gapTier`, `started`: nothing scored, nobody on the field, no starter
+  kicked off): a plain divider with its 0.00, no pulse, no fusing, no
+  rank colour, and it counts for no capsule; the hero's tier chip reads
+  "Not started". Early in a week most of the board is 0.00 against 0.00,
+  and a red "Coin flip" under every one of them said nothing. The tiers
+  are computed once per render into `gapTiers` and read everywhere.
 - **Position chips** use `--pos-qb/rb/wr/te/k/lb`; every defensive position
   maps to `--pos-lb`, matching the league's "3 IDP, any combination" rule.
 - **A franchise's status names who is on the field** (2026-09-09): its
