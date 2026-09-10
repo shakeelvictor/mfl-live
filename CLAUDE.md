@@ -137,9 +137,9 @@ element and scores are second.
   On the mockup site this all works; **in the Artifact bundle the CSP
   blocks sleeper.app**, so the news reads "Couldn't load the news" and
   no badges show. A centred 600px card on a laptop, a fixed-height
-  bottom sheet on a phone with ghost stories while the news loads; the
-  scrim, the close button or Escape puts it away. No chevron on the
-  row. The mechanics and the traps are in `main`'s CLAUDE.md.
+  bottom sheet on a phone with ghost stories while the news loads; the scrim, the close button, Escape or, on a phone, a finger dragging
+  the sheet down puts it away (a grab handle at the top says so). No
+  chevron on the row. The mechanics and the traps are in `main`'s CLAUDE.md.
   **Red zone** (2026-09-08): a live row whose player's offense is
   inside the 20 (offensive positions only; IDP get nothing, a defender
   facing a red-zone drive is a different signal) wears a faint red
