@@ -686,6 +686,11 @@ button.hero { cursor: pointer; }
    faster and red for a coin flip. Transform and opacity only, so phones
    do not repaint a blur every frame. An idle gap (neither side has
    begun) is the plain divider above. */
+/* A hot divider sits above the plain rows either side of it (they are
+   positioned and paint in DOM order, so the row below covered the lower
+   half of the ring as it breathed out, 2026-09-10); a lifted or moving
+   row (z 3, z 2) still passes over it. */
+.gap.live, .gap.critical { position: relative; z-index: 1; }
 .gap.live .pill, .gap.critical .pill { position: relative; isolation: isolate; }
 .gap.live .pill::after, .gap.critical .pill::after {
   content: ""; position: absolute; inset: -1px; z-index: -1;

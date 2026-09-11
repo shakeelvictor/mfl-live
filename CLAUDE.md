@@ -356,8 +356,9 @@ element and scores are second.
   5% (all of the growth goes leftward, and at 1280px 6% met the viewport
   edge; the laptop shell keeps 40px side padding for it, since `.app`
   clips at the viewport); the hero gets a lighter lift when the leader is
-  picked. On a phone the row stays lifted after the team page closes
-  (`picked` outlives `open`), so the board shows where you have been. A
+  picked. On a phone the lift comes off when the team page closes (`closeTeam`
+  clears `picked`; until 2026-09-10 it stayed as a trace of where you had
+  been, and read as a row stuck half-open). A
   FLIP move rides `--dy` inside the same transform, not an inline
   `transform`, so a lifted row keeps its lift while it slides to a new
   rank. (A player row came forward the same way while its breakdown was open
