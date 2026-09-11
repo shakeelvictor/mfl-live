@@ -870,6 +870,27 @@ function revealSpotlight(opening) {
   spotRevealTimer = setTimeout(() => { spotEl.classList.remove("reveal"); spotEl.style.removeProperty("--open"); }, spotRevealUntil - Date.now());
 }
 let spotRevealTimer = 0;
+// The entrance runs on the first visit after a day's end, on a refresh
+// and on a return to the app (2026-09-11): a card present when the page
+// loads waits under the loader and opens once the board has cascaded in
+// (spotQueued, boardReady), and a card showing when the tab comes back
+// after SPOT_RETURN_MS away opens again (a new card found on the way
+// back opens too). A short flip away leaves it be.
+let spotQueued = false, boardIn = false, hiddenAt = 0;
+const SPOT_RETURN_MS = 60e3;
+function boardReady() {
+  boardIn = true;
+  if (!spotQueued) return;
+  spotQueued = false;
+  spotEl.hidden = false;
+  revealSpotlight(true);
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  const away = hiddenAt ? Date.now() - hiddenAt : 0;
+  hiddenAt = 0;
+  if (away >= SPOT_RETURN_MS && boardIn && !spotEl.hidden && Date.now() >= spotRevealUntil) revealSpotlight(true);
+});
 
 function spotlightPick() {
   const all = teams.flatMap((t) => liveStarters(t, new Set()).map((p) => ({ ...p, franchise: p.from || t.team })));
@@ -884,11 +905,11 @@ function spotlightPick() {
 
 function renderSpotlight() {
   const { top, label, when, mvp, key } = spotlightPick();
-  if (!top) { spotEl.hidden = true; spotEl.classList.remove("reveal"); spotRevealUntil = 0; lastSpotKey = key; return; }
+  if (!top) { spotEl.hidden = true; spotEl.classList.remove("reveal"); spotRevealUntil = 0; spotQueued = false; lastSpotKey = key; return; }
   const changed = lastSpotKey !== null && key !== lastSpotKey;
   if (!changed && Date.now() < spotRevealUntil) return;   // mid-reveal: the pieces would restart
-  const appearing = spotEl.hidden && lastSpotKey !== null;   // from nothing during the session: the space opens first (a page loaded after a day's end shows it at once)
-  spotEl.hidden = false;
+  const appearing = spotEl.hidden || lastSpotKey === null;   // from nothing, the first render included
+  if (boardIn) spotEl.hidden = false;   // under the loader it waits for the board (boardReady)
   const phaseChanged = changed && key.split(":")[0] !== lastSpotKey.split(":")[0];
   lastSpotKey = key;
   spotEl.classList.toggle("mvp", mvp);
@@ -906,7 +927,13 @@ function renderSpotlight() {
       `</span>` +
       `<span class="spot-pts" data-tween="p:${top.key}">${fmt(top.pts)}</span>` +
     `</div>`;
-  if (appearing || (phaseChanged && mvp)) revealSpotlight(appearing);
+  // The entrance: the full opening for a card from nothing or a new day's
+  // card; the reveal alone when a day's card turns gold in place, or the
+  // day's top scorer changes on a correction.
+  if (appearing || changed) {
+    if (!boardIn) { spotQueued = true; spotEl.hidden = true; return; }
+    revealSpotlight(appearing || (phaseChanged && !mvp));
+  }
 }
 
 /* ---------------- team page ---------------- */
@@ -1997,7 +2024,7 @@ function hideLoading() {
 // Top to bottom: every block on the board, then each standings row and
 // divider in order, then the laptop pane.
 function cascadeIn() {
-  if (reducedMotion.matches) { pickOnLoad(); return; }
+  if (reducedMotion.matches) { pickOnLoad(); boardReady(); return; }
   const app = document.getElementById("app");
   const targets = [
     ...[...document.querySelectorAll(".col-board > *")].flatMap((el) =>
@@ -2009,7 +2036,7 @@ function cascadeIn() {
   setTimeout(() => {
     app.classList.remove("intro");
     targets.forEach((el) => { el.classList.remove("cascade"); el.style.removeProperty("--i"); });
-    pickOnLoad();
+    pickOnLoad(); boardReady();
   }, targets.length * 55 + 700);
 }
 // The laptop pane shows the leader from the start; once the board has

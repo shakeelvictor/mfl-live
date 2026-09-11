@@ -257,10 +257,16 @@ element and scores are second.
   into view a piece at a time (`.spot.reveal`, `--i` per piece, 140ms
   apart). The MVP of the week gets the same: the full opening when it
   arrives from nothing (a Monday night, the day and the week final
-  together), the reveal alone when a day's card turns gold in place. A
-  tick's re-render leaves the card alone while the reveal runs
-  (`spotRevealUntil`), so the pieces do not restart. Skipped under
-  reduced motion. Not yet on `main`. A soft colour wave drifts across its background (accent, gold
+  together), the reveal alone when a day's card turns gold in place. A tick's re-render leaves the card alone while the reveal runs
+  (`spotRevealUntil`), so the pieces do not restart. **It runs on the
+  first visit after a day's end, on a refresh and on a return to the
+  app** (2026-09-11): a card present when the page loads waits under
+  the loader and opens once the board has cascaded in (`spotQueued`,
+  `boardReady` at the cascade's end), and a card showing when the tab
+  comes back after a minute or more away (`SPOT_RETURN_MS`) opens again;
+  a short flip away leaves it be. A new day's card replacing another
+  opens too; the MVP turning gold in place, or a corrected top scorer,
+  gets the reveal alone. Skipped under reduced motion. Same on `main`. A soft colour wave drifts across its background (accent, gold
   as MVP). When the week is official the leader hero becomes the **Week
   winner**: gold wave, gold badge, and a money-bag emoji hanging over its
   top-right corner (it sits outside the hero, which clips overflow for the
