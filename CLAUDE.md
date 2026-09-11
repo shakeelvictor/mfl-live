@@ -470,7 +470,7 @@ element and scores are second.
   by the player's tween key (`pcKey`). **A bottom sheet on every
   screen** (2026-09-11): from 600px up it is cut after Sleeper's own
   desktop player card, three quarters of the window wide and 84vh
-  tall in the bottom-left corner: a dark strip along the top with a
+  tall, centred and flush to the bottom: a dark strip along the top with a
   **name tab** on its left ("J. Gibbs", "RB · DET", the close button
   beside it) in the band's colour (`.pc-tab`; the team's colours are
   set on the sheet, `--pc-ground` / `--pc-accent`, so the tab and the
@@ -479,8 +479,9 @@ element and scores are second.
   (`.pc-poschip`), the name at 44px with a white **team pill** (mark
   and code, `.pc-team`) and the vitals in large figures, then the body
   in two columns under **display headings on ruled rows** ("This game"
-  / "News"): the stat tiles left, the news right scrolling on its own
-  behind a hairline with its heading sticky; each story titled at 17px
+  / "Game log" / "News"): the stat tiles and the game log left
+  (`.pc-col`, scrolling on its own), the news right scrolling on its
+  own behind a hairline with its heading sticky; each story titled at 17px
   over a bordered **date pill**, "Sep 2, 6:56 PM via RotoWire"
   (`whenLabel`, the reader's clock; the row badge's tooltip keeps
   `timeAgo`). A centred 600px card before; a two-column cut at that
@@ -488,7 +489,32 @@ element and scores are second.
   this width they have company. Under 600px the phone's sheet, full
   width and 90dvh, one column, the band staying put and the body
   scrolling, the tab reduced to the close button at the band's
-  top-right and the position chip back in the sub line. **The card
+  top-right and the position chip back in the sub line (there the
+  column and the news need `min-height: auto`: at the laptop's 0 the
+  grid's auto rows collapsed and split the body's height between them,
+  and the log painted over the news). **The game log** (`gameLogHtml`)
+  is every week of the season in Sleeper's manner: the opponent and
+  the NFL result (W/L and score, W in mint, L in the coin-flip red)
+  from ESPN's team schedule (`teamSchedule`, `site.api.espn.com/...
+  /teams/<abbr>/schedule?season=`, CORS open, one call per team held
+  ten minutes, the bye from its `byeWeek`), the player's line for the
+  week from Sleeper's per-player season (`api.sleeper.com/stats/nfl/
+  player/<id>?...&grouping=week`, CORS open, in `profileOf` as `log`),
+  the points under the league's rules (`Scoring.scoreLine`, the same
+  number the page shows on a game day; `mockup/scoring.js` is a copy
+  so `poc` can) and the snap share (`off_snp` / `tm_off_snp`, the
+  defensive pair for IDP), then the position's groups (RB rushing and
+  receiving, QB passing and rushing, WR/TE receiving and rushing, K
+  kicking, IDP defense) as a table with group headings over the
+  columns, the current week's row raised, a week with a game and no
+  line dashed, the bye named; without the schedule the weeks Sleeper
+  has, with no result. Team codes are mapped both ways (`ESPN_ABBR`,
+  `TO_MFL`: Sleeper's and ESPN's SF/NE/GB/KC/TB/NO/LV/JAX and ESPN's
+  WSH against MFL's). `SEASON` comes from the proxy's answers (every
+  one names it; the fixture sets 2025). The table scrolls sideways in
+  its own wrap with the week column sticky, which is how it fits a
+  phone. It lands after the sheet like the news and sweeps in the same
+  way. Context beside the number, like the news. **The card
   opens in two acts**:
   the sheet sweeps up from the bottom edge with the player's data
   (`translateY(100%)`, .52s; before, the laptop card rose a little and

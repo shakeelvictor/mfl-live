@@ -13,6 +13,7 @@ let rosters = [];              // [{ id, team, pts, toPlay, starters, bench }]
 let headshotSrc = () => null;  // (player) -> img src, or null for the initials fallback
 let logoSrc = () => null;      // (NFL team code) -> img src, or null
 let WEEK = 12;
+let SEASON = 2026;   // the NFL season (the proxy names it on every answer)
 let UPDATED = "4:12 PM";   // when a number on the page last changed: MFL's snapshot (scores, lineups) or Sleeper's lines
 let snapshotSig = "";
 let phase = "live";            // "live" | "preseason" (liveScoring not available yet)
@@ -1453,6 +1454,12 @@ function profileOf(sid) {
   if (have && Date.now() - have.at < PROFILE_TTL_MS) return have;
   const prof = {
     at: Date.now(),
+    // The season week by week (api.sleeper.com, CORS open): each week's
+    // line with the opponent, for the game log.
+    log: fetch(`https://api.sleeper.com/stats/nfl/player/${id}?season_type=regular&season=${SEASON}&grouping=week`, { signal: AbortSignal.timeout(8000) })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`sleeper ${r.status}`))))
+      .then((d) => (d && typeof d === "object" ? d : {}))
+      .catch(() => null),
     news: sleeperGql(`{get_player_news(sport:"nfl",player_id:"${id}",limit:8){metadata published source}}`)
       .then((d) => (d.get_player_news || []).map(newsItem).sort((a, b) => b.at - a.at))
       .catch(() => null),   // null: the fetch failed; []: no news
@@ -1463,6 +1470,96 @@ function profileOf(sid) {
   profiles.set(id, prof);
   return prof;
 }
+
+/* The game log (2026-09-11), cut after Sleeper's: every week of the
+   season, the opponent and the NFL result from ESPN's team schedule
+   (site.api.espn.com, CORS open, one call per team held ten minutes),
+   the player's line for the week from Sleeper's per-player season
+   (profileOf's `log`), the points under the league's rules
+   (Scoring.scoreLine, the same number the page shows on a game day)
+   and the snap share, then the position's own groups. A week with a
+   game and no line is dashes (not played, or not yet); the bye says
+   so. Without the schedule the log falls back to the weeks Sleeper
+   has, with no result. Context beside the number, like the news. */
+const ESPN_ABBR = { SFO: "sf", NEP: "ne", GBP: "gb", KCC: "kc", TBB: "tb", NOS: "no", LVR: "lv", JAC: "jax", WAS: "wsh" };   // MFL code -> ESPN's
+const TO_MFL = { SF: "SFO", NE: "NEP", GB: "GBP", KC: "KCC", TB: "TBB", NO: "NOS", LV: "LVR", JAX: "JAC", WSH: "WAS" };    // Sleeper's and ESPN's -> MFL
+const toMfl = (code) => TO_MFL[String(code || "").toUpperCase()] || String(code || "").toUpperCase();
+const schedules = new Map();   // MFL team code -> { at, promise }
+const SCHEDULE_TTL_MS = 10 * 60e3;
+function teamSchedule(tm) {
+  if (!tm) return Promise.resolve(null);
+  const have = schedules.get(tm);
+  if (have && Date.now() - have.at < SCHEDULE_TTL_MS) return have.promise;
+  const abbr = ESPN_ABBR[tm] || String(tm).toLowerCase();
+  const promise = fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${abbr}/schedule?season=${SEASON}`, { signal: AbortSignal.timeout(8000) })
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`espn ${r.status}`))))
+    .then((d) => {
+      const weeks = {};
+      for (const ev of d.events || []) {
+        const c = ev.competitions?.[0], w = Number(ev.week?.number);
+        if (!c || !w) continue;
+        const mine = c.competitors.find((x) => toMfl(x.team?.abbreviation) === tm), them = c.competitors.find((x) => x !== mine);
+        if (!mine || !them) continue;
+        const final = c.status?.type?.completed === true || typeof mine.winner === "boolean";
+        weeks[w] = { opp: toMfl(them.team?.abbreviation), home: mine.homeAway === "home", final,
+          us: Number(mine.score?.value ?? mine.score), them: Number(them.score?.value ?? them.score), win: mine.winner === true, date: ev.date };
+      }
+      return { weeks, bye: Number(d.byeWeek) || 0 };
+    });
+  schedules.set(tm, { at: Date.now(), promise });
+  promise.catch(() => schedules.delete(tm));
+  return promise;
+}
+const LOG_WEEKS = 18;
+const logCol = (l, f) => ({ l, f });
+const logNum = (k) => logCol(k.l, (st) => st[k.k] || 0);
+const logFrac = (l, a, b) => logCol(l, (st) => `${st[a] || 0}/${st[b] || st[a] || 0}`);
+const logRate = (l, yd, n) => logCol(l, (st) => rate(st[yd] || 0, st[n] || 0) ?? "0.0");
+function logGroups(pos) {
+  const rush = ["Rushing", [logCol("CAR", (st) => st.rush_att || 0), logCol("YDS", (st) => st.rush_yd || 0), logCol("TD", (st) => st.rush_td || 0), logRate("AVG", "rush_yd", "rush_att"), logCol("LNG", (st) => st.rush_lng || 0)]];
+  const rec = ["Receiving", [logCol("REC", (st) => st.rec || 0), logCol("TGT", (st) => st.rec_tgt || 0), logCol("YDS", (st) => st.rec_yd || 0), logCol("TD", (st) => st.rec_td || 0), logCol("LNG", (st) => st.rec_lng || 0)]];
+  if (pos === "QB") return [
+    ["Passing", [logFrac("CMP/ATT", "pass_cmp", "pass_att"), logCol("YDS", (st) => st.pass_yd || 0), logCol("TD", (st) => st.pass_td || 0), logCol("INT", (st) => st.pass_int || 0), logRate("Y/A", "pass_yd", "pass_att")]],
+    ["Rushing", rush[1].slice(0, 3)],
+  ];
+  if (pos === "RB") return [rush, ["Receiving", rec[1].slice(0, 4)]];
+  if (pos === "WR" || pos === "TE") return [rec, ["Rushing", rush[1].slice(0, 3)]];
+  if (pos === "K") return [["Kicking", [logFrac("FG", "fgm", "fga"), logCol("LNG", (st) => st.fgm_lng || 0), logFrac("XP", "xpm", "xpa")]]];
+  return [["Defense", [logCol("TKL", (st) => st.idp_tkl || 0), logCol("SOLO", (st) => st.idp_tkl_solo || 0), logCol("AST", (st) => st.idp_tkl_ast || 0),
+    logCol("SACK", (st) => st.idp_sack || 0), logCol("TFL", (st) => st.idp_tkl_loss || 0), logCol("INT", (st) => st.idp_int || 0),
+    logCol("FF", (st) => st.idp_ff || 0), logCol("PD", (st) => st.idp_pass_def || 0), logCol("TD", (st) => st.idp_def_td || 0)]]];
+}
+const snapShare = (st, pos) => {
+  const idp = !["QB", "RB", "WR", "TE", "K"].includes(pos);
+  const mine = idp ? st.def_snp : st.off_snp, team = idp ? st.tm_def_snp : st.tm_off_snp;
+  return mine && team ? `${Math.round((mine / team) * 100)}%` : "\u2014";
+};
+function gameLogHtml(p, log, sched) {
+  const groups = [["Fantasy", [logCol("PTS", (st) => fmt(r2(Scoring.scoreLine(st)))), logCol("SNP%", (st) => snapShare(st, p.pos))]], ...logGroups(p.pos)];
+  const cols = groups.flatMap(([, c]) => c);
+  const oppCell = (opp, home) => opp
+    ? `<td class="opp"><i>${home ? "vs" : "@"}</i>${logoSrc(opp) ? `<img src="${logoSrc(opp)}" alt="">` : ""}${esc(opp)}</td>`
+    : `<td class="opp">\u2014</td>`;
+  const rows = [];
+  for (let w = 1; w <= LOG_WEEKS; w++) {
+    const g = sched?.weeks?.[w], e = log?.[w] || log?.[String(w)];
+    const st = e?.stats && Object.keys(e.stats).length ? e.stats : null;
+    const cls = w === WEEK ? ' class="now"' : "";
+    if (sched && w === sched.bye) { rows.push(`<tr${cls}><td class="wk">${w}</td><td class="bye" colspan="${cols.length + 2}">Bye</td></tr>`); continue; }
+    if (!g && !e) { if (sched) continue; rows.push(`<tr${cls}><td class="wk">${w}</td>${oppCell(null)}<td class="res">\u2014</td>${cols.map(() => `<td class="dash">\u2014</td>`).join("")}</tr>`); continue; }
+    const opp = g ? g.opp : toMfl(e.opponent), home = g ? g.home : !e.is_away_team;
+    const res = g?.final && Number.isFinite(g.us) && Number.isFinite(g.them)
+      ? `<b class="${g.win ? "w" : g.us === g.them ? "t" : "l"}">${g.win ? "W" : g.us === g.them ? "T" : "L"}</b> ${g.us}-${g.them}` : "\u2014";
+    rows.push(`<tr${cls}><td class="wk">${w}</td>${oppCell(opp, home)}<td class="res">${res}</td>` +
+      cols.map((c) => (st ? `<td>${esc(String(c.f(st)))}</td>` : `<td class="dash">\u2014</td>`)).join("") + `</tr>`);
+  }
+  if (!rows.length) return `<p class="pc-meta">No games logged for ${esc(p.n)} this season.</p>`;
+  return `<table class="plog"><thead>` +
+    `<tr class="grp"><th colspan="3"></th>${groups.map(([name, c]) => `<th colspan="${c.length}"><span>${esc(name)}</span></th>`).join("")}</tr>` +
+    `<tr class="cols"><th class="wk">WK</th><th class="opp">OPP</th><th class="res">RESULT</th>${cols.map((c) => `<th>${esc(c.l)}</th>`).join("")}</tr>` +
+    `</thead><tbody>${rows.join("")}</tbody></table>`;
+}
+const LOG_SKELETON = `<div class="pnews skel plog-skel" aria-hidden="true"><i style="width:60%"></i><i></i><i></i><i></i><i></i><i></i></div>`;
 
 // The open player as the roster shows him now (points, line, flash), from
 // the open team's last render: starters or bench, whichever tab.
@@ -1575,7 +1672,10 @@ function openPlayer(key, row) {
     `</div></div>` +
     `<div id="pc-hero">${pcHeroHtml(p, t)}</div>` +
     `<div class="pc-body">` +
-      `<section class="pc-game"><h4>This game</h4><div id="pc-game">${tilesHtml(p)}</div></section>` +
+      `<div class="pc-col">` +
+        `<section class="pc-game"><h4>This game</h4><div id="pc-game">${tilesHtml(p)}</div></section>` +
+        `<section class="pc-log"><h4>Game log</h4><div class="plog-wrap${p.sid ? " pending" : ""}" id="pc-log">${p.sid ? LOG_SKELETON : `<p class="pc-meta">No game log for this player.</p>`}</div></section>` +
+      `</div>` +
       `<section class="pc-news${p.sid ? " loading" : ""}"><div class="pc-news-inner"><h4>News</h4>` +
         `<div class="pc-news-list${p.sid ? " pending" : ""}" id="pc-news-list">${p.sid ? NEWS_SKELETON : `<p class="pc-meta">No news feed for this player.</p>`}</div>` +
       `</div></section>` +
@@ -1591,6 +1691,18 @@ function openPlayer(key, row) {
   // so stories arriving mid-slide made it jump (2026-09-10).
   let landed;   // the stories, once they are here
   prof.news.then((items) => { landed = items; });
+  // The game log lands the same way, once the sheet has: the season from
+  // Sleeper beside the team's schedule from ESPN (a failed schedule still
+  // logs the weeks Sleeper has).
+  Promise.all([prof.log, teamSchedule(p.tm).catch(() => null)]).then(([log, sched]) => {
+    const wait = reducedMotion.matches ? 0 : Math.max(0, PC_IN_MS - (performance.now() - openedAt));
+    setTimeout(() => {
+      const wrap = still() && document.getElementById("pc-log");
+      if (!wrap) return;
+      wrap.innerHTML = log || sched ? gameLogHtml(p, log || {}, sched) : `<p class="pc-meta">Couldn't load the game log.</p>`;
+      sweepIn(wrap);
+    }, wait);
+  });
   setTimeout(() => {
     if (!still()) return;
     const list = document.getElementById("pc-news-list");
@@ -2035,7 +2147,9 @@ async function api(type, params = {}, timeoutMs = 0) {
   for (const [k, v] of Object.entries(params)) if (v !== "" && v != null) u.searchParams.set(k, v);
   const res = await fetch(u, { cache: "no-store", signal: timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined });
   if (!res.ok) throw new Error(`${type}: HTTP ${res.status}`);
-  return res.json();   // { ok: true, data } | { ok: false, error }
+  const json = await res.json();   // { ok: true, data } | { ok: false, error }
+  if (json.season) SEASON = Number(json.season);
+  return json;
 }
 
 // The fixture: data.js is loaded only when needed (it is 2.2MB of base64).
@@ -2046,7 +2160,7 @@ function loadFixture() {
     rosters = ROSTERS;
     headshotSrc = (p) => (p.sid && HEADSHOTS[p.sid]) || null;
     logoSrc = (tm) => LOGOS[tm] || null;
-    WEEK = 12; UPDATED = "4:12 PM"; phase = "live";
+    WEEK = 12; SEASON = 2025; UPDATED = "4:12 PM"; phase = "live";
   };
   if (typeof ROSTERS !== "undefined") { apply(); return Promise.resolve(); }
   return new Promise((resolve, reject) => {
