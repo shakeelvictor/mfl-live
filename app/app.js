@@ -2053,8 +2053,15 @@ const statsNote = () => {
    with MFL's delta, as before. A jump with no touchdown in the window
    lapses silently. Fallback: while the lines are unavailable or stale
    (statsNote), have not arrived yet, or for a player with no Sleeper join,
-   the jump alone raises the card. */
+   the jump alone raises the card. But a jump is pended even then, and
+   only falls back after a short grace (TD_GRACE_MS): on the first poll
+   after a tab comes back from the background the lines are stale by age
+   alone, and the fresh ones are in flight beside that very poll, so a
+   jump raised at once as the fallback and the line landing a second
+   later raised a second card with Sleeper's points for the same
+   touchdown (Kyren Williams, 2026-09-10). */
 const TD_WINDOW_MS = 3 * 60e3;
+const TD_GRACE_MS = 45e3;   // a jump pended while the lines were not fine waits this long for them
 const tdBase = new Map();        // sid -> touchdowns on the last stat line
 const tdEstBase = new Map();     // sid -> the engine's points for the last stat line
 const tdConfirmed = new Map();   // sid -> times a touchdown was announced from the line, its jump not yet seen
@@ -2063,11 +2070,11 @@ const statsConfirm = () => statsAt !== 0 && statsNote() === "";
 
 function noteJump(team, p, delta) {
   const ev = { player: p, franchise: team.team, pts: r2(delta), starter: true };
-  if (!p.sid || !statsConfirm()) { announceTouchdown(ev); return; }
+  if (!p.sid) { announceTouchdown(ev); return; }
   const seen = tdConfirmed.get(p.sid);
   if (seen?.length) { seen.shift(); return; }   // the line got there first and the card has shown
   const key = `${team.id}:${p.id}`, prev = tdPending.get(key);
-  tdPending.set(key, prev ? { ev: { ...ev, pts: r2(prev.ev.pts + delta) }, at: prev.at } : { ev, at: Date.now() });
+  tdPending.set(key, prev ? { ...prev, ev: { ...ev, pts: r2(prev.ev.pts + delta) } } : { ev, at: Date.now(), grace: !statsConfirm() });
 }
 // The starter carrying a Sleeper id, and his franchise, on the current
 // rosters; a bench player gets no card.
@@ -2084,14 +2091,17 @@ function confirmTouchdowns(first) {
     tdBase.set(sid, n); tdEstBase.set(sid, est);
     if (first || n <= was) continue;
     const hit = starterBySid(sid);
-    for (let i = was; i < n; i++) {
-      const key = hit ? `${hit.t.id}:${hit.p.id}` : null, waiting = key && tdPending.get(key);
-      if (waiting) { tdPending.delete(key); announceTouchdown(waiting.ev); continue; }   // MFL got there first
-      if (hit) announceTouchdown({ player: hit.p, franchise: hit.t.team, pts: r2(Math.max(0, est - estWas)), est: true, starter: true });
-      const seen = tdConfirmed.get(sid) || [];
-      seen.push(now);
-      tdConfirmed.set(sid, seen);
-    }
+    const key = hit ? `${hit.t.id}:${hit.p.id}` : null, waiting = key && tdPending.get(key);
+    // One card per arrival, however many touchdowns the line gained since
+    // the last one (two in a window, or a stretch in the background): the
+    // line's delta covers them all, and so does a jump waiting for them.
+    if (waiting) { tdPending.delete(key); announceTouchdown(waiting.ev); }   // MFL got there first
+    else if (hit) announceTouchdown({ player: hit.p, franchise: hit.t.team, pts: r2(Math.max(0, est - estWas)), est: true, starter: true });
+    // Every touchdown the line gained may still bring its own jump on
+    // MFL's cycle (or one jump may cover them all: the spares expire).
+    const seen = tdConfirmed.get(sid) || [];
+    for (let i = was + (waiting ? 1 : 0); i < n; i++) seen.push(now);
+    if (seen.length) tdConfirmed.set(sid, seen);
   }
   settleTouchdowns();
 }
@@ -2101,10 +2111,12 @@ function confirmTouchdowns(first) {
 // raises it.
 function settleTouchdowns() {
   const now = Date.now();
-  for (const [key, { ev, at }] of tdPending) {
+  for (const [key, { ev, at, grace }] of tdPending) {
     const seen = tdConfirmed.get(ev.player.sid);
     if (seen?.length) { seen.shift(); tdPending.delete(key); }
-    else if (now - at > TD_WINDOW_MS) { tdPending.delete(key); if (!statsConfirm()) announceTouchdown(ev); }
+    // Pended while the lines were not fine and still not fine: the short
+    // grace, then the jump's own card. Fine lines get the full window.
+    else if (now - at > (grace && !statsConfirm() ? TD_GRACE_MS : TD_WINDOW_MS)) { tdPending.delete(key); if (!statsConfirm()) announceTouchdown(ev); }
   }
   for (const [sid, seen] of tdConfirmed) {
     const live = seen.filter((t) => now - t <= TD_WINDOW_MS);

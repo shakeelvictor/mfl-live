@@ -252,7 +252,17 @@ Each of these was verified against real 2025 data, not inferred:
   lands within one. **Fallback:** while the lines are unavailable, stale or
   not yet arrived, or for a player with no Sleeper join, the jump alone
   raises the card, as before; a pending jump that lapses while the lines
-  have gone stale is raised too. Sleeper is a second provider, but a
+  have gone stale is raised too. **The jump is pended even while the
+  lines are stale** (2026-09-10): on the first poll after a tab comes
+  back from the background the lines are stale by age alone and the
+  fresh ones are in flight beside that very poll, so a jump raised at
+  once as the fallback and the line landing a second later raised a
+  second card with Sleeper's points for the same touchdown (Kyren
+  Williams). A jump pended while the lines were not fine waits
+  `TD_GRACE_MS` (45s) for them and then falls back to its own card; fine
+  lines get the full window. The line's side raises one card per
+  arrival however many touchdowns it gained since the last one (two in
+  a window, or a stretch in the background), never one per touchdown. Sleeper is a second provider, but a
   touchdown is not a judgment call the way a tackle is. The points are
   never recomputed from stats.
 - **MFL counts special-teams tackles toward IDP totals**; Sleeper breaks them
