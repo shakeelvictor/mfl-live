@@ -552,7 +552,13 @@ element and scores are second.
   and only that render's `.sbox.grow` carries a transition), and on a
   poll's refresh they land where they are. Which stats show is the old tiles' rule, the
   position's core always with zeros muted, the rest once they count.
-  Week 1 has no season to scale against, so the bars stay empty. **The card
+  Week 1 has no season to scale against, so the bars stay empty. **The
+  section shows only once the player's game has begun** (`gameBegun`:
+  `gameState`'s `started`, or with no schedule entry a line or a clock;
+  never pre-season): before kickoff it said "Game not started" under
+  its heading, which was nothing to look at, so it is hidden
+  (`.pc-game.off`) and a poll's refresh turns it on as the game kicks
+  off. On `poc` a game has begun when it is on the field or has a line. **The card
   opens in two acts**:
   the sheet sweeps up from the bottom edge with the player's data
   (`translateY(100%)`, .52s; before, the laptop card rose a little and
