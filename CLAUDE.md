@@ -279,6 +279,23 @@ files themselves (spec, prototype and its runtime, mock data, screenshots,
 the **gap between adjacent ranks is worth a full win**, so gaps are the loudest
 element and scores are second.
 
+- **Blue under the mint** (2026-09-11, from `poc`): the dark canvas is
+  blue-black (`#060a11`, also the manifest's splash and the `theme-color`
+  meta's fallback), the surfaces blue-grey, the wash a sea blue, and the
+  hero and the pane sweep from the mint's teal into a deep sea blue (the
+  hero reaches oklch hue 252 past its middle and fades to the surface;
+  `--tab-b` is the blue, `--tab-a` the teal still, so the laptop tab's
+  seam is a teal-and-blue mix, sRGB hex at both ends as before). Light
+  cools the canvas to a blue-white and runs the hero teal to cobalt.
+  **Gold never sits on the blue**: `.hero.winner` reads `--hero-bg-gold`,
+  the teal-to-surface hero the gold sat on before. On laptop the picked
+  winner hero is still the tab, so its right edge meets the pane's mix;
+  only the phone's winner hero is fully green. Why: the green ground
+  under the gold read as the Packers. Four palettes and four third
+  colours were tried on `poc` that day (a cobalt with crimson, brass,
+  volt and fuchsia; the Bears' navy and orange; a red on the blue) and
+  mint is the keeper; the orange close gap beside the mint still reads a
+  little Dolphins, and a rose close gap is the fix if it ever matters.
 - **In dark the kicker ("Playoffs · Week 15") and the subhead are white**
   (`--text-primary`), every week: the muted greys were hard to read on
   the dark canvas, worst under the Bowl's gold clouds (2026-09-05). Light
