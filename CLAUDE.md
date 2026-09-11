@@ -250,7 +250,17 @@ element and scores are second.
   (headshot, logo, stat line, franchise, points) and goes away when the
   next day's games kick off; once the week is official it turns gold as the
   MVP of the week and stays until the next week begins. While a day is in
-  progress (the mockup's opening state) there is no card. A soft colour wave drifts across its background (accent, gold
+  progress (the mockup's opening state) there is no card. **The card's entrance** (2026-09-11): a day's last whistle
+  used to pop it in; now the space opens first, slowly, from the top
+  down (`revealSpotlight`: the card's height tweened from nothing over
+  1.6s, the rows below easing down), and only then does the scorer come
+  into view a piece at a time (`.spot.reveal`, `--i` per piece, 140ms
+  apart). The MVP of the week gets the same: the full opening when it
+  arrives from nothing (a Monday night, the day and the week final
+  together), the reveal alone when a day's card turns gold in place. A
+  tick's re-render leaves the card alone while the reveal runs
+  (`spotRevealUntil`), so the pieces do not restart. Skipped under
+  reduced motion. Not yet on `main`. A soft colour wave drifts across its background (accent, gold
   as MVP). When the week is official the leader hero becomes the **Week
   winner**: gold wave, gold badge, and a money-bag emoji hanging over its
   top-right corner (it sits outside the hero, which clips overflow for the

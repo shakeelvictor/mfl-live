@@ -833,6 +833,40 @@ const THU_NFL = new Set(["DET", "CLE"]);   // Thursday night: Browns at Lions
 const spotEl = document.getElementById("spot");
 let lastSpotKey = null;
 
+/* The card's entrance (2026-09-11). A day's last whistle used to pop the
+   card in; now the space opens first, slowly, from the top down (the
+   card's height tweened from nothing, the rows below easing down to make
+   room), and only then does the scorer come into view, one piece at a
+   time (label and day, headshot, name, position, line, franchise, points;
+   .reveal with --i on each, CSS). The MVP of the week gets the same: the
+   full opening when it arrives from nothing (a Monday night, the day and
+   the week final together), the reveal alone when a day's card turns gold
+   in place. A tick's re-render leaves the card alone while the reveal
+   runs, so the pieces do not restart. */
+const SPOT_OPEN_MS = 1600, SPOT_STEP_MS = 140, SPOT_PIECE_MS = 650;
+let spotRevealUntil = 0;
+function revealSpotlight(opening) {
+  if (reducedMotion.matches) return;
+  const pieces = [spotEl.querySelector(".spot-top"), ...spotEl.querySelectorAll(".spot-body > *, .spot-who > *")];
+  pieces.forEach((el, i) => el.style.setProperty("--i", i));
+  const open = opening ? SPOT_OPEN_MS : 0;
+  spotEl.style.setProperty("--open", `${open}ms`);
+  spotEl.classList.add("reveal");
+  if (opening) {
+    const cs = getComputedStyle(spotEl);
+    const pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    const h = cs.boxSizing === "border-box" ? spotEl.offsetHeight : spotEl.offsetHeight - pad - parseFloat(cs.borderTopWidth) - parseFloat(cs.borderBottomWidth);
+    const a = spotEl.animate(
+      [{ height: "0px", paddingTop: "0px", paddingBottom: "0px", opacity: .7 }, { height: `${h}px`, paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, opacity: 1 }],
+      { duration: SPOT_OPEN_MS, easing: "cubic-bezier(.22, 1, .36, 1)", id: "spot-open" });
+    a.onfinish = a.oncancel = () => a.cancel();
+  }
+  spotRevealUntil = Date.now() + open + pieces.length * SPOT_STEP_MS + SPOT_PIECE_MS + 100;
+  clearTimeout(spotRevealTimer);
+  spotRevealTimer = setTimeout(() => { spotEl.classList.remove("reveal"); spotEl.style.removeProperty("--open"); }, spotRevealUntil - Date.now());
+}
+let spotRevealTimer = 0;
+
 function spotlightPick() {
   const all = teams.flatMap((t) => liveStarters(t, new Set()).map((p) => ({ ...p, franchise: p.from || t.team })));
   let pool, label, when;
@@ -846,9 +880,11 @@ function spotlightPick() {
 
 function renderSpotlight() {
   const { top, label, when, mvp, key } = spotlightPick();
-  if (!top) { spotEl.hidden = true; lastSpotKey = key; return; }
-  spotEl.hidden = false;
+  if (!top) { spotEl.hidden = true; spotEl.classList.remove("reveal"); spotRevealUntil = 0; lastSpotKey = key; return; }
   const changed = lastSpotKey !== null && key !== lastSpotKey;
+  if (!changed && Date.now() < spotRevealUntil) return;   // mid-reveal: the pieces would restart
+  const appearing = spotEl.hidden;   // from nothing: the space opens first
+  spotEl.hidden = false;
   const phaseChanged = changed && key.split(":")[0] !== lastSpotKey.split(":")[0];
   lastSpotKey = key;
   spotEl.classList.toggle("mvp", mvp);
@@ -866,6 +902,7 @@ function renderSpotlight() {
       `</span>` +
       `<span class="spot-pts" data-tween="p:${top.key}">${fmt(top.pts)}</span>` +
     `</div>`;
+  if (appearing || (phaseChanged && mvp)) revealSpotlight(appearing);
 }
 
 /* ---------------- team page ---------------- */
