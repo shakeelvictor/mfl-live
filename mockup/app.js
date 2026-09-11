@@ -887,7 +887,7 @@ function renderSpotlight() {
   if (!top) { spotEl.hidden = true; spotEl.classList.remove("reveal"); spotRevealUntil = 0; lastSpotKey = key; return; }
   const changed = lastSpotKey !== null && key !== lastSpotKey;
   if (!changed && Date.now() < spotRevealUntil) return;   // mid-reveal: the pieces would restart
-  const appearing = spotEl.hidden;   // from nothing: the space opens first
+  const appearing = spotEl.hidden && lastSpotKey !== null;   // from nothing during the session: the space opens first (a page loaded after a day's end shows it at once)
   spotEl.hidden = false;
   const phaseChanged = changed && key.split(":")[0] !== lastSpotKey.split(":")[0];
   lastSpotKey = key;
