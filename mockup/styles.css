@@ -1505,11 +1505,24 @@ body.pcard-open { overflow: hidden; }
 .plog td.res b.w { color: var(--accent); }
 .plog td.res b.l { color: var(--gap-critical); }
 .plog-list { display: none; }   /* the phone's rendering of the log (below) */
-.pc-game .ptiles { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
-.pc-game .ptile { padding: 11px 12px; }
-.pc-game .ptile b { font-size: 19px; }
-.pc-game .ptiles { padding: 0; }
 .pc-game .pnone { padding: 0; }
+/* The box score: the position's groups as rows, a label at the left and
+   the stats across, each a number over its label over a bar scaled to
+   the season high (a full bar is a season best; empty until the log has
+   landed, then growing in). */
+.sbox { display: grid; gap: 16px; }
+.sg { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 14px; align-items: start; }
+.sg > i { padding-top: 7px; font: 800 10px/1 var(--font-data); font-style: normal; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); }
+.sg-stats { display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: 0 14px; }
+.sv { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sv b { font: 800 22px/1 var(--font-data); letter-spacing: -.01em; white-space: nowrap; }
+.sv b em { font-style: normal; font-size: 14px; font-weight: 700; color: var(--text-muted); }
+.sv.zero b { color: var(--text-muted); }
+.sv small { font: 700 9.5px/1 var(--font-data); letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sv small .hi { font-style: normal; color: var(--accent); }   /* a season best, strictly */
+.sb { display: block; height: 4px; margin-top: 3px; border-radius: 2px; background: var(--surface-raised); overflow: hidden; }
+.sb > span { display: block; height: 100%; width: 0; border-radius: 2px; background: var(--accent); transition: width .7s cubic-bezier(.22, 1, .36, 1); }
+.sv.zero .sb > span { background: transparent; }
 .pc-news {
   min-width: 0; min-height: 0; align-self: stretch;
   overflow-y: auto; overscroll-behavior: contain;
@@ -1656,9 +1669,15 @@ body.pcard-open { overflow: hidden; }
   .plog-item .pts { grid-area: pts; min-width: 48px; text-align: right; font-size: 15px; font-weight: 800; }
   .plog-item .pts.dash { color: var(--text-muted); font-weight: 600; }
   .plog-line { grid-area: line; font: 600 11.5px/1.4 var(--font-data); letter-spacing: .02em; color: var(--text-muted); }
-  .pc-game .ptiles { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
-  .pc-game .ptile { padding: 9px 10px; }
-  .pc-game .ptile b { font-size: 17px; }
+  /* The group label above its stats. */
+  .sbox { gap: 14px; }
+  .sg { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .sg > i { padding-top: 0; }
+  .sg-stats { gap: 0 10px; }
+  .sv b { font-size: 20px; }
+  /* The season-best tag as a mint marker: the words clipped in a column this narrow. */
+  .sv small .hi span { display: none; }
+  .sv small .hi::before { content: "\25B2"; margin-left: 4px; font-size: 7px; vertical-align: 1px; }
   .pc-news { align-self: auto; overflow: visible; border-left: 0; }
   .pc-news h4 { position: static; }
   .pc-news-inner > .pc-news-list, .pc-news-inner > .pc-news-ghost { padding: 0; }
@@ -2045,6 +2064,7 @@ body.pcard-open { overflow: hidden; }
   .prow.enter { animation: none; }
   .pnews.skel i { animation: none; }
   .pc-scrim, .pc-sheet, .pc-news h4::after { animation: none !important; }   /* the card lands at once; the script lands the news at once */
+  .sb > span { transition: none; }
   .pc-hero::after { display: none; }   /* a static sheen would be a stripe */
   .prow.rz::after, .rzn { animation: none; }
   .gap .pill::after { display: none; }
