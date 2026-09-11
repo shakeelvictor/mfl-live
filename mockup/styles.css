@@ -22,6 +22,7 @@
   --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 16px 40px rgba(0, 0, 0, 0.4);
   --shadow-sheet: 0 -24px 80px rgba(0, 0, 0, 0.65);
   --scrim: rgba(3, 6, 6, 0.72);
+  --news-ink: #ffffff;   /* the news copy: pure white here, pure black in light, for reading (2026-09-11) */
   --text-primary: #f6faf8;
   --text-secondary: #a7b5b0;
   --text-muted: #6b7a75;
@@ -98,6 +99,7 @@
   --shadow-card: 0 1px 2px rgba(15, 25, 22, 0.04), 0 16px 40px rgba(15, 25, 22, 0.09);
   --shadow-sheet: 0 -24px 80px rgba(15, 25, 22, 0.25);
   --scrim: rgba(20, 30, 28, 0.38);
+  --news-ink: #000000;
   --text-primary: #101514;
   --text-secondary: #475350;
   --text-muted: #86908c;
@@ -1301,7 +1303,8 @@ button.hero { cursor: pointer; }
    once it has landed the news sweeps in from the left (the script;
    2026-09-11); it sweeps back down to close, faster. From 600px up it
    is cut after Sleeper's own desktop card: three quarters of the window
-   wide, centred and flush to the bottom, the band with a big portrait
+   wide, centred in the viewport (flush to the bottom until 2026-09-11;
+   it still sweeps up from below), the band with a big portrait
    over the ghosted club mark and the vitals in large figures (the close
    button in its top-right corner on every screen; a name tab on a dark
    strip lasted a day, and put the button somewhere else than on the
@@ -1313,7 +1316,7 @@ button.hero { cursor: pointer; }
    the log and the news behind a pair of tabs. */
 .pcard {
   position: fixed; inset: 0; z-index: 55;
-  display: none; align-items: flex-end; justify-content: center;
+  display: none; align-items: center; justify-content: center;
   padding: 0;
 }
 .pcard[data-open="true"], .pcard[data-open="closing"] { display: flex; }
@@ -1329,16 +1332,17 @@ body.pcard-open { overflow: hidden; }
   width: 75%; height: min(84vh, 84dvh);   /* a fixed height: the news loads inside it and nothing grows or jumps */
   display: flex; flex-direction: column;
   background: var(--surface); color: var(--text-primary);
-  border: 1px solid var(--border); border-bottom: 0;
-  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
   overflow: hidden;   /* the hero band takes the corners */
   animation: fflr-pc-in .52s cubic-bezier(.22, 1, .36, 1) both;
   will-change: transform;   /* its own layer for the ride */
 }
 .pcard[data-open="closing"] .pc-sheet { animation: fflr-pc-out .24s cubic-bezier(.4, 0, 1, 1) forwards; }
-@keyframes fflr-pc-in { from { transform: translateY(100%); } to { transform: none; } }
-@keyframes fflr-pc-out { to { transform: translateY(100%); } }
+/* From its centred rest, half the viewport and half its own height down puts its top at the bottom edge. */
+@keyframes fflr-pc-in { from { transform: translateY(calc(50vh + 50%)); } to { transform: none; } }
+@keyframes fflr-pc-out { to { transform: translateY(calc(50vh + 50%)); } }
 
 .pc-close {
   position: absolute; top: 14px; right: 14px; z-index: 4;
@@ -1533,7 +1537,7 @@ body.pcard-open { overflow: hidden; }
 .pnews { padding: 18px 0; border-bottom: 1px solid var(--border-strong); }
 .pnews:first-child { padding-top: 14px; }
 .pnews:last-child { border-bottom: 0; }
-.pnews h5 { margin: 0; font: 700 17px/1.3 var(--font-display); color: var(--text-primary); }
+.pnews h5 { margin: 0; font: 700 18px/1.3 var(--font-display); color: var(--news-ink); }
 /* When and where from, on a bordered pill: "Sep 2, 6:56 PM via RotoWire". */
 .pnews-when {
   display: inline-block; margin-top: 10px; padding: 6px 10px;
@@ -1541,14 +1545,14 @@ body.pcard-open { overflow: hidden; }
   font: 600 11.5px/1 var(--font-data); color: var(--text-muted);
 }
 .pnews-when b { color: var(--text-secondary); }
-.pnews p { margin: 10px 0 0; font: 400 13.5px/1.6 var(--font-data); color: var(--text-secondary); }
+.pnews p { margin: 10px 0 0; font: 400 15px/1.6 var(--font-data); color: var(--news-ink); }
 .pnews-analysis {
   margin-top: 8px; padding: 8px 12px;
   border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
   background: var(--surface-raised);
-  font: 400 12.5px/1.6 var(--font-data); color: var(--text-secondary);
+  font: 400 14px/1.6 var(--font-data); color: var(--news-ink);
 }
-.pnews-analysis b { color: var(--text-primary); }
+.pnews-analysis b { color: var(--news-ink); font-weight: 800; }
 .pnews a { display: inline-block; margin-top: 8px; font: 700 12px/1 var(--font-data); color: var(--accent); text-decoration: none; }
 .pnews a:hover { text-decoration: underline; }
 /* Ghost stories while the news loads: a title bar and three text bars, a
@@ -1567,7 +1571,9 @@ body.pcard-open { overflow: hidden; }
    The sheet is a fixed height, as on a laptop. */
 @media (max-width: 599px) {
   .pcard { align-items: flex-end; padding: 0; }
-  .pc-sheet { width: 100%; height: min(90vh, 90dvh); }
+  .pc-sheet { width: 100%; height: min(90vh, 90dvh); border-bottom: 0; border-radius: var(--radius-card) var(--radius-card) 0 0; }
+  @keyframes fflr-pc-in { from { transform: translateY(100%); } to { transform: none; } }
+  @keyframes fflr-pc-out { to { transform: translateY(100%); } }
   /* A grab handle at the top of the sheet: a finger dragging down closes it (the script). */
   .pc-sheet::before {
     content: ""; position: absolute; top: 8px; left: 50%; z-index: 5;
@@ -1656,7 +1662,7 @@ body.pcard-open { overflow: hidden; }
   .pc-news { align-self: auto; overflow: visible; border-left: 0; }
   .pc-news h4 { position: static; }
   .pc-news-inner > .pc-news-list, .pc-news-inner > .pc-news-ghost { padding: 0; }
-  .pnews h5 { font-size: 15px; }
+  .pnews h5 { font-size: 16.5px; }
   .pnews { padding: 14px 0; }
   .pnews:first-child { padding-top: 10px; }
 }
