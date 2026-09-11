@@ -470,7 +470,9 @@ element and scores are second.
   by the player's tween key (`pcKey`). **A bottom sheet on every
   screen** (2026-09-11): from 600px up it is cut after Sleeper's own
   desktop player card, three quarters of the window wide and 84vh
-  tall, centred and flush to the bottom: the band with a 150px portrait
+  tall, centred in the viewport (it sweeps up from below the bottom
+  edge, `translateY(calc(50vh + 50%))`; flush to the bottom for a day):
+  the band with a 150px portrait
   over the club mark ghosted large, the name at 44px, a white **team
   pill** (mark and code, `.pc-team`) and the position chip in the sub
   line, the vitals in large figures (the game strip as wide as its
@@ -484,7 +486,9 @@ element and scores are second.
   left (the tiles stay, the log scrolls on its own), the news right
   scrolling on its own behind a hairline with its heading sticky; the
   four sections are flat siblings placed by the grid, so the phone can
-  stack them; each story titled at 17px
+  stack them; **the news copy is pure white in dark and pure black in
+  light** (`--news-ink`, for reading; the muted greys were hard going)
+  at 15px, the analysis at 14px; each story titled at 18px
   over a bordered **date pill**, "Sep 2, 6:56 PM via RotoWire"
   (`whenLabel`, the reader's clock; the row badge's tooltip keeps
   `timeAgo`). A centred 600px card before; a two-column cut at that
