@@ -1017,10 +1017,13 @@ function renderSpotlight(flip = false) {
   const i = spotIndex == null ? entries.length - 1 : Math.min(spotIndex, entries.length - 1);
   const { top, label, when, mvp } = entries[i];
   spotEl.classList.toggle("mvp", mvp);
+  // More than one entry: a pill per day (and the MVP), the shown one lit;
+  // tap, swipe or arrow keys flip. One entry: its day as a plain pill.
   const nav = entries.length > 1
-    ? `<span class="spot-nav"><button class="spot-arrow" type="button" data-dir="-1" aria-label="Earlier day"${i === 0 ? " disabled" : ""}>&#8249;</button>` +
-      `<span class="spot-when">${esc(when)}</span>` +
-      `<button class="spot-arrow" type="button" data-dir="1" aria-label="Later day"${i === entries.length - 1 ? " disabled" : ""}>&#8250;</button></span>`
+    ? `<span class="spot-nav" role="tablist" aria-label="Days">` + entries.map((e, j) =>
+        `<button class="spot-tab${j === i ? " on" : ""}${e.mvp ? " gold" : ""}" type="button" role="tab" data-i="${j}" aria-selected="${j === i}" title="${esc(e.when)}">` +
+          `<span class="long">${e.mvp ? "\u2605 " : ""}${esc(e.when)}</span><span class="short">${e.mvp ? "\u2605 " : ""}${esc(e.mvp ? "Final" : e.when.slice(0, 3))}</span></button>`).join("") +
+      `</span>`
     : `<span class="spot-when">${esc(when)}</span>`;
   const logo = logoSrc(top.tm) ? `<span class="logo"><img src="${logoSrc(top.tm)}" alt=""></span>` : `<span class="logo">${esc(top.tm)}</span>`;
   spotEl.innerHTML =
@@ -1044,14 +1047,42 @@ function renderSpotlight(flip = false) {
     revealSpotlight(appearing || (phaseChanged && !newest.mvp));
   }
 }
-spotEl.addEventListener("click", (e) => {
-  const b = e.target.closest(".spot-arrow");
-  if (!b || b.disabled) return;
-  const n = spotlightEntries().length, cur = spotIndex == null ? n - 1 : Math.min(spotIndex, n - 1);
-  spotIndex = Math.max(0, Math.min(n - 1, cur + Number(b.dataset.dir)));
+// Flip the spotlight to entry j (clamped), re-rendering with the body's
+// rise; focus follows onto its pill when asked (keys and taps).
+function flipSpot(j, focus = false) {
+  const n = spotlightEntries().length;
+  if (n < 2) return;
+  const cur = spotIndex == null ? n - 1 : Math.min(spotIndex, n - 1);
+  const to = Math.max(0, Math.min(n - 1, j));
+  if (to === cur) return;
+  spotIndex = to;
   renderSpotlight(true);
-  spotEl.querySelector(`.spot-arrow[data-dir="${b.dataset.dir}"]`)?.focus();
+  if (focus) spotEl.querySelector(`.spot-tab[data-i="${to}"]`)?.focus();
+}
+const spotCur = () => { const n = spotlightEntries().length; return spotIndex == null ? n - 1 : Math.min(spotIndex, n - 1); };
+spotEl.addEventListener("click", (e) => {
+  const b = e.target.closest(".spot-tab");
+  if (b) flipSpot(Number(b.dataset.i), true);
 });
+spotEl.addEventListener("keydown", (e) => {
+  if (!e.target.closest(".spot-tab")) return;
+  const d = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : e.key === "Home" ? -Infinity : e.key === "End" ? Infinity : 0;
+  if (!d) return;
+  e.preventDefault();
+  flipSpot(Number.isFinite(d) ? spotCur() + d : d < 0 ? 0 : Infinity, true);
+});
+// A swipe across the card flips it: left for a later day, right for an
+// earlier one, like a carousel. Only a clear horizontal move counts, so a
+// scroll that starts on the card is left to the page.
+let spotTouch = null;
+spotEl.addEventListener("touchstart", (e) => { const t = e.changedTouches[0]; spotTouch = { x: t.clientX, y: t.clientY }; }, { passive: true });
+spotEl.addEventListener("touchend", (e) => {
+  if (!spotTouch) return;
+  const t = e.changedTouches[0], dx = t.clientX - spotTouch.x, dy = t.clientY - spotTouch.y; spotTouch = null;
+  if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+  flipSpot(spotCur() + (dx < 0 ? 1 : -1));
+}, { passive: true });
+spotEl.addEventListener("touchcancel", () => { spotTouch = null; }, { passive: true });
 
 /* ---------------- team page ---------------- */
 

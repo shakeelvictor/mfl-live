@@ -815,9 +815,13 @@ element and scores are second.
   `spotlightEntries` lists every finished day's top starter, labelled
   with the weekday, while no day is in progress, and the MVP of the
   week after them once the week is final; the card lands on the newest
-  and **arrows by the day pill flip back through the earlier days**
-  (2026-09-11; `spotIndex`, `.spot-arrow`, only there with more than
-  one entry, the ends disabled): a flip re-renders with the body's own
+  and **a pill per entry flips through them** (2026-09-11; `spotIndex`,
+  `.spot-tab`, `flipSpot`, only there with more than one entry): the
+  shown day lit in the accent, the MVP's in gold with a star, the rest
+  muted; short labels under 600px (Thu, Sun, Final), a swipe across the
+  card (left for later, right for earlier) and the arrow keys flip too.
+  A pair of small arrows around the day pill lasted the morning: too
+  faint to find. A flip re-renders with the body's own
   rise and no reveal, and gold only for the MVP entry; a new day's card
   lands on the newest again, and a poll's render leaves a flipped day
   where it is. The fixture's entries are Thursday's and Sunday's; on
