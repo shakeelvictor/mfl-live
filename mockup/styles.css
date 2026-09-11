@@ -1662,7 +1662,10 @@ body.pcard-open { overflow: hidden; }
   .pc-news { align-self: auto; overflow: visible; border-left: 0; }
   .pc-news h4 { position: static; }
   .pc-news-inner > .pc-news-list, .pc-news-inner > .pc-news-ghost { padding: 0; }
-  .pnews h5 { font-size: 16.5px; }
+  /* The copy a step up again here: a phone is read at arm's length. */
+  .pnews h5 { font-size: 18px; }
+  .pnews p { font-size: 16px; }
+  .pnews-analysis { font-size: 15px; }
   .pnews { padding: 14px 0; }
   .pnews:first-child { padding-top: 10px; }
 }
