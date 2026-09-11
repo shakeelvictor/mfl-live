@@ -693,10 +693,17 @@ element and scores are second.
   render, since it replayed as a second flash when the class came off).
   The MVP of the week gets the same: the full opening when it arrives
   from nothing (a Monday night, the day and the week final together),
-  the reveal alone when a day's card turns gold in place. Only for a
-  card appearing during the session: a page loaded after a day's end
-  shows it at once. A poll's re-render leaves the card alone while the
-  reveal runs (`spotRevealUntil`). Skipped under reduced motion. A soft colour wave drifts across its background (accent, gold
+  the reveal alone when a day's card turns gold in place. **It runs on the first visit after a day's end, on a refresh and on a
+  return to the app** (2026-09-11): a card present when the page loads
+  waits under the loader and opens once the board has cascaded in
+  (`spotQueued`, `boardReady` at the cascade's end, so the cascade never
+  counts it), and a card showing when the tab comes back after a minute
+  or more away (`SPOT_RETURN_MS`) opens again, the poll fired by the
+  same return leaving it alone; a short flip away leaves it be. A new
+  day's card replacing another opens too; the MVP turning gold in place,
+  or a corrected top scorer, gets the reveal alone. A poll's re-render
+  leaves the card alone while the reveal runs (`spotRevealUntil`).
+  Skipped under reduced motion. A soft colour wave drifts across its background (accent, gold
   as MVP). When the week is official the leader hero becomes the **Week
   winner**: gold wave, gold badge, and a money-bag emoji hanging over its
   top-right corner (it sits outside the hero, which clips overflow for the
