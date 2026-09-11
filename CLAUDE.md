@@ -469,15 +469,29 @@ element and scores are second.
   open team's last render) and leaves the news alone; the card is keyed
   by the player's tween key (`pcKey`). A centred 600px card on a laptop (a two-column cut with a news rail
   lasted a day: the stats sat beside a lot of nothing), a bottom sheet
-  under 600px (the band stays put, the body scrolls). **The phone's slide is the sheet's transform alone** (2026-09-10, it
-  stuttered and jumped): the body's own entrance and the scrim's blur
-  are off, the sheet rides its own layer, and **the phone sheet is a
+  under 600px (the band stays put, the body scrolls). **The card opens
+  in two acts, on a laptop as on a phone** (2026-09-11): the sheet
+  sweeps up from the bottom of the screen with the player's data (the
+  laptop card from below the viewport to its centre, `translateY(calc(50vh
+  + 50%))`, on the phone's curve; before, a small rise and fade), and
+  once it has landed (`PC_IN_MS`) the news sweeps in from the left
+  (`sweepIn`, a clip-path wipe with a nudge, `NEWS_WIPE_MS`): the
+  stories themselves when Sleeper has already answered, the three ghost
+  stories (`NEWS_SKELETON`, a highlight shimmering left to right along
+  them, a bar of accent sweeping under the News heading while
+  `.pc-news.loading`) otherwise, and the stories then sweep over the
+  ghosts when they land (`showNews`: the ghosts cloned into a
+  `.pc-news-ghost` overlay wiped out on the same front, nudged off ahead
+  of it), never before the ghosts have finished arriving. The list
+  waits clipped to nothing (`.pending`) until its sweep, so nothing
+  paints before its cue; the body has no entrance of its own. It leaves
+  the way it came. Reduced motion lands each act at once. **The phone's
+  slide is the sheet's transform alone** (2026-09-10, it
+  stuttered and jumped): the scrim's blur is off, the sheet rides its
+  own layer, and **the phone sheet is a
   fixed height** (90dvh): a content-sized sheet slid up by its own
   height and then grew when the news landed, and holding the news back
-  until it had landed only turned the jump into a snap. Three ghost
-  stories (`NEWS_SKELETON`) hold the news' place, so the card reads as
-  full from the first frame; the news still waits for the entrance
-  (`PC_IN_MS`). The laptop card stays content-sized and grows to the
+  until it had landed only turned the jump into a snap. The laptop card stays content-sized and grows to the
   news on a height tween (`growSheet`), never a snap. The row has no
   chevron (removed the same day; the tap is the affordance), and a row
   whose team has no schedule entry shows no game label ("Not started"

@@ -1280,9 +1280,11 @@ button.hero { cursor: pointer; }
    hero band in the team's colours with the club mark ghosted behind the
    headshot, the name in the display italic, the position, the injury
    chip when Sleeper has one, and a vitals strip (points, game, lineup);
-   then the body, the game so far beside the news. A centred card on a
-   laptop, a bottom sheet on a phone, each leaving the way it came in;
-   closing is faster than opening. */
+   then the body, the stat tiles and the news. The card sweeps up from
+   the bottom of the screen with the player's data, on a laptop (to the
+   centre) as on a phone (a bottom sheet), and once it has landed the
+   news sweeps in from the left (the script; 2026-09-11, a small rise
+   and fade before). It leaves the way it came, faster. */
 .pcard {
   position: fixed; inset: 0; z-index: 55;
   display: none; align-items: center; justify-content: center;
@@ -1303,11 +1305,13 @@ body.pcard-open { overflow: hidden; }
   border: 1px solid var(--border); border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
   overflow: hidden;   /* the hero band takes the corners */
-  animation: fflr-pc-in .48s cubic-bezier(.22, 1, .36, 1) both;
+  animation: fflr-pc-in .52s cubic-bezier(.22, 1, .36, 1) both;
+  will-change: transform;
 }
-.pcard[data-open="closing"] .pc-sheet { animation: fflr-pc-out .19s cubic-bezier(.4, 0, 1, 1) forwards; }
-@keyframes fflr-pc-in { from { opacity: 0; transform: translateY(22px) scale(.96); } }
-@keyframes fflr-pc-out { to { opacity: 0; transform: translateY(12px) scale(.98); } }
+.pcard[data-open="closing"] .pc-sheet { animation: fflr-pc-out .26s cubic-bezier(.4, 0, 1, 1) forwards; }
+/* From its centred rest, half the viewport and half its own height down puts its top at the bottom edge. */
+@keyframes fflr-pc-in { from { transform: translateY(calc(50vh + 50%)); } to { transform: none; } }
+@keyframes fflr-pc-out { to { transform: translateY(calc(50vh + 50%)); } }
 
 .pc-close {
   position: absolute; top: 14px; right: 14px; z-index: 4;
@@ -1338,7 +1342,7 @@ body.pcard-open { overflow: hidden; }
 .pcard[data-open="true"] .pc-hero::after {
   content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
   background: linear-gradient(100deg, transparent 38%, rgba(255, 255, 255, 0.09) 50%, transparent 62%);
-  animation: fflr-pc-key .72s ease-out .16s both;
+  animation: fflr-pc-key .72s ease-out .3s both;
 }
 @keyframes fflr-pc-key { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 /* The club mark, huge and ghosted, off the top-left corner. */
@@ -1422,8 +1426,6 @@ body.pcard-open { overflow: hidden; }
   padding: 14px 20px 22px;
   display: grid; gap: 18px;
 }
-.pcard[data-open="true"] .pc-body { animation: fflr-pc-content .34s ease .12s both; }
-@keyframes fflr-pc-content { from { opacity: 0; transform: translateY(6px); } }
 .pc-body h4 {
   margin: 0 0 8px;
   font: 800 10px/1 var(--font-data); letter-spacing: .14em; text-transform: uppercase;
@@ -1435,6 +1437,20 @@ body.pcard-open { overflow: hidden; }
 .pc-game .ptiles { padding: 0; }
 .pc-game .pnone { padding: 0; }
 .pc-news { min-width: 0; }
+.pc-news-inner { position: relative; }   /* the ghost stories overlay the list while the news sweeps over them */
+/* Act two (the script): the list waits clipped to nothing until the sheet
+   has landed, then sweeps in from the left; while the news loads a bar of
+   accent sweeps left to right under the heading, and the ghost stories
+   shimmer the same way. */
+.pc-news-list.pending { clip-path: inset(0 100% 0 0); }
+.pc-news h4 { position: relative; overflow: hidden; padding-bottom: 5px; margin-bottom: 4px; }
+.pc-news.loading h4::after {
+  content: ""; position: absolute; left: 0; bottom: 0; width: 30%; height: 2px; border-radius: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: fflr-pc-load 1.2s cubic-bezier(.4, 0, .6, 1) infinite;
+}
+@keyframes fflr-pc-load { from { transform: translateX(-100%); } to { transform: translateX(334%); } }
+.pc-news-ghost { position: absolute; left: 0; right: 0; pointer-events: none; }
 .pc-meta { margin: 0; font: 600 12.5px/1.5 var(--font-data); color: var(--text-muted); }
 .pc-meta a { color: var(--accent); font-weight: 700; text-decoration: none; }
 .pc-meta a:hover { text-decoration: underline; }
@@ -1454,28 +1470,30 @@ body.pcard-open { overflow: hidden; }
 .pnews-analysis b { color: var(--text-primary); }
 .pnews a { display: inline-block; margin-top: 8px; font: 700 12px/1 var(--font-data); color: var(--accent); text-decoration: none; }
 .pnews a:hover { text-decoration: underline; }
-/* Ghost stories while the news loads: a title bar and three text bars, breathing. */
-.pnews.skel i { display: block; height: 10px; margin-top: 9px; border-radius: 6px; background: var(--surface-raised); animation: fflr-skel 1.1s ease-in-out infinite alternate; }
+/* Ghost stories while the news loads: a title bar and three text bars, a
+   highlight sweeping left to right along them. */
+.pnews.skel i {
+  display: block; height: 10px; margin-top: 9px; border-radius: 6px;
+  background: linear-gradient(90deg, var(--surface-raised) 0 32%, color-mix(in srgb, var(--surface-raised) 80%, var(--text-primary)) 50%, var(--surface-raised) 68% 100%);
+  background-size: 300% 100%;
+  animation: fflr-skel 1.4s linear infinite;
+}
 .pnews.skel i:first-child { height: 14px; margin-top: 0; }
-@keyframes fflr-skel { to { opacity: .45; } }
+@keyframes fflr-skel { from { background-position: 100% 0; } to { background-position: 0 0; } }
 
 /* A phone: a bottom sheet, stopping short of the top so a strip of the
    page stays to tap; the band stays put and the body scrolls under it.
-   The slide is the sheet's transform alone: the body's own entrance is
-   off here (a second transform in flight under the first stuttered),
-   the sheet is promoted to its own layer for the ride, the sheet is a
-   fixed height (the news loads inside it, behind ghost stories, so it
-   never grows), and the script still holds the news back until the
-   sheet has landed. */
+   The sheet is a fixed height (the news loads inside it, behind ghost
+   stories, so it never grows), and the script still holds the news
+   back until the sheet has landed. */
 @media (max-width: 599px) {
   .pcard { align-items: flex-end; padding: 0; }
   .pc-sheet {
     width: 100%; height: min(90vh, 90dvh);   /* a fixed height: the news loads inside it and nothing grows or jumps */
     border-radius: var(--radius-card) var(--radius-card) 0 0; border-bottom: 0;
-    animation: fflr-pc-up .48s cubic-bezier(.22, 1, .36, 1) both;
-    will-change: transform;
+    animation: fflr-pc-up .52s cubic-bezier(.22, 1, .36, 1) both;
   }
-  .pcard[data-open="closing"] .pc-sheet { animation: fflr-pc-down .22s cubic-bezier(.4, 0, 1, 1) forwards; }
+  .pcard[data-open="closing"] .pc-sheet { animation: fflr-pc-down .24s cubic-bezier(.4, 0, 1, 1) forwards; }
   /* A grab handle at the top of the sheet: a finger dragging down closes it (the script). */
   .pc-sheet::before {
     content: ""; position: absolute; top: 8px; left: 50%; z-index: 5;
@@ -1483,7 +1501,6 @@ body.pcard-open { overflow: hidden; }
     background: rgba(255, 255, 255, 0.35); pointer-events: none;
   }
   .pc-hero { touch-action: none; }   /* the band is the handle: every touch move is ours to cancel */
-  .pcard[data-open="true"] .pc-body { animation: none; }
   @keyframes fflr-pc-up { from { transform: translateY(100%); } to { transform: none; } }
   @keyframes fflr-pc-down { to { transform: translateY(100%); } }
   .pc-hero { gap: 14px; padding: 20px 56px 16px 18px; }
@@ -1878,7 +1895,7 @@ body.pcard-open { overflow: hidden; }
   .td-chi .td-scrim::before { display: none; }   /* a static strobe would be a solid orange sheet */
   .prow.enter { animation: none; }
   .pnews.skel i { animation: none; }
-  .pc-scrim, .pc-sheet, .pc-body { animation: none !important; }   /* the card lands at once */
+  .pc-scrim, .pc-sheet, .pc-news h4::after { animation: none !important; }   /* the card lands at once; the script lands the news at once */
   .pc-hero::after { display: none; }   /* a static sheen would be a stripe */
   .prow.rz::after, .rzn { animation: none; }
   .gap .pill::after { display: none; }
