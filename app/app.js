@@ -1530,27 +1530,44 @@ const snapShare = (st, pos) => {
 function gameLogHtml(p, log, sched) {
   const groups = [["Fantasy", [logCol("PTS", (st) => fmt(r2(Scoring.scoreLine(st)))), logCol("SNP%", (st) => snapShare(st, p.pos))]], ...logGroups(p.pos)];
   const cols = groups.flatMap(([, c]) => c);
-  const oppCell = (opp, home) => opp
-    ? `<td class="opp"><i>${home ? "vs" : "@"}</i>${logoSrc(opp) ? `<img src="${logoSrc(opp)}" alt="">` : ""}${esc(opp)}</td>`
-    : `<td class="opp">\u2014</td>`;
-  const rows = [];
+  const oppHtml = (opp, home) => opp
+    ? `<i>${home ? "vs" : "@"}</i>${logoSrc(opp) ? `<img src="${logoSrc(opp)}" alt="">` : ""}${esc(opp)}`
+    : "\u2014";
+  const resHtml = (g) => g?.final && Number.isFinite(g.us) && Number.isFinite(g.them)
+    ? `<b class="${g.win ? "w" : g.us === g.them ? "t" : "l"}">${g.win ? "W" : g.us === g.them ? "T" : "L"}</b> ${g.us}-${g.them}` : "\u2014";
+  // Two renderings of the same weeks: the table for a laptop, and for a
+  // phone a stacked list, a week to a row with the line under it, so
+  // nothing scrolls sideways.
+  const rows = [], items = [];
   for (let w = 1; w <= LOG_WEEKS; w++) {
     const g = sched?.weeks?.[w], e = log?.[w] || log?.[String(w)];
     const st = e?.stats && Object.keys(e.stats).length ? e.stats : null;
-    const cls = w === WEEK ? ' class="now"' : "";
-    if (sched && w === sched.bye) { rows.push(`<tr${cls}><td class="wk">${w}</td><td class="bye" colspan="${cols.length + 2}">Bye</td></tr>`); continue; }
-    if (!g && !e) { if (sched) continue; rows.push(`<tr${cls}><td class="wk">${w}</td>${oppCell(null)}<td class="res">\u2014</td>${cols.map(() => `<td class="dash">\u2014</td>`).join("")}</tr>`); continue; }
+    const now = w === WEEK ? " now" : "";
+    if (sched && w === sched.bye) {
+      rows.push(`<tr class="${now.trim()}"><td class="wk">${w}</td><td class="bye" colspan="${cols.length + 2}">Bye</td></tr>`);
+      items.push(`<div class="plog-item bye${now}"><span class="wk">${w}</span><span class="opp">Bye</span></div>`);
+      continue;
+    }
+    if (!g && !e) {
+      if (sched) continue;
+      rows.push(`<tr class="${now.trim()}"><td class="wk">${w}</td><td class="opp">\u2014</td><td class="res">\u2014</td>${cols.map(() => `<td class="dash">\u2014</td>`).join("")}</tr>`);
+      items.push(`<div class="plog-item${now}"><span class="wk">${w}</span><span class="opp">\u2014</span><span class="res">\u2014</span><b class="pts dash">\u2014</b></div>`);
+      continue;
+    }
     const opp = g ? g.opp : toMfl(e.opponent), home = g ? g.home : !e.is_away_team;
-    const res = g?.final && Number.isFinite(g.us) && Number.isFinite(g.them)
-      ? `<b class="${g.win ? "w" : g.us === g.them ? "t" : "l"}">${g.win ? "W" : g.us === g.them ? "T" : "L"}</b> ${g.us}-${g.them}` : "\u2014";
-    rows.push(`<tr${cls}><td class="wk">${w}</td>${oppCell(opp, home)}<td class="res">${res}</td>` +
+    rows.push(`<tr class="${now.trim()}"><td class="wk">${w}</td><td class="opp">${oppHtml(opp, home)}</td><td class="res">${resHtml(g)}</td>` +
       cols.map((c) => (st ? `<td>${esc(String(c.f(st)))}</td>` : `<td class="dash">\u2014</td>`)).join("") + `</tr>`);
+    const line = st ? (statLine(p.pos, st) || "No stats") : g?.final ? "Did not play" : "";
+    items.push(`<div class="plog-item${now}"><span class="wk">${w}</span><span class="opp">${oppHtml(opp, home)}</span><span class="res">${resHtml(g)}</span>` +
+      `<b class="pts${st ? "" : " dash"}">${st ? fmt(r2(Scoring.scoreLine(st))) : "\u2014"}</b>` +
+      (line ? `<span class="plog-line">${esc(line)}</span>` : "") + `</div>`);
   }
   if (!rows.length) return `<p class="pc-meta">No games logged for ${esc(p.n)} this season.</p>`;
   return `<table class="plog"><thead>` +
     `<tr class="grp"><th colspan="3"></th>${groups.map(([name, c]) => `<th colspan="${c.length}"><span>${esc(name)}</span></th>`).join("")}</tr>` +
     `<tr class="cols"><th class="wk">WK</th><th class="opp">OPP</th><th class="res">RESULT</th>${cols.map((c) => `<th>${esc(c.l)}</th>`).join("")}</tr>` +
-    `</thead><tbody>${rows.join("")}</tbody></table>`;
+    `</thead><tbody>${rows.join("")}</tbody></table>` +
+    `<div class="plog-list">${items.join("")}</div>`;
 }
 const LOG_SKELETON = `<div class="pnews skel plog-skel" aria-hidden="true"><i style="width:60%"></i><i></i><i></i><i></i><i></i><i></i></div>`;
 

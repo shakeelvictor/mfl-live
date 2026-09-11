@@ -1426,14 +1426,16 @@ body.pcard-open { overflow: hidden; }
 .pc-vital .pc-pts { font-size: 38px; }
 .pc-vital .delta { right: auto; left: 100%; margin-left: 6px; top: 2px; }
 /* The Game vital is the game strip, restyled for the dark band. */
-.pc-vital.game { flex: 1 1 240px; }
+.pc-vital.game { flex: 0 1 auto; }   /* the strip is as wide as its content, not the row (2026-09-11: stretched, it looked odd) */
 .pc-hero .pgame {
+  display: inline-flex; gap: 6px 14px;
   padding: 5px 9px;
   background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.14);
   color: rgba(242, 244, 248, 0.62);
 }
 .pc-hero .pg-team.mine, .pc-hero .pg-team.mine .pg-score { color: #fff; }
 .pc-hero .pgame.live .pg-state { color: #4fe3c1; }
+.pc-hero .pg-state { margin-left: 10px; }
 .pc-hero .pg-spot { color: rgba(242, 244, 248, 0.55); }
 
 /* The body: the stat tiles on the left, the news on the right scrolling
@@ -1482,8 +1484,7 @@ body.pcard-open { overflow: hidden; }
 .plog td.res b { font-weight: 800; }
 .plog td.res b.w { color: var(--accent); }
 .plog td.res b.l { color: var(--gap-critical); }
-.plog .wk { position: sticky; left: 0; z-index: 1; background: var(--surface); }   /* the week stays while the stats scroll sideways */
-.plog tr.now td.wk { background: var(--surface-raised); }
+.plog-list { display: none; }   /* the phone's rendering of the log (below) */
 .pc-game .ptiles { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
 .pc-game .ptile { padding: 11px 12px; }
 .pc-game .ptile b { font-size: 19px; }
@@ -1574,8 +1575,11 @@ body.pcard-open { overflow: hidden; }
   .pc-vital.game { flex-basis: 100%; padding: 0; border-left: 0; }
   .pc-vital b { font-size: 16px; }
   .pc-vital .pc-pts { font-size: 20px; }
-  /* One column, the whole body scrolling, the news in the flow. */
-  .pc-body { padding: 14px 16px 22px; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: 18px; overflow-y: auto; overscroll-behavior: contain; }
+  /* One column, the whole body scrolling (never sideways), the news in
+     the flow. No top padding: the tabs stick to the scrollport's top,
+     and padding there left a strip of text showing above them. */
+  .pc-body { padding: 0 16px 22px; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: 18px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
+  .pc-game { padding-top: 14px; }
   .pc-body h4 { padding: 0 0 10px; font-size: 16px; }
   /* min-height back to auto: at 0 (the laptop's, so the columns can scroll)
      the phone's auto rows collapsed and split the body's height between
@@ -1604,9 +1608,32 @@ body.pcard-open { overflow: hidden; }
   .pc-log h4, .pc-news h4 { display: none; }
   .pc-body[data-panel="log"] .pc-news, .pc-body[data-panel="news"] .pc-log { display: none; }
   #pc-game { padding: 14px 0 22px; }
-  .plog-wrap { margin: 0 -16px; padding: 4px 16px 6px; }   /* the table scrolls sideways out to the sheet's edges */
-  .plog th, .plog td { padding: 11px 8px; }
-  .plog thead .cols th { padding: 8px 8px 10px; }
+  /* The log as a list: a week to a row, the opponent, the result and
+     the points across it and the line under them; the table is the
+     laptop's (it scrolled sideways here, and the body with it). */
+  .plog { display: none; }
+  .plog-wrap { padding: 0 0 6px; overflow: visible; }
+  .plog-list { display: block; }
+  .plog-item {
+    display: grid; grid-template-columns: 26px minmax(0, 1fr) auto auto; grid-template-areas: "wk opp res pts" "wk line line line";
+    align-items: center; column-gap: 10px; row-gap: 5px;
+    padding: 11px 0; border-bottom: 1px solid var(--border);
+    font: 700 13px/1 var(--font-data); color: var(--text-primary);
+  }
+  .plog-item:last-child { border-bottom: 0; }
+  .plog-item .wk { grid-area: wk; color: var(--text-muted); font-weight: 600; }
+  .plog-item.now .wk { color: var(--accent); font-weight: 800; }
+  .plog-item .opp { grid-area: opp; display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+  .plog-item .opp i { width: 18px; font-style: normal; color: var(--text-muted); font-weight: 600; }
+  .plog-item .opp img { width: 20px; height: 20px; object-fit: contain; }
+  .plog-item.bye .opp { color: var(--text-muted); font-weight: 600; }
+  .plog-item .res { grid-area: res; color: var(--text-secondary); font-weight: 600; white-space: nowrap; }
+  .plog-item .res b { font-weight: 800; }
+  .plog-item .res b.w { color: var(--accent); }
+  .plog-item .res b.l { color: var(--gap-critical); }
+  .plog-item .pts { grid-area: pts; min-width: 48px; text-align: right; font-size: 15px; font-weight: 800; }
+  .plog-item .pts.dash { color: var(--text-muted); font-weight: 600; }
+  .plog-line { grid-area: line; font: 600 11.5px/1.4 var(--font-data); letter-spacing: .02em; color: var(--text-muted); }
   .pc-game .ptiles { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
   .pc-game .ptile { padding: 9px 10px; }
   .pc-game .ptile b { font-size: 17px; }
