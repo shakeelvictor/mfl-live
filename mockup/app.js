@@ -234,6 +234,7 @@ function renderChrome() {
   title.classList.toggle("bowl", bowlTitle);
   document.getElementById("week-trophy").hidden = !bowlTitle;
   document.getElementById("bowl-bg").classList.toggle("on", bowlTitle);   // the gold clouds behind the board
+  document.getElementById("sky-bg").classList.toggle("on", !bowlTitle);   // the season's aurora otherwise: the gold replaces it, never sits on it
   document.getElementById("app").classList.toggle("bowl", bowlTitle);     // and the text above and below the title steps up a shade
   document.getElementById("subhead").innerHTML =
     (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head`
