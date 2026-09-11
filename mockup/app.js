@@ -983,8 +983,7 @@ const page = document.getElementById("team");
 const rosterEl = document.getElementById("roster");
 const tabs = [...page.querySelectorAll(".tab")];
 let open = null;       // team id
-let picked = null;     // the team last opened: its row stays lifted on the board (on a phone,
-                       // after the page closes too, so the board shows where you have been)
+let picked = null;     // the team last opened: its row stays lifted on the board while its page is up
 let tab = "starters";
 let lastFocus = null;
 let teamView = null;   // the open team as last rendered ({ t, starters, bench }): the player card reads from it
@@ -1106,6 +1105,8 @@ function closeTeam() {
   page.dataset.open = "closing";   // fades out, then unmounts below
   document.body.classList.remove("team-open");
   open = null;
+  picked = null;   // the row's lift comes off with the page (it used to stay, as a trace of where you had been; it read as stuck, 2026-09-10)
+  markActive();
   if (lastFocus) lastFocus.focus();
 
   // animationend does not fire under prefers-reduced-motion, so a timer
