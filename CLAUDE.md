@@ -470,27 +470,31 @@ element and scores are second.
   by the player's tween key (`pcKey`). **A bottom sheet on every
   screen** (2026-09-11): from 600px up it is cut after Sleeper's own
   desktop player card, three quarters of the window wide and 84vh
-  tall, centred and flush to the bottom: a dark strip along the top with a
-  **name tab** on its left ("J. Gibbs", "RB · DET", the close button
-  beside it) in the band's colour (`.pc-tab`; the team's colours are
-  set on the sheet, `--pc-ground` / `--pc-accent`, so the tab and the
-  band share them), the band under it with a 150px portrait over the
-  club mark ghosted large, the position chip under the portrait
-  (`.pc-poschip`), the name at 44px with a white **team pill** (mark
-  and code, `.pc-team`) and the vitals in large figures, then the body
+  tall, centred and flush to the bottom: the band with a 150px portrait
+  over the club mark ghosted large, the name at 44px, a white **team
+  pill** (mark and code, `.pc-team`) and the position chip in the sub
+  line, the vitals in large figures, and **the close button in the
+  band's top-right corner on every screen** (a name tab on a dark strip
+  along the top, "J. Gibbs" with the button beside it, lasted a day: it
+  put the button somewhere else than on the phone; the team's colours
+  still sit on the sheet, `--pc-ground` / `--pc-accent`), then the body
   in two columns under **display headings on ruled rows** ("This game"
-  / "Game log" / "News"): the stat tiles and the game log left
-  (`.pc-col`, scrolling on its own), the news right scrolling on its
-  own behind a hairline with its heading sticky; each story titled at 17px
+  / "Game log" / "News"): the stat tiles and under them the game log
+  left (the tiles stay, the log scrolls on its own), the news right
+  scrolling on its own behind a hairline with its heading sticky; the
+  four sections are flat siblings placed by the grid, so the phone can
+  stack them; each story titled at 17px
   over a bordered **date pill**, "Sep 2, 6:56 PM via RotoWire"
   (`whenLabel`, the reader's clock; the row badge's tooltip keeps
   `timeAgo`). A centred 600px card before; a two-column cut at that
   width had lasted a day, the stats beside a lot of nothing, and at
   this width they have company. Under 600px the phone's sheet, full
   width and 90dvh, one column, the band staying put and the body
-  scrolling, the tab reduced to the close button at the band's
-  top-right and the position chip back in the sub line (there the
-  column and the news need `min-height: auto`: at the laptop's 0 the
+  scrolling, and **the game log and the news behind a pair of tabs**
+  (`.pc-tabs`, the Starters/Bench control's classes, pinned under the
+  band while the body scrolls; the sections' own headings hidden; the
+  choice kept across cards in `pcPanel`, the log by default; there the
+  log and the news need `min-height: auto`: at the laptop's 0 the
   grid's auto rows collapsed and split the body's height between them,
   and the log painted over the news). **The game log** (`gameLogHtml`)
   is every week of the season in Sleeper's manner: the opponent and
