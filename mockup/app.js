@@ -1246,6 +1246,10 @@ const timeAgo = (ms) => {
   const days = Math.round(secs / 86400);
   return days < 30 ? `${days}d ago` : `${Math.round(days / 30)}mo ago`;
 };
+// "Sep 2, 6:56 PM", the reader's own clock, as Sleeper's card dates its news.
+const WHEN_FMT = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+const whenLabel = (ms) => WHEN_FMT.format(new Date(ms));
+const shortName = (n) => `${String(n).trim()[0] || ""}. ${lastName(n)}`;   // "J. Gibbs", the tab's name
 // RotoBaller's `published` is Eastern wall-clock written as UTC: on the
 // Week 1 opener its "exits the game" item read an hour BEFORE kickoff, and
 // RotoWire's equivalent came four hours after it (2026-09-10). So it is
@@ -1304,17 +1308,18 @@ const injuryChip = (inj) => {
 // headshot, the name, the franchise as a kicker, and the vitals: the
 // points (rolling) and the game strip.
 function pcHeroHtml(p, t) {
-  const [ground, accent] = TEAM_COLORS[p.tm] || [];
   const rs = p.sid && rosterStatus.get(p.sid);
   const inj = pcInjury || (rs ? { injury_status: rs.inj, injury_body_part: rs.part } : null);
   const strip = gameStrip(p) || "<b>Final</b>";
-  return `<div class="pc-hero"${ground ? ` style="--pc-ground:${ground};--pc-accent:${accent}"` : ""}>` +
+  const team = `<span class="pc-team">${LOGOS[p.tm] ? `<img src="${LOGOS[p.tm]}" alt="">` : ""}${esc(p.tm || "FA")}</span>`;
+  return `<div class="pc-hero">` +
     (LOGOS[p.tm] ? `<img class="pc-mark" src="${LOGOS[p.tm]}" alt="" aria-hidden="true">` : "") +
     `<span class="pface pc-face">${avatar(p)}${logoBadge(p.tm)}${tdBadge(p.st)}</span>` +
+    `<span class="pc-poschip pos ${posClass(p.pos)}">${esc(p.pos)}</span>` +   /* under the portrait on a laptop; the phone keeps the chip in the sub line */
     `<div class="pc-main">` +
       `<span class="pc-kicker">${esc(p.from || t.team)} · Week ${WEEK}</span>` +
       `<h2 class="pc-name" id="pc-name">${esc(p.n)}</h2>` +
-      `<div class="pc-sub"><span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span><span>${esc(p.tm || "FA")}</span>` +
+      `<div class="pc-sub">${team}<span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span>` +
         `<span id="pc-inj-slot">${injuryChip(inj)}</span>` +
       `</div>` +
     `</div>` +
@@ -1366,7 +1371,7 @@ function newsHtml(items, p) {
   if (!items.length) return `<p class="pc-meta">No recent news for ${esc(p.n)}.</p>`;
   return items.slice(0, 6).map((n) => `<article class="pnews">` +
     `<h5>${esc(n.title || "Update")}</h5>` +
-    `<div class="pnews-meta"><b>${esc(sourceLabel(n.source))}</b>${n.at ? ` · ${esc(timeAgo(n.at))}` : ""}</div>` +
+    `<div class="pnews-when">${n.at ? `${esc(whenLabel(n.at))} via ` : ""}<b>${esc(sourceLabel(n.source))}</b></div>` +
     (n.desc ? `<p>${esc(n.desc)}</p>` : "") +
     (n.analysis ? `<div class="pnews-analysis"><b>Analysis:</b> ${esc(n.analysis)}</div>` : "") +
     (n.url ? `<a href="${escq(n.url)}" target="_blank" rel="noopener">Read at ${esc(sourceLabel(n.source))} &#8599;</a>` : "") +
@@ -1381,11 +1386,16 @@ function openPlayer(key, row) {
   pcFocus = row || null;
   const { p, t } = hit;
   const openedAt = performance.now();
+  const [ground, accent] = TEAM_COLORS[p.tm] || [];
+  pcSheet.style.cssText = ground ? `--pc-ground:${ground};--pc-accent:${accent}` : "";   // the tab and the band wear the team's colours
   pcSheet.innerHTML =
-    `<button class="pc-close" id="pc-close" type="button" aria-label="Close">&#x2715;</button>` +
+    `<div class="pc-tab"><div class="pc-tab-card">` +
+      `<span class="pc-tab-name"><b>${esc(shortName(p.n))}</b><small>${esc(p.pos)} · ${esc(p.tm || "FA")}</small></span>` +
+      `<button class="pc-close" id="pc-close" type="button" aria-label="Close">&#x2715;</button>` +
+    `</div></div>` +
     `<div id="pc-hero">${pcHeroHtml(p, t)}</div>` +
     `<div class="pc-body">` +
-      `<section class="pc-game" id="pc-game">${tilesHtml(p)}</section>` +
+      `<section class="pc-game"><h4>This game</h4><div id="pc-game">${tilesHtml(p)}</div></section>` +
       `<section class="pc-news${p.sid ? " loading" : ""}"><div class="pc-news-inner"><h4>News</h4>` +
         `<div class="pc-news-list${p.sid ? " pending" : ""}" id="pc-news-list">${p.sid ? NEWS_SKELETON : `<p class="pc-meta">No news feed for this player.</p>`}</div>` +
       `</div></section>` +
