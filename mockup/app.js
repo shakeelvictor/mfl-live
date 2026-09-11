@@ -871,14 +871,13 @@ function revealSpotlight(opening) {
   spotRevealTimer = setTimeout(() => { spotEl.classList.remove("reveal"); spotEl.style.removeProperty("--open"); }, spotRevealUntil - Date.now());
 }
 let spotRevealTimer = 0;
-// The entrance runs on the first visit after a day's end, on a refresh
-// and on a return to the app (2026-09-11): a card present when the page
-// loads waits under the loader and opens once the board has cascaded in
-// (spotQueued, boardReady), and a card showing when the tab comes back
-// after SPOT_RETURN_MS away opens again (a new card found on the way
-// back opens too). A short flip away leaves it be.
-let spotQueued = false, boardIn = false, hiddenAt = 0;
-const SPOT_RETURN_MS = 60e3;
+// The entrance runs on the first visit after a day's end and on a load
+// or a refresh (2026-09-11): a card present when the page loads waits
+// under the loader and opens once the board has cascaded in (spotQueued,
+// boardReady). A return to the tab leaves it be (until 2026-09-12 a card
+// showing when the tab came back after a minute away opened again, and
+// the replay wore thin).
+let spotQueued = false, boardIn = false;
 function boardReady() {
   boardIn = true;
   if (!spotQueued) return;
@@ -886,12 +885,6 @@ function boardReady() {
   spotEl.hidden = false;
   revealSpotlight(true);
 }
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) { hiddenAt = Date.now(); return; }
-  const away = hiddenAt ? Date.now() - hiddenAt : 0;
-  hiddenAt = 0;
-  if (away >= SPOT_RETURN_MS && boardIn && !spotEl.hidden && Date.now() >= spotRevealUntil) revealSpotlight(true);
-});
 
 function spotlightPick() {
   const all = teams.flatMap((t) => liveStarters(t, new Set()).map((p) => ({ ...p, franchise: p.from || t.team })));
@@ -1219,7 +1212,7 @@ let pcKey = null;      // the open player's key (playerKey); null while closed
 let pcFocus = null;    // the row that opened it, for focus on close
 let pcInjury = null;   // Sleeper's injury fields for the open player, once they land
 let pcTimer = 0;
-let pcPanel = "log";   // the phone's open tab, game log or news, kept across cards
+let pcPanel = "news";   // the phone's open tab, news or game log, kept across cards
 const PC_IN_MS = 520;   // the sheet's sweep up from the bottom (styles.css: fflr-pc-in)
 const NEWS_WIPE_MS = 520;   // the news sweeping in from the left, once the sheet has landed
 const SWEEP_EASE = "cubic-bezier(.22, 1, .36, 1)";
@@ -1486,18 +1479,18 @@ function openPlayer(key, row) {
   pcSheet.style.cssText = ground ? `--pc-ground:${ground};--pc-accent:${accent}` : "";   // the tab and the band wear the team's colours
   // The body's sections are flat siblings: the laptop's grid places the
   // game and the log in the left column and the news in the right, and
-  // the phone stacks them, the log and the news behind a pair of tabs.
+  // the phone stacks them, the news and the log behind a pair of tabs.
   const tab = (id, label) => `<button class="tab" type="button" role="tab" data-panel="${id}" aria-selected="${pcPanel === id}">${label}</button>`;
   pcSheet.innerHTML =
     `<button class="pc-close" id="pc-close" type="button" aria-label="Close">&#x2715;</button>` +
     `<div id="pc-hero">${pcHeroHtml(p, t)}</div>` +
     `<div class="pc-body" data-panel="${pcPanel}">` +
       `<section class="pc-game"><h4>This game</h4><div id="pc-game">${tilesHtml(p)}</div></section>` +
-      `<div class="pc-tabs tabs" role="tablist" aria-label="Player">${tab("log", "Game log")}${tab("news", "News")}</div>` +
-      `<section class="pc-log"><h4>Game log</h4><div class="plog-wrap${p.sid ? " pending" : ""}" id="pc-log">${p.sid ? LOG_SKELETON : `<p class="pc-meta">No game log for this player.</p>`}</div></section>` +
+      `<div class="pc-tabs" role="tablist" aria-label="Player">${tab("news", "News")}${tab("log", "Game log")}</div>` +
       `<section class="pc-news${p.sid ? " loading" : ""}"><div class="pc-news-inner"><h4>News</h4>` +
         `<div class="pc-news-list${p.sid ? " pending" : ""}" id="pc-news-list">${p.sid ? NEWS_SKELETON : `<p class="pc-meta">No news feed for this player.</p>`}</div>` +
       `</div></section>` +
+      `<section class="pc-log"><h4>Game log</h4><div class="plog-wrap${p.sid ? " pending" : ""}" id="pc-log">${p.sid ? LOG_SKELETON : `<p class="pc-meta">No game log for this player.</p>`}</div></section>` +
     `</div>`;
   pcard.dataset.open = "true";
   document.body.classList.add("pcard-open");
