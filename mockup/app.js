@@ -1218,7 +1218,7 @@ let pcKey = null;      // the open player's key (playerKey); null while closed
 let pcFocus = null;    // the row that opened it, for focus on close
 let pcInjury = null;   // Sleeper's injury fields for the open player, once they land
 let pcTimer = 0;
-const PC_IN_MS = 520;   // the sheet's sweep up from the bottom (styles.css: fflr-pc-in / fflr-pc-up)
+const PC_IN_MS = 520;   // the sheet's sweep up from the bottom (styles.css: fflr-pc-in)
 const NEWS_WIPE_MS = 520;   // the news sweeping in from the left, once the sheet has landed
 const SWEEP_EASE = "cubic-bezier(.22, 1, .36, 1)";
 
@@ -1329,21 +1329,6 @@ function pcHeroHtml(p, t) {
 const NEWS_SKELETON = Array.from({ length: 3 }, () =>
   `<div class="pnews skel" aria-hidden="true"><i style="width:74%"></i><i style="width:34%"></i><i></i><i style="width:88%"></i></div>`).join("");
 
-// The laptop card is as tall as its content, so when the news lands it
-// grows to fit on a tween, not a snap. The phone sheet is a fixed height
-// (the news loads inside it), so there the heights match and nothing
-// moves.
-function growSheet(fill) {
-  const h0 = pcSheet.offsetHeight;   // layout height: the entrance's scale would shrink a client rect
-  fill();
-  if (reducedMotion.matches) return;
-  const h1 = pcSheet.offsetHeight;
-  if (Math.abs(h1 - h0) < 1) return;
-  for (const a of pcSheet.getAnimations()) if (a.id === "grow") a.cancel();
-  const a = pcSheet.animate([{ height: `${h0}px` }, { height: `${h1}px` }], { duration: 400, easing: "cubic-bezier(.22, 1, .36, 1)", id: "grow" });
-  a.onfinish = a.oncancel = () => a.cancel();   // back to its natural height, nothing inline left behind
-}
-
 /* The news is the card's second act (2026-09-11): the sheet sweeps up
    from the bottom with the player's data, and once it has landed the
    news sweeps in from the left: the stories themselves if they are
@@ -1366,7 +1351,7 @@ function showNews(list, items, p, overGhosts) {
     ghost.innerHTML = list.innerHTML; ghost.style.top = `${list.offsetTop}px`;
     list.parentElement.appendChild(ghost);
   }
-  growSheet(() => { list.innerHTML = newsHtml(items, p); });
+  list.innerHTML = newsHtml(items, p);   // the sheet is a fixed height on every screen: nothing grows
   sweepIn(list);
   if (ghost) {
     const a = ghost.animate([{ clipPath: "inset(0 0 0 0)", transform: "none" }, { clipPath: "inset(0 0 0 100%)", transform: "translateX(12px)" }],
