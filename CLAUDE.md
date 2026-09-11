@@ -798,8 +798,16 @@ element and scores are second.
   (Eastern, through Intl, since a Sunday afternoon kickoff is already
   Monday in Karachi), a day has started when its first game has kicked
   off and is final when every game on it has ended (`dayStates`), and
-  `spotlightPick` shows the last finished day's top starter, labelled
-  with the weekday, while no day is in progress. The week is final once
+  `spotlightEntries` lists every finished day's top starter, labelled
+  with the weekday, while no day is in progress, and the MVP of the
+  week after them once the week is final; the card lands on the newest
+  and **arrows by the day pill flip back through the earlier days**
+  (2026-09-11; `spotIndex`, `.spot-arrow`, only there with more than
+  one entry, the ends disabled): a flip re-renders with the body's own
+  rise and no reveal, and gold only for the MVP entry; a new day's card
+  lands on the newest again, and a poll's render leaves a flipped day
+  where it is. The fixture's entries are Thursday's and Sunday's; on
+  `poc` Thursday's, Sunday's and the MVP. The week is final once
   every game is (`slate.weekFinal = slate.sunFinal`; MFL's "official"
   mark is not read, the same rule the playoffs use), which turns the
   card gold and the leader hero into the Week winner; both clear when
