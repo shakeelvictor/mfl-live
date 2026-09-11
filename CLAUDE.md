@@ -467,13 +467,18 @@ element and scores are second.
   re-render refills the hero and the game from the current roster
   (`refreshPlayerCard`, called by `renderTeam`, reading `teamView`, the
   open team's last render) and leaves the news alone; the card is keyed
-  by the player's tween key (`pcKey`). A centred 600px card on a laptop (a two-column cut with a news rail
-  lasted a day: the stats sat beside a lot of nothing), a bottom sheet
-  under 600px (the band stays put, the body scrolls). **The card opens
-  in two acts, on a laptop as on a phone** (2026-09-11): the sheet
-  sweeps up from the bottom of the screen with the player's data (the
-  laptop card from below the viewport to its centre, `translateY(calc(50vh
-  + 50%))`, on the phone's curve; before, a small rise and fade), and
+  by the player's tween key (`pcKey`). **A bottom sheet on every
+  screen** (2026-09-11): from 600px up it is three quarters of the
+  window wide and 76vh tall, flush to the bottom, the band across the
+  top and the body in two columns, the stat tiles left and the news
+  right scrolling on its own behind a hairline (a centred 600px card
+  before; a two-column cut at that width had lasted a day, the stats
+  beside a lot of nothing, and at this width they have company); under
+  600px the phone's sheet, full width and 90dvh, one column, the band
+  staying put and the body scrolling. **The card opens in two acts**:
+  the sheet sweeps up from the bottom edge with the player's data
+  (`translateY(100%)`, .52s; before, the laptop card rose a little and
+  faded in), sweeps back down to close (.24s), and
   once it has landed (`PC_IN_MS`) the news sweeps in from the left
   (`sweepIn`, a clip-path wipe with a nudge, `NEWS_WIPE_MS`): the
   stories themselves when Sleeper has already answered, the three ghost
@@ -491,8 +496,8 @@ element and scores are second.
   own layer, and **the phone sheet is a
   fixed height** (90dvh): a content-sized sheet slid up by its own
   height and then grew when the news landed, and holding the news back
-  until it had landed only turned the jump into a snap. The laptop card stays content-sized and grows to the
-  news on a height tween (`growSheet`), never a snap. The row has no
+  until it had landed only turned the jump into a snap; both sheets
+  are a fixed height now, so nothing grows. The row has no
   chevron (removed the same day; the tap is the affordance), and a row
   whose team has no schedule entry shows no game label ("Not started"
   crowded the phone row). The scrim, the close button or Escape puts it away with focus back on

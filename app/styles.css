@@ -1280,15 +1280,19 @@ button.hero { cursor: pointer; }
    hero band in the team's colours with the club mark ghosted behind the
    headshot, the name in the display italic, the position, the injury
    chip when Sleeper has one, and a vitals strip (points, game, lineup);
-   then the body, the stat tiles and the news. The card sweeps up from
-   the bottom of the screen with the player's data, on a laptop (to the
-   centre) as on a phone (a bottom sheet), and once it has landed the
-   news sweeps in from the left (the script; 2026-09-11, a small rise
-   and fade before). It leaves the way it came, faster. */
+   then the body, the stat tiles and the news. A bottom sheet on every
+   screen: it sweeps up from the bottom edge with the player's data, and
+   once it has landed the news sweeps in from the left (the script;
+   2026-09-11); it sweeps back down to close, faster. From 600px up the
+   sheet is three quarters of the window wide and flush to the bottom,
+   the band across the top and the body in two columns, the stats
+   beside the news, which scrolls on its own (a centred 600px card
+   before, and a two-column cut at that width had left the stats beside
+   a lot of nothing; at this width they have company). */
 .pcard {
   position: fixed; inset: 0; z-index: 55;
-  display: none; align-items: center; justify-content: center;
-  padding: clamp(12px, 4vw, 28px);
+  display: none; align-items: flex-end; justify-content: center;
+  padding: 0;
 }
 .pcard[data-open="true"], .pcard[data-open="closing"] { display: flex; }
 body.pcard-open { overflow: hidden; }
@@ -1299,19 +1303,19 @@ body.pcard-open { overflow: hidden; }
 .pcard[data-open="closing"] .pc-scrim { animation: fflr-fade-out .2s ease-out forwards; }
 .pc-sheet {
   position: relative;
-  width: min(600px, 100%); max-height: min(88vh, 88dvh);
+  width: 75%; height: min(76vh, 76dvh);   /* a fixed height: the news loads inside it and nothing grows or jumps */
   display: flex; flex-direction: column;
   background: var(--surface); color: var(--text-primary);
-  border: 1px solid var(--border); border-radius: var(--radius-card);
+  border: 1px solid var(--border); border-bottom: 0;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
   box-shadow: var(--shadow-card);
   overflow: hidden;   /* the hero band takes the corners */
   animation: fflr-pc-in .52s cubic-bezier(.22, 1, .36, 1) both;
-  will-change: transform;
+  will-change: transform;   /* its own layer for the ride */
 }
-.pcard[data-open="closing"] .pc-sheet { animation: fflr-pc-out .26s cubic-bezier(.4, 0, 1, 1) forwards; }
-/* From its centred rest, half the viewport and half its own height down puts its top at the bottom edge. */
-@keyframes fflr-pc-in { from { transform: translateY(calc(50vh + 50%)); } to { transform: none; } }
-@keyframes fflr-pc-out { to { transform: translateY(calc(50vh + 50%)); } }
+.pcard[data-open="closing"] .pc-sheet { animation: fflr-pc-out .24s cubic-bezier(.4, 0, 1, 1) forwards; }
+@keyframes fflr-pc-in { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes fflr-pc-out { to { transform: translateY(100%); } }
 
 .pc-close {
   position: absolute; top: 14px; right: 14px; z-index: 4;
@@ -1418,13 +1422,14 @@ body.pcard-open { overflow: hidden; }
 .pc-hero .pgame.live .pg-state { color: #4fe3c1; }
 .pc-hero .pg-spot { color: rgba(242, 244, 248, 0.55); }
 
-/* The body: the stat tiles, then the news, one column that scrolls under
-   the band (a laptop got two columns for a day; the news rail left the
-   stats beside a lot of nothing). */
+/* The body: the stat tiles on the left, the news on the right scrolling
+   on its own under the band, the stats staying put (a phone stacks them
+   in one scrolling column, below). */
 .pc-body {
-  flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
-  padding: 14px 20px 22px;
-  display: grid; gap: 18px;
+  flex: 1 1 auto; min-height: 0; overflow: hidden;
+  padding: 20px 32px 0;
+  display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+  gap: 0 32px; align-items: start;
 }
 .pc-body h4 {
   margin: 0 0 8px;
@@ -1436,7 +1441,11 @@ body.pcard-open { overflow: hidden; }
 .pc-game .ptile b { font-size: 17px; }
 .pc-game .ptiles { padding: 0; }
 .pc-game .pnone { padding: 0; }
-.pc-news { min-width: 0; }
+.pc-news {
+  min-width: 0; min-height: 0; align-self: stretch;
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: 0 4px 24px 32px; border-left: 1px solid var(--border);
+}
 .pc-news-inner { position: relative; }   /* the ghost stories overlay the list while the news sweeps over them */
 /* Act two (the script): the list waits clipped to nothing until the sheet
    has landed, then sweeps in from the left; while the news loads a bar of
@@ -1483,17 +1492,10 @@ body.pcard-open { overflow: hidden; }
 
 /* A phone: a bottom sheet, stopping short of the top so a strip of the
    page stays to tap; the band stays put and the body scrolls under it.
-   The sheet is a fixed height (the news loads inside it, behind ghost
-   stories, so it never grows), and the script still holds the news
-   back until the sheet has landed. */
+   The sheet is a fixed height, as on a laptop. */
 @media (max-width: 599px) {
   .pcard { align-items: flex-end; padding: 0; }
-  .pc-sheet {
-    width: 100%; height: min(90vh, 90dvh);   /* a fixed height: the news loads inside it and nothing grows or jumps */
-    border-radius: var(--radius-card) var(--radius-card) 0 0; border-bottom: 0;
-    animation: fflr-pc-up .52s cubic-bezier(.22, 1, .36, 1) both;
-  }
-  .pcard[data-open="closing"] .pc-sheet { animation: fflr-pc-down .24s cubic-bezier(.4, 0, 1, 1) forwards; }
+  .pc-sheet { width: 100%; height: min(90vh, 90dvh); }
   /* A grab handle at the top of the sheet: a finger dragging down closes it (the script). */
   .pc-sheet::before {
     content: ""; position: absolute; top: 8px; left: 50%; z-index: 5;
@@ -1501,8 +1503,6 @@ body.pcard-open { overflow: hidden; }
     background: rgba(255, 255, 255, 0.35); pointer-events: none;
   }
   .pc-hero { touch-action: none; }   /* the band is the handle: every touch move is ours to cancel */
-  @keyframes fflr-pc-up { from { transform: translateY(100%); } to { transform: none; } }
-  @keyframes fflr-pc-down { to { transform: translateY(100%); } }
   .pc-hero { gap: 14px; padding: 20px 56px 16px 18px; }
   .pc-face { grid-row: auto; }
   .pc-vitals { grid-column: 1 / -1; }   /* its own row under the name, the sheet's full width */
@@ -1518,7 +1518,9 @@ body.pcard-open { overflow: hidden; }
   .pc-vital.game { flex-basis: 100%; padding: 0; border-left: 0; }
   .pc-vital b { font-size: 16px; }
   .pc-vital .pc-pts { font-size: 20px; }
-  .pc-body { padding: 14px 16px 22px; gap: 18px; }
+  /* One column, the whole body scrolling, the news in the flow. */
+  .pc-body { padding: 14px 16px 22px; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: 18px; overflow-y: auto; overscroll-behavior: contain; }
+  .pc-news { align-self: auto; overflow: visible; padding: 0; border-left: 0; }
 }
 
 /* ---------- laptop and up: board left, selected team right ----------
