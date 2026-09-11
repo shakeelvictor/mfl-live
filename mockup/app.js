@@ -847,32 +847,55 @@ function boardReady() {
   revealSpotlight(true);
 }
 
-function spotlightPick() {
+/* The spotlight's entries, oldest first (2026-09-11): Thursday's top
+   starter and Sunday's once Sunday is final, and once the week is final
+   the MVP of the week last. The newest is the card's own pick and what
+   a new day lands on; the arrows by the day pill flip back through the
+   earlier days (spotIndex). Nothing while Sunday is in progress, as
+   before. */
+function spotlightEntries() {
   const all = teams.flatMap((t) => liveStarters(t, new Set()).map((p) => ({ ...p, franchise: p.from || t.team })));
-  let pool, label, when;
-  if (slate.nextWeek) return { top: null, key: "none" };            // new week, nothing final yet
-  if (weekIsFinal()) { pool = all; label = post ? `\u2605 MVP of ${post.round.ref}` : duel ? "\u2605 MVP of the Pro Bowl" : "\u2605 MVP of the week"; when = `${post ? post.round.name : duel ? EXHIBITION.name : `Week ${WEEK}`} final`; }
-  else if (slate.sunFinal) { pool = all.filter((p) => !THU_NFL.has(p.tm)); label = "Top scorer"; when = "Sunday"; }
-  else return { top: null, key: "none" };                             // Sunday is in progress
-  const top = pool.reduce((a, p) => (p.pts > a.pts ? p : a), pool[0]);
-  return { top, label, when, mvp: weekIsFinal(), key: `${when}:${top?.key}` };
+  if (slate.nextWeek || !slate.sunFinal) return [];
+  const entry = (pool, label, when, mvp) => {
+    if (!pool.length) return null;
+    const top = pool.reduce((a, p) => (p.pts > a.pts ? p : a), pool[0]);
+    return { top, label, when, mvp, key: `${when}:${top.key}` };
+  };
+  const out = [entry(all.filter((p) => THU_NFL.has(p.tm)), "Top scorer", "Thursday", false), entry(all.filter((p) => !THU_NFL.has(p.tm)), "Top scorer", "Sunday", false)];
+  if (weekIsFinal()) out.push(entry(all,
+    post ? `\u2605 MVP of ${post.round.ref}` : duel ? "\u2605 MVP of the Pro Bowl" : "\u2605 MVP of the week",
+    `${post ? post.round.name : duel ? EXHIBITION.name : `Week ${WEEK}`} final`, true));
+  return out.filter(Boolean);
 }
+let spotIndex = null;   // the entry the arrows have flipped to; null is the newest
 
-function renderSpotlight() {
-  const { top, label, when, mvp, key } = spotlightPick();
-  if (!top) { spotEl.hidden = true; spotEl.classList.remove("reveal"); spotRevealUntil = 0; spotQueued = false; lastSpotKey = key; return; }
+// flip: a render for the arrows, which shows another entry with the body's
+// own rise and no reveal; a poll's render keys the reveal off the newest.
+function renderSpotlight(flip = false) {
+  const entries = spotlightEntries(), newest = entries[entries.length - 1];
+  if (!newest) { spotEl.hidden = true; spotEl.classList.remove("reveal"); spotRevealUntil = 0; spotQueued = false; lastSpotKey = "none"; spotIndex = null; return; }
+  const key = newest.key;
   const changed = lastSpotKey !== null && key !== lastSpotKey;
-  if (!changed && Date.now() < spotRevealUntil) return;   // mid-reveal: the pieces would restart
+  if (!flip && !changed && Date.now() < spotRevealUntil) return;   // mid-reveal: the pieces would restart
+  if (flip) { spotEl.classList.remove("reveal"); spotEl.style.removeProperty("--open"); spotRevealUntil = 0; }
   const appearing = spotEl.hidden || lastSpotKey === null;   // from nothing, the first render included
   if (boardIn) spotEl.hidden = false;   // under the loader it waits for the board (boardReady)
   const phaseChanged = changed && key.split(":")[0] !== lastSpotKey.split(":")[0];
+  if (changed || appearing) spotIndex = null;   // a new newest: the card lands on it
   lastSpotKey = key;
+  const i = spotIndex == null ? entries.length - 1 : Math.min(spotIndex, entries.length - 1);
+  const { top, label, when, mvp } = entries[i];
   spotEl.classList.toggle("mvp", mvp);
+  const nav = entries.length > 1
+    ? `<span class="spot-nav"><button class="spot-arrow" type="button" data-dir="-1" aria-label="Earlier day"${i === 0 ? " disabled" : ""}>&#8249;</button>` +
+      `<span class="spot-when">${esc(when)}</span>` +
+      `<button class="spot-arrow" type="button" data-dir="1" aria-label="Later day"${i === entries.length - 1 ? " disabled" : ""}>&#8250;</button></span>`
+    : `<span class="spot-when">${esc(when)}</span>`;
   const logo = LOGOS[top.tm] ? `<span class="logo"><img src="${LOGOS[top.tm]}" alt=""></span>` : `<span class="logo">${esc(top.tm)}</span>`;
   spotEl.innerHTML =
-    (phaseChanged && mvp && !reducedMotion.matches ? `<span class="spot-flash" aria-hidden="true"></span>` : "") +
-    `<div class="spot-top"><span class="micro spot-label">${label}</span><span class="spot-when">${esc(when)}</span></div>` +
-    `<div class="spot-body"${changed ? "" : ` style="animation:none"`}>` +
+    (phaseChanged && newest.mvp && !reducedMotion.matches ? `<span class="spot-flash" aria-hidden="true"></span>` : "") +
+    `<div class="spot-top"><span class="micro spot-label">${label}</span>${nav}</div>` +
+    `<div class="spot-body"${changed || flip ? "" : ` style="animation:none"`}>` +
       `<span class="spot-face">${avatar(top)}${logo}</span>` +
       `<span class="spot-who">` +
         `<span class="spot-name">${esc(top.n)}</span>` +
@@ -885,11 +908,19 @@ function renderSpotlight() {
   // The entrance: the full opening for a card from nothing or a new day's
   // card; the reveal alone when a day's card turns gold in place, or the
   // day's top scorer changes on a correction.
-  if (appearing || changed) {
+  if (!flip && (appearing || changed)) {
     if (!boardIn) { spotQueued = true; spotEl.hidden = true; return; }
-    revealSpotlight(appearing || (phaseChanged && !mvp));
+    revealSpotlight(appearing || (phaseChanged && !newest.mvp));
   }
 }
+spotEl.addEventListener("click", (e) => {
+  const b = e.target.closest(".spot-arrow");
+  if (!b || b.disabled) return;
+  const n = spotlightEntries().length, cur = spotIndex == null ? n - 1 : Math.min(spotIndex, n - 1);
+  spotIndex = Math.max(0, Math.min(n - 1, cur + Number(b.dataset.dir)));
+  renderSpotlight(true);
+  spotEl.querySelector(`.spot-arrow[data-dir="${b.dataset.dir}"]`)?.focus();
+});
 
 /* ---------------- team page ---------------- */
 
