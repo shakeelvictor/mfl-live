@@ -503,7 +503,9 @@ element and scores are second.
   at its parent's content edge, and a line of text showed in the gap
   above the tabs) and the body never scrolls sideways (`overflow-x:
   hidden`); the sections' own headings hidden; the
-  choice kept across cards in `pcPanel`, the news by default; there the
+  news open on every card, `pcPanel` reset by `openPlayer` (for a day the
+  choice carried across cards); the copy a step up again here, 16px
+  body, 15px analysis, 18px titles; there the
   log and the news need `min-height: auto`: at the laptop's 0 the
   grid's auto rows collapsed and split the body's height between them,
   and the log painted over the news). **The game log** (`gameLogHtml`)

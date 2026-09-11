@@ -1391,7 +1391,7 @@ let pcKey = null;      // the open player's key (playerKey); null while closed
 let pcFocus = null;    // the row that opened it, for focus on close
 let pcInjury = null;   // Sleeper's injury fields for the open player, once they land
 let pcTimer = 0;
-let pcPanel = "news";   // the phone's open tab, news or game log, kept across cards
+let pcPanel = "news";   // the phone's open tab, news or game log; every card opens on the news
 const PC_IN_MS = 520;   // the sheet's sweep up from the bottom (styles.css: fflr-pc-in)
 const NEWS_WIPE_MS = 520;   // the news sweeping in from the left, once the sheet has landed
 const SWEEP_EASE = "cubic-bezier(.22, 1, .36, 1)";
@@ -1665,7 +1665,7 @@ function newsHtml(items, p) {
 }
 
 function openPlayer(key, row) {
-  pcKey = key; pcInjury = null;
+  pcKey = key; pcInjury = null; pcPanel = "news";
   const hit = pcPlayer();
   if (!hit) { pcKey = null; return; }
   clearTimeout(pcTimer);
