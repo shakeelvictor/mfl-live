@@ -545,8 +545,12 @@ element and scores are second.
   player's season high** from the same game log (`pcLog`, the season's
   other weeks; a full bar is a season best, a strict one tagged
   "· best", a mint marker on a phone): the bars are empty until the log
-  lands and grow in then (`fillBars`), and on a poll's refresh they
-  land where they are. Which stats show is the old tiles' rule, the
+  lands (no other weeks, no bar: with the high falling back to the
+  stat's own value every bar opened full and then "grew", 2026-09-11)
+  and grow in then, once per card (`pcBarsGrown`; `fillBars` lays the
+  empty bars out before widening them, so the transition is certain,
+  and only that render's `.sbox.grow` carries a transition), and on a
+  poll's refresh they land where they are. Which stats show is the old tiles' rule, the
   position's core always with zeros muted, the rest once they count.
   Week 1 has no season to scale against, so the bars stay empty. **The card
   opens in two acts**:

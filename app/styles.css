@@ -1505,7 +1505,8 @@ body.pcard-open { overflow: hidden; }
 .sv small { font: 700 9.5px/1 var(--font-data); letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sv small .hi { font-style: normal; color: var(--accent); }   /* a season best, strictly */
 .sb { display: block; height: 4px; margin-top: 3px; border-radius: 2px; background: var(--surface-raised); overflow: hidden; }
-.sb > span { display: block; height: 100%; width: 0; border-radius: 2px; background: var(--accent); transition: width .7s cubic-bezier(.22, 1, .36, 1); }
+.sb > span { display: block; height: 100%; width: 0; border-radius: 2px; background: var(--accent); }
+.sbox.grow .sb > span { transition: width .7s cubic-bezier(.22, 1, .36, 1); }   /* the one render that grows them; every other lands */
 .sv.zero .sb > span { background: transparent; }
 .pc-news {
   min-width: 0; min-height: 0; align-self: stretch;

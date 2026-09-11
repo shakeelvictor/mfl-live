@@ -1129,6 +1129,7 @@ const gameStrip = (p) => {
    they land where they are. Which stats show is the tiles' rule: the
    position's core always (zeros muted), the rest once they count. */
 let pcLog = null;   // the open player's season (profileOf's log), once it lands: the bars' scale
+let pcBarsGrown = false;   // the bars grow once per card, when the log lands; every render after lands them where they are
 const cs = {
   num: (l, k, always = false) => ({ l, always, v: (st) => String(st[k] || 0), n: (st) => st[k] || 0 }),
   sum: (l, ks, always = false) => ({ l, always, v: (st) => String(ks.reduce((a, k) => a + (st[k] || 0), 0)), n: (st) => ks.reduce((a, k) => a + (st[k] || 0), 0) }),
@@ -1148,7 +1149,7 @@ const CARD_GROUPS = {
 };
 CARD_GROUPS.TE = CARD_GROUPS.WR;
 const statZero = (t, st) => (t.zero ? t.zero(st) : !t.n(st));
-// grow: the bars start empty and are widened a frame later (fillBars), for the log's arrival.
+// grow: the bars start empty and are widened after a layout (fillBars), for the log's arrival; only that render transitions.
 function cardStatsHtml(p, grow = false) {
   const st = p.st && Object.keys(p.st).length ? p.st : null;
   if (!st) return `<p class="pnone">${esc(noStats(p))}</p>`;
@@ -1160,18 +1161,22 @@ function cardStatsHtml(p, grow = false) {
   const stat = (t) => {
     const cur = t.n(st), zero = statZero(t, st);
     const others = weeks.map((w) => t.n(w)), hi = Math.max(cur, ...others, 0);
-    const pct = hi > 0 ? Math.round((cur / hi) * 100) : 0;
+    const pct = weeks.length && hi > 0 ? Math.round((cur / hi) * 100) : 0;   // no season to scale against (the log not here, or Week 1): no bar, not a full one
     const best = weeks.length >= 2 && cur > 0 && others.every((o) => cur > o);   // a strict best, not a tie
     const v = t.frac ? t.v(st).replace("/", "<em>/") + (t.v(st).includes("/") ? "</em>" : "") : esc(t.v(st));
     return `<span class="sv${zero ? " zero" : ""}"><b>${v}</b>` +
       `<small>${esc(t.l)}${best ? `<em class="hi" title="Season best"><span> · best</span></em>` : ""}</small>` +
       `<span class="sb"><span${grow ? ` data-w="${pct}"` : ` style="width:${pct}%"`}></span></span></span>`;
   };
-  return `<div class="sbox" style="--cols:${cols}">` +
+  return `<div class="sbox${grow ? " grow" : ""}" style="--cols:${cols}">` +
     groups.map(([name, ts]) => `<div class="sg"><i>${esc(name)}</i><div class="sg-stats">${ts.map(stat).join("")}</div></div>`).join("") +
   `</div>`;
 }
-const fillBars = (root) => requestAnimationFrame(() => { for (const b of root.querySelectorAll(".sb > span[data-w]")) b.style.width = `${b.dataset.w}%`; });
+function fillBars(root) {
+  const bars = root.querySelectorAll(".sb > span[data-w]");
+  void root.offsetWidth;   // the empty bars laid out first, so the widening is a transition and not a landing (a frame later was not enough in every browser)
+  for (const b of bars) b.style.width = `${b.dataset.w}%`;
+}
 
 // Small badges by a player's name (rowBadges): Sleeper's injury status
 // and a newspaper while there is news from the last day (rosterStatus,
@@ -1671,7 +1676,7 @@ function newsHtml(items, p) {
 }
 
 function openPlayer(key, row) {
-  pcKey = key; pcInjury = null; pcPanel = "news"; pcLog = null;
+  pcKey = key; pcInjury = null; pcPanel = "news"; pcLog = null; pcBarsGrown = false;
   const hit = pcPlayer();
   if (!hit) { pcKey = null; return; }
   clearTimeout(pcTimer);
@@ -1719,7 +1724,7 @@ function openPlayer(key, row) {
       // The box score's bars: scaled to the season now that it is here, growing in.
       pcLog = log || null;
       const hit = pcPlayer(), game = document.getElementById("pc-game");
-      if (hit && game && pcLog) { game.innerHTML = cardStatsHtml(hit.p, true); fillBars(game); }
+      if (hit && game && pcLog && !pcBarsGrown) { pcBarsGrown = true; game.innerHTML = cardStatsHtml(hit.p, true); fillBars(game); }
     }, wait);
   });
   setTimeout(() => {
