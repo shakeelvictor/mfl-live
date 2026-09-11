@@ -1301,16 +1301,16 @@ button.hero { cursor: pointer; }
    once it has landed the news sweeps in from the left (the script;
    2026-09-11); it sweeps back down to close, faster. From 600px up it
    is cut after Sleeper's own desktop card: three quarters of the window
-   wide in the bottom-left corner, a name tab on its top-left corner
-   over a dark strip, the band under it with a big portrait over the
-   ghosted club mark and the vitals in large figures, then a wide column
-   for the game beside a news rail that scrolls on its own, each under
-   a display heading (a centred 600px card before, and a two-column cut
-   at that width had left the stats beside a lot of nothing; at this
-   width they have company). */
+   wide, centred and flush to the bottom, a name tab on its top-left corner over a dark strip,
+   the band under it with a big portrait over the ghosted club mark and
+   the vitals in large figures, then a wide column for the game and the
+   game log beside a news rail, each scrolling on its own, the sections
+   under display headings (a centred 600px card before, and a
+   two-column cut at that width had left the stats beside a lot of
+   nothing; at this width they have company). */
 .pcard {
   position: fixed; inset: 0; z-index: 55;
-  display: none; align-items: flex-end; justify-content: flex-start;
+  display: none; align-items: flex-end; justify-content: center;
   padding: 0;
 }
 .pcard[data-open="true"], .pcard[data-open="closing"] { display: flex; }
@@ -1326,8 +1326,8 @@ body.pcard-open { overflow: hidden; }
   width: 75%; height: min(84vh, 84dvh);   /* a fixed height: the news loads inside it and nothing grows or jumps */
   display: flex; flex-direction: column;
   background: var(--surface); color: var(--text-primary);
-  border: 1px solid var(--border); border-bottom: 0; border-left: 0;
-  border-radius: 0 var(--radius-card) 0 0;
+  border: 1px solid var(--border); border-bottom: 0;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
   box-shadow: var(--shadow-card);
   overflow: hidden;   /* the hero band takes the corners */
   animation: fflr-pc-in .52s cubic-bezier(.22, 1, .36, 1) both;
@@ -1482,7 +1482,34 @@ body.pcard-open { overflow: hidden; }
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-strong);
 }
-#pc-game { padding: 22px 32px; }
+.pc-col { min-width: 0; min-height: 0; align-self: stretch; overflow-y: auto; overscroll-behavior: contain; }
+#pc-game { padding: 22px 32px 26px; }
+/* The game log: a table in the reference's manner, group headings over
+   the columns, a ruled row per week, the week and opponent staying put
+   while the stats scroll sideways on a narrow screen. */
+.plog-wrap { overflow-x: auto; overscroll-behavior-x: contain; padding: 4px 24px 28px; }
+.plog-skel { padding-top: 12px; }
+.plog { border-collapse: separate; border-spacing: 0; min-width: 100%; font: 700 12px/1 var(--font-data); white-space: nowrap; }
+.plog th, .plog td { padding: 11px 6px; text-align: right; }
+.plog .wk, .plog .opp, .plog .res, .plog .bye { text-align: left; }
+.plog thead .grp th { padding: 14px 4px 0; }
+.plog thead .grp th span {
+  display: block; padding: 8px 0 6px; border-radius: 8px 8px 0 0;
+  background: var(--surface-raised);
+  font: 800 10px/1 var(--font-data); letter-spacing: .12em; text-transform: uppercase; text-align: center; color: var(--text-secondary);
+}
+.plog thead .cols th { padding: 10px 6px 12px; font: 800 10px/1 var(--font-data); letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border-strong); }
+.plog tbody td { border-bottom: 1px solid var(--border); color: var(--text-primary); }
+.plog tbody tr:last-child td { border-bottom: 0; }
+.plog tbody tr.now td { background: var(--surface-raised); }
+.plog td.wk, .plog td.dash, .plog td.bye { color: var(--text-muted); font-weight: 600; }
+.plog td.opp i { display: inline-block; width: 18px; font-style: normal; color: var(--text-muted); font-weight: 600; }
+.plog td.opp img { width: 22px; height: 22px; object-fit: contain; vertical-align: middle; margin: -4px 7px -2px 0; }
+.plog td.res b { font-weight: 800; }
+.plog td.res b.w { color: var(--accent); }
+.plog td.res b.l { color: var(--gap-critical); }
+.plog .wk { position: sticky; left: 0; z-index: 1; background: var(--surface); }   /* the week stays while the stats scroll sideways */
+.plog tr.now td.wk { background: var(--surface-raised); }
 .pc-game .ptiles { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
 .pc-game .ptile { padding: 11px 12px; }
 .pc-game .ptile b { font-size: 19px; }
@@ -1581,7 +1608,15 @@ body.pcard-open { overflow: hidden; }
   /* One column, the whole body scrolling, the news in the flow. */
   .pc-body { padding: 14px 16px 22px; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: 18px; overflow-y: auto; overscroll-behavior: contain; }
   .pc-body h4 { padding: 0 0 10px; font-size: 16px; }
-  #pc-game { padding: 14px 0 0; }
+  /* min-height back to auto: at 0 (the laptop's, so the columns can scroll)
+     the phone's auto rows collapsed and split the body's height between
+     them, and the log painted over the news. */
+  .pc-col, .pc-news { min-height: auto; }
+  .pc-col { align-self: auto; overflow: visible; }
+  #pc-game { padding: 14px 0 22px; }
+  .plog-wrap { margin: 0 -16px; padding: 4px 16px 6px; }   /* the table scrolls sideways out to the sheet's edges */
+  .plog th, .plog td { padding: 11px 8px; }
+  .plog thead .cols th { padding: 8px 8px 10px; }
   .pc-game .ptiles { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
   .pc-game .ptile { padding: 9px 10px; }
   .pc-game .ptile b { font-size: 17px; }

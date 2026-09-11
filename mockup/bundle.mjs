@@ -30,6 +30,7 @@ export function bundle() {
     ['<script src="data.js"></script>', () => `<script>\n${read('data.js')}</script>`],
     ['<script src="playoffs.js"></script>', () => `<script>\n${read('playoffs.js')}</script>`],
     ['<script src="season.js"></script>', () => `<script>\n${read('season.js')}</script>`],
+    ['<script src="scoring.js"></script>', () => `<script>\n${read('scoring.js')}</script>`],
     ['<script src="app.js"></script>', () => `<script>\n${read('app.js')}</script>`],
   ];
   for (const [tag, inline] of swaps) {
