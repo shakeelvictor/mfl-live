@@ -85,6 +85,21 @@ element and scores are second.
 - In dark the hero has **no border and no inset highlight** (`--hero-border`,
   `--hero-shadow`): its gradient fades to near-canvas, so either reads as a
   stray outline. Light keeps both.
+- **Blue under the mint** (2026-09-11): the dark canvas is blue-black
+  (`#060a11`), the surfaces blue-grey, the wash a sea blue, and the hero
+  and the pane sweep from the mint's teal into a deep sea blue (the hero
+  reaches oklch hue 252 past its middle and fades to the surface;
+  `--tab-b` is the blue, `--tab-a` the teal still, so the laptop tab's
+  seam is a teal-and-blue mix, sRGB hex at both ends as before). Light
+  cools the canvas to a blue-white and runs the hero teal to cobalt.
+  **Gold never sits on the blue**: `.hero.winner` reads `--hero-bg-gold`,
+  the teal-to-surface hero the gold sat on before. On laptop the picked
+  winner hero is still the tab, so its right edge meets the pane's
+  mix there; only the phone's winner hero is fully green. Why: the green
+  ground under the gold read as the Packers, and the mint beside the
+  orange as the Dolphins; the blue takes care of the first (the Bears'
+  navy and orange, and a cobalt with crimson, brass, volt and fuchsia,
+  were tried the same day and reverted; mint is the keeper).
 - **Accent is mint** and carries "live / on now", the selected segment and the
   leader's badge -- never urgency. Urgency is a separate warm scale:
   `--gap-critical` (< 0.25, coin flip) -> `--gap-live` (< 2.5) ->

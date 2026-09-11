@@ -11,26 +11,32 @@
    --gap-critical (coin flip) -> --gap-live (at risk) -> --gap-settled.
    =================================================================== */
 :root {
-  --canvas: #070b0a;
-  --wash: oklch(0.62 0.13 178 / 0.62);
-  --surface: #0f1917;
-  --surface-raised: #172522;
-  --surface-sunken: #0b1311;
+  --canvas: #060a11;
+  --wash: oklch(0.55 0.12 232 / 0.6);
+  --surface: #0e161f;
+  --surface-raised: #16212d;
+  --surface-sunken: #0a1017;
   --surface-glass: rgba(255, 255, 255, 0.05);
   --border: rgba(255, 255, 255, 0.06);
   --border-strong: rgba(255, 255, 255, 0.14);
   --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 16px 40px rgba(0, 0, 0, 0.4);
   --shadow-sheet: 0 -24px 80px rgba(0, 0, 0, 0.65);
-  --scrim: rgba(3, 6, 6, 0.72);
+  --scrim: rgba(3, 6, 12, 0.72);
   --news-ink: #ffffff;   /* the news copy: pure white here, pure black in light, for reading (2026-09-11) */
   --text-primary: #f6faf8;
-  --text-secondary: #a7b5b0;
-  --text-muted: #6b7a75;
+  --text-secondary: #a7b3bb;
+  --text-muted: #6b7882;
   --text-faint: #3f4b47;
   --accent: #4fe3c1;
   --accent-ink: #052a24;
   --accent-soft: rgba(79, 227, 193, 0.14);
-  --hero-bg: linear-gradient(160deg, oklch(0.42 0.1 178) 0%, #0f1917 70%);
+  /* Teal into blue (2026-09-11): the hero starts on the mint's teal, reaches
+     a deep sea blue past its middle and fades to the surface. The canvas,
+     surfaces and pane carry the same blue. Gold never sits on it: the Week
+     winner's hero reads --hero-bg-gold, the green ground the gold sat on
+     before, so green and gold never share a surface with the blue. */
+  --hero-bg: linear-gradient(160deg, oklch(0.42 0.1 178) 0%, oklch(0.34 0.11 252) 52%, #0e161f 88%);
+  --hero-bg-gold: linear-gradient(160deg, oklch(0.42 0.1 178) 0%, #0f1917 70%);
   --hero-text: #f6faf8;
   --hero-muted: rgba(246, 250, 248, 0.66);
   --hero-strip: rgba(255, 255, 255, 0.10);
@@ -60,7 +66,7 @@
      being outside the sRGB gamut, were gamut-mapped differently by the
      gradient and the mix, so the bridge never quite matched the pane. */
   --tab-a: #015145;   /* oklch(0.39 0.0715 178), the in-gamut cut of 0.39 0.09 */
-  --tab-b: #01342b;   /* oklch(0.29 0.053 178) */
+  --tab-b: #0c2a55;   /* the pane ends on the blue; the tab's seam mixes teal and blue in sRGB */   /* oklch(0.29 0.053 178) */
   --tab-line: rgba(255, 255, 255, 0.12);
   --hero-tab-start: oklch(0.42 0.1 178);
   --shadow-row: 0 4px 10px rgba(0, 0, 0, 0.42);
@@ -88,16 +94,16 @@
 }
 
 :root[data-theme="light"] {
-  --canvas: #f1f3f2;
-  --wash: oklch(0.86 0.07 178 / 0.55);
+  --canvas: #eef2f5;
+  --wash: oklch(0.88 0.06 235 / 0.55);
   --surface: #ffffff;
-  --surface-raised: #f3f6f5;
-  --surface-sunken: #e9edeb;
+  --surface-raised: #f2f5f8;
+  --surface-sunken: #e6ebf0;
   --surface-glass: rgba(255, 255, 255, 0.7);
-  --border: rgba(10, 20, 18, 0.04);
-  --border-strong: rgba(10, 20, 18, 0.10);
-  --shadow-card: 0 1px 2px rgba(15, 25, 22, 0.04), 0 16px 40px rgba(15, 25, 22, 0.09);
-  --shadow-sheet: 0 -24px 80px rgba(15, 25, 22, 0.25);
+  --border: rgba(10, 18, 28, 0.04);
+  --border-strong: rgba(10, 18, 28, 0.10);
+  --shadow-card: 0 1px 2px rgba(12, 20, 30, 0.04), 0 16px 40px rgba(12, 20, 30, 0.09);
+  --shadow-sheet: 0 -24px 80px rgba(12, 20, 30, 0.25);
   --scrim: rgba(20, 30, 28, 0.38);
   --news-ink: #000000;
   --text-primary: #101514;
@@ -107,7 +113,8 @@
   --accent: #0e9c83;
   --accent-ink: #ffffff;
   --accent-soft: rgba(14, 156, 131, 0.12);
-  --hero-bg: linear-gradient(160deg, #0c5a4b 0%, #0e7a66 100%);
+  --hero-bg: linear-gradient(160deg, #0c5a4b 0%, #0e7a66 38%, #1d4d9c 100%);
+  --hero-bg-gold: linear-gradient(160deg, #0c5a4b 0%, #0e7a66 100%);
   --hero-text: #ffffff;
   --hero-muted: rgba(255, 255, 255, 0.7);
   --hero-border: var(--border);
@@ -131,12 +138,12 @@
   --gold-soft: rgba(154, 107, 0, 0.12);
   --gold-line: rgba(154, 107, 0, 0.35);
   --tab-a: #13907b;
-  --tab-b: #0a5a4b;
+  --tab-b: #1d4d9c;
   --tab-line: rgba(255, 255, 255, 0.18);
   --hero-tab-start: #0c5a4b;
-  --shadow-row: 0 3px 8px rgba(15, 25, 22, 0.12);
-  --shadow-lift: 0 24px 44px -10px rgba(15, 25, 22, 0.28), 0 6px 14px rgba(15, 25, 22, 0.12);
-  --shadow-pane: 0 1px 2px rgba(15, 25, 22, 0.06), 0 20px 50px rgba(15, 25, 22, 0.16);
+  --shadow-row: 0 3px 8px rgba(12, 20, 30, 0.12);
+  --shadow-lift: 0 24px 44px -10px rgba(12, 20, 30, 0.28), 0 6px 14px rgba(12, 20, 30, 0.12);
+  --shadow-pane: 0 1px 2px rgba(12, 20, 30, 0.06), 0 20px 50px rgba(12, 20, 30, 0.16);
 }
 
 @keyframes fflr-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
@@ -555,7 +562,7 @@ button.hero { cursor: pointer; }
   transition: opacity .6s;
 }
 .hero.winner .hero-wave { opacity: 1; }
-.hero.winner { border-color: var(--hero-gold-line); }
+.hero.winner { border-color: var(--hero-gold-line); background: var(--hero-bg-gold); }   /* gold on the green ground, never on the blue */
 .hero.winner .badge { background: var(--hero-gold); color: #3a2a00; }
 .hero-money {
   position: absolute; top: -22px; right: 16px;
