@@ -85,19 +85,7 @@ element and scores are second.
 - In dark the hero has **no border and no inset highlight** (`--hero-border`,
   `--hero-shadow`): its gradient fades to near-canvas, so either reads as a
   stray outline. Light keeps both.
-- **The mockup wears the Bears' colours** (2026-09-11; mint on `main`, and
-  here until that day, with a cobalt afternoon in between): navy canvas
-  (`#070d1a`, surfaces at the Bears' `#0b162a`), warm off-white text, the
-  Bears orange as the accent (`#ff6a1f` in dark, the club's `#c83803` in
-  light, where the hero is navy and the canvas a warm paper), an
-  orange-to-navy hero in dark with an orange two-step edge, and a navy
-  pane. The "mint" in the notes below means the accent. The alert red is
-  crimson (`#ff3556` / `#c8102e`), one token for the coin flip, RZ, OUT,
-  the injury chip and the LIVE in the wordmark. **Since the orange is
-  the accent, the close gap is amber** (`#ffbf3c` / `#c77a00`) and the TE
-  chip moved off amber onto teal. Every colour-mixed seam still takes
-  sRGB hex.
-- **Accent** carries "live / on now", the selected segment and the
+- **Accent is mint** and carries "live / on now", the selected segment and the
   leader's badge -- never urgency. Urgency is a separate warm scale:
   `--gap-critical` (< 0.25, coin flip) -> `--gap-live` (< 2.5) ->
   `--gap-settled`. Rows adjacent to a hot gap **fuse into one card** (per-edge

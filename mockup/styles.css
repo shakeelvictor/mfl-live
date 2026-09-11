@@ -6,45 +6,45 @@
    correctly in all three artifact host states (unstamped -> dark,
    stamped dark -> dark, stamped light -> light).
 
-   Accent (Bears orange, 2026-09-11; mint before, cobalt for an afternoon) carries "live / on now", the selected segment and the
+   Accent (mint) carries "live / on now", the selected segment and the
    leader's rank badge -- never urgency. Urgency is its own warm scale:
    --gap-critical (coin flip) -> --gap-live (at risk) -> --gap-settled.
    =================================================================== */
 :root {
-  --canvas: #070d1a;
-  --wash: oklch(0.60 0.17 45 / 0.34);
-  --surface: #0e1a30;
-  --surface-raised: #16243f;
-  --surface-sunken: #0a1224;
+  --canvas: #070b0a;
+  --wash: oklch(0.62 0.13 178 / 0.62);
+  --surface: #0f1917;
+  --surface-raised: #172522;
+  --surface-sunken: #0b1311;
   --surface-glass: rgba(255, 255, 255, 0.05);
   --border: rgba(255, 255, 255, 0.06);
   --border-strong: rgba(255, 255, 255, 0.14);
   --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 16px 40px rgba(0, 0, 0, 0.4);
   --shadow-sheet: 0 -24px 80px rgba(0, 0, 0, 0.65);
-  --scrim: rgba(4, 8, 18, 0.72);
+  --scrim: rgba(3, 6, 6, 0.72);
   --news-ink: #ffffff;   /* the news copy: pure white here, pure black in light, for reading (2026-09-11) */
-  --text-primary: #f6f4ef;
-  --text-secondary: #aab3c5;
-  --text-muted: #6b7690;
-  --text-faint: #3b4560;
-  --accent: #ff6a1f;
-  --accent-ink: #2a0e00;
-  --accent-soft: rgba(255, 106, 31, 0.15);
-  --hero-bg: linear-gradient(160deg, oklch(0.52 0.19 40) 0%, #0e1a30 70%);
-  --hero-text: #f6f4ef;
-  --hero-muted: rgba(246, 244, 239, 0.68);
+  --text-primary: #f6faf8;
+  --text-secondary: #a7b5b0;
+  --text-muted: #6b7a75;
+  --text-faint: #3f4b47;
+  --accent: #4fe3c1;
+  --accent-ink: #052a24;
+  --accent-soft: rgba(79, 227, 193, 0.14);
+  --hero-bg: linear-gradient(160deg, oklch(0.42 0.1 178) 0%, #0f1917 70%);
+  --hero-text: #f6faf8;
+  --hero-muted: rgba(246, 250, 248, 0.66);
   --hero-strip: rgba(255, 255, 255, 0.10);
   --hero-pill: rgba(255, 255, 255, 0.14);
   /* In dark the hero's gradient fades to near-canvas, so a border and the
      card shadow's inset highlight read as a stray outline: neither here. */
   --hero-border: transparent;
   --hero-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
-  --hero-edge: color-mix(in srgb, var(--accent) 60%, #070d1a);      /* the leader card's thick edge: crimson on navy (2026-09-11; was the accent) */
-  --hero-edge-2: color-mix(in srgb, var(--accent) 30%, #070d1a);
+  --hero-edge: color-mix(in srgb, var(--accent) 30%, #07110e);      /* the leader card's thick edge */
+  --hero-edge-2: color-mix(in srgb, var(--accent) 14%, #07110e);
   /* The hero gradient stays dark in both themes, so anything mint on it
      needs the bright mint, not the theme accent (deep teal in light). */
-  --hero-accent: #ff6a1f;
-  --hero-accent-soft: rgba(255, 106, 31, 0.24);
+  --hero-accent: #4fe3c1;
+  --hero-accent-soft: rgba(79, 227, 193, 0.22);
   /* Gold for the week's MVP; deepened in light for contrast on white. */
   --gold: #f2c94c;
   --gold-soft: rgba(242, 201, 76, 0.16);
@@ -59,24 +59,24 @@
      sRGB, so the seam is exact. As oklch these interpolated in oklab and,
      being outside the sRGB gamut, were gamut-mapped differently by the
      gradient and the mix, so the bridge never quite matched the pane. */
-  --tab-a: #1a3160;   /* Bears navy pane top (sRGB hex on purpose, see above) */
-  --tab-b: #0c1a38;
+  --tab-a: #015145;   /* oklch(0.39 0.0715 178), the in-gamut cut of 0.39 0.09 */
+  --tab-b: #01342b;   /* oklch(0.29 0.053 178) */
   --tab-line: rgba(255, 255, 255, 0.12);
-  --hero-tab-start: oklch(0.52 0.19 40);
+  --hero-tab-start: oklch(0.42 0.1 178);
   --shadow-row: 0 4px 10px rgba(0, 0, 0, 0.42);
   --shadow-lift: 0 24px 44px -10px rgba(0, 0, 0, 0.7), 0 6px 14px rgba(0, 0, 0, 0.4);   /* the picked row, risen off the board */
   --shadow-pane: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 20px 50px rgba(0, 0, 0, 0.5);
-  --gap-critical: #ff3556;   /* crimson (2026-09-11; was coral #ff5d5d): the coin flip, RZ, OUT and the LIVE in the wordmark. The close gap is amber, since the orange is the accent here. */
-  --gap-critical-soft: rgba(255, 53, 86, 0.14);
-  --gap-critical-ink: #2a0510;
-  --gap-live: #ffbf3c;
-  --gap-live-soft: rgba(255, 191, 60, 0.14);
-  --gap-live-ink: #2a1a00;
+  --gap-critical: #ff5d5d;
+  --gap-critical-soft: rgba(255, 93, 93, 0.14);
+  --gap-critical-ink: #2a0606;
+  --gap-live: #ff9a57;
+  --gap-live-soft: rgba(255, 154, 87, 0.13);
+  --gap-live-ink: #2a1204;
   --gap-settled: rgba(255, 255, 255, 0.10);
   --pos-qb: #f472b6; --pos-qb-soft: rgba(244, 114, 182, 0.16);
   --pos-rb: #34d399; --pos-rb-soft: rgba(52, 211, 153, 0.16);
   --pos-wr: #60a5fa; --pos-wr-soft: rgba(96, 165, 250, 0.16);
-  --pos-te: #2dd4bf; --pos-te-soft: rgba(45, 212, 191, 0.16);
+  --pos-te: #fbbf24; --pos-te-soft: rgba(251, 191, 36, 0.16);
   --pos-k:  #a78bfa; --pos-k-soft:  rgba(167, 139, 250, 0.16);
   --pos-lb: #a3e635; --pos-lb-soft: rgba(163, 230, 53, 0.16);
   --radius-card: 24px;
@@ -88,55 +88,55 @@
 }
 
 :root[data-theme="light"] {
-  --canvas: #f3f1ec;
-  --wash: oklch(0.90 0.06 50 / 0.55);
+  --canvas: #f1f3f2;
+  --wash: oklch(0.86 0.07 178 / 0.55);
   --surface: #ffffff;
-  --surface-raised: #f5f3ee;
-  --surface-sunken: #ebe8e1;
+  --surface-raised: #f3f6f5;
+  --surface-sunken: #e9edeb;
   --surface-glass: rgba(255, 255, 255, 0.7);
-  --border: rgba(11, 22, 42, 0.05);
-  --border-strong: rgba(11, 22, 42, 0.12);
-  --shadow-card: 0 1px 2px rgba(11, 22, 42, 0.04), 0 16px 40px rgba(11, 22, 42, 0.09);
-  --shadow-sheet: 0 -24px 80px rgba(11, 22, 42, 0.25);
-  --scrim: rgba(11, 22, 42, 0.40);
+  --border: rgba(10, 20, 18, 0.04);
+  --border-strong: rgba(10, 20, 18, 0.10);
+  --shadow-card: 0 1px 2px rgba(15, 25, 22, 0.04), 0 16px 40px rgba(15, 25, 22, 0.09);
+  --shadow-sheet: 0 -24px 80px rgba(15, 25, 22, 0.25);
+  --scrim: rgba(20, 30, 28, 0.38);
   --news-ink: #000000;
-  --text-primary: #0b162a;
-  --text-secondary: #3f4b62;
-  --text-muted: #7e879a;
-  --text-faint: #c3c7cf;
-  --accent: #c83803;
+  --text-primary: #101514;
+  --text-secondary: #475350;
+  --text-muted: #86908c;
+  --text-faint: #c3cac7;
+  --accent: #0e9c83;
   --accent-ink: #ffffff;
-  --accent-soft: rgba(200, 56, 3, 0.12);
-  --hero-bg: linear-gradient(160deg, #0b162a 0%, #1c3562 100%);
+  --accent-soft: rgba(14, 156, 131, 0.12);
+  --hero-bg: linear-gradient(160deg, #0c5a4b 0%, #0e7a66 100%);
   --hero-text: #ffffff;
   --hero-muted: rgba(255, 255, 255, 0.7);
   --hero-border: var(--border);
   --hero-shadow: var(--shadow-card);
-  --hero-edge: #c83803;   /* crimson steps, not crimson into navy: that mix lands on maroon */
-  --hero-edge-2: #7a2200;
-  --gap-critical: #c8102e;
-  --gap-critical-soft: rgba(200, 16, 46, 0.09);
+  --hero-edge: color-mix(in srgb, var(--accent) 55%, #083a30);
+  --hero-edge-2: color-mix(in srgb, var(--accent) 30%, #083a30);
+  --gap-critical: #e0342f;
+  --gap-critical-soft: rgba(224, 52, 47, 0.09);
   --gap-critical-ink: #ffffff;
-  --gap-live: #c77a00;
-  --gap-live-soft: rgba(199, 122, 0, 0.11);
+  --gap-live: #e2621a;
+  --gap-live-soft: rgba(226, 98, 26, 0.10);
   --gap-live-ink: #ffffff;
-  --gap-settled: rgba(11, 22, 42, 0.10);
+  --gap-settled: rgba(10, 20, 18, 0.10);
   --pos-qb: #c8347f; --pos-qb-soft: rgba(200, 52, 127, 0.12);
   --pos-rb: #0f8f63; --pos-rb-soft: rgba(15, 143, 99, 0.12);
   --pos-wr: #2a6fd6; --pos-wr-soft: rgba(42, 111, 214, 0.12);
-  --pos-te: #0f8f8a; --pos-te-soft: rgba(15, 143, 138, 0.12);
+  --pos-te: #b7791f; --pos-te-soft: rgba(183, 121, 31, 0.14);
   --pos-k:  #7c4fd8; --pos-k-soft:  rgba(124, 79, 216, 0.12);
   --pos-lb: #5a8a0c; --pos-lb-soft: rgba(90, 138, 12, 0.12);
   --gold: #9a6b00;
   --gold-soft: rgba(154, 107, 0, 0.12);
   --gold-line: rgba(154, 107, 0, 0.35);
-  --tab-a: #1c3a6e;
-  --tab-b: #0b162a;
+  --tab-a: #13907b;
+  --tab-b: #0a5a4b;
   --tab-line: rgba(255, 255, 255, 0.18);
-  --hero-tab-start: #0b162a;
-  --shadow-row: 0 3px 8px rgba(11, 22, 42, 0.12);
-  --shadow-lift: 0 24px 44px -10px rgba(11, 22, 42, 0.28), 0 6px 14px rgba(11, 22, 42, 0.12);
-  --shadow-pane: 0 1px 2px rgba(11, 22, 42, 0.06), 0 20px 50px rgba(11, 22, 42, 0.16);
+  --hero-tab-start: #0c5a4b;
+  --shadow-row: 0 3px 8px rgba(15, 25, 22, 0.12);
+  --shadow-lift: 0 24px 44px -10px rgba(15, 25, 22, 0.28), 0 6px 14px rgba(15, 25, 22, 0.12);
+  --shadow-pane: 0 1px 2px rgba(15, 25, 22, 0.06), 0 20px 50px rgba(15, 25, 22, 0.16);
 }
 
 @keyframes fflr-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
@@ -1356,7 +1356,7 @@ body.pcard-open { overflow: hidden; }
 }
 .pcard[data-open="closing"] .pc-scrim { animation: fflr-fade-out .2s ease-out forwards; }
 .pc-sheet {
-  --pc-ground: #0b162a; --pc-accent: #ff6a1f;   /* the team's, set by the script; a Bears navy-and-orange default for a free agent */
+  --pc-ground: #12211d; --pc-accent: #4fe3c1;   /* the team's, set by the script; a mint-on-dark default for a free agent */
   position: relative;
   width: 75%; height: min(84vh, 84dvh);   /* a fixed height: the news loads inside it and nothing grows or jumps */
   display: flex; flex-direction: column;
@@ -1451,9 +1451,9 @@ body.pcard-open { overflow: hidden; }
 .pc-inj {
   display: inline-flex; align-items: center;
   padding: 4px 9px; border-radius: var(--radius-pill);
-  background: color-mix(in srgb, #ff3556 22%, transparent);
-  border: 1px solid color-mix(in srgb, #ff3556 50%, transparent);
-  color: #ffb3c0;
+  background: color-mix(in srgb, #ff5d5d 22%, transparent);
+  border: 1px solid color-mix(in srgb, #ff5d5d 50%, transparent);
+  color: #ffb4b4;
   font: 800 10.5px/1 var(--font-data); letter-spacing: .06em; text-transform: uppercase;
 }
 .pc-inj.soft {
@@ -1483,7 +1483,7 @@ body.pcard-open { overflow: hidden; }
   color: rgba(242, 244, 248, 0.62);
 }
 .pc-hero .pg-team.mine, .pc-hero .pg-team.mine .pg-score { color: #fff; }
-.pc-hero .pgame.live .pg-state { color: #ff6a1f; }
+.pc-hero .pgame.live .pg-state { color: #4fe3c1; }
 .pc-hero .pg-state { margin-left: 10px; }
 .pc-hero .pg-spot { color: rgba(242, 244, 248, 0.55); }
 
