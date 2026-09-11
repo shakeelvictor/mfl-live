@@ -1219,6 +1219,7 @@ let pcKey = null;      // the open player's key (playerKey); null while closed
 let pcFocus = null;    // the row that opened it, for focus on close
 let pcInjury = null;   // Sleeper's injury fields for the open player, once they land
 let pcTimer = 0;
+let pcPanel = "log";   // the phone's open tab, game log or news, kept across cards
 const PC_IN_MS = 520;   // the sheet's sweep up from the bottom (styles.css: fflr-pc-in)
 const NEWS_WIPE_MS = 520;   // the news sweeping in from the left, once the sheet has landed
 const SWEEP_EASE = "cubic-bezier(.22, 1, .36, 1)";
@@ -1250,7 +1251,6 @@ const timeAgo = (ms) => {
 // "Sep 2, 6:56 PM", the reader's own clock, as Sleeper's card dates its news.
 const WHEN_FMT = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const whenLabel = (ms) => WHEN_FMT.format(new Date(ms));
-const shortName = (n) => `${String(n).trim()[0] || ""}. ${lastName(n)}`;   // "J. Gibbs", the tab's name
 // RotoBaller's `published` is Eastern wall-clock written as UTC: on the
 // Week 1 opener its "exits the game" item read an hour BEFORE kickoff, and
 // RotoWire's equivalent came four hours after it (2026-09-10). So it is
@@ -1412,7 +1412,6 @@ function pcHeroHtml(p, t) {
   return `<div class="pc-hero">` +
     (LOGOS[p.tm] ? `<img class="pc-mark" src="${LOGOS[p.tm]}" alt="" aria-hidden="true">` : "") +
     `<span class="pface pc-face">${avatar(p)}${logoBadge(p.tm)}${tdBadge(p.st)}</span>` +
-    `<span class="pc-poschip pos ${posClass(p.pos)}">${esc(p.pos)}</span>` +   /* under the portrait on a laptop; the phone keeps the chip in the sub line */
     `<div class="pc-main">` +
       `<span class="pc-kicker">${esc(p.from || t.team)} · Week ${WEEK}</span>` +
       `<h2 class="pc-name" id="pc-name">${esc(p.n)}</h2>` +
@@ -1485,17 +1484,17 @@ function openPlayer(key, row) {
   const openedAt = performance.now();
   const [ground, accent] = TEAM_COLORS[p.tm] || [];
   pcSheet.style.cssText = ground ? `--pc-ground:${ground};--pc-accent:${accent}` : "";   // the tab and the band wear the team's colours
+  // The body's sections are flat siblings: the laptop's grid places the
+  // game and the log in the left column and the news in the right, and
+  // the phone stacks them, the log and the news behind a pair of tabs.
+  const tab = (id, label) => `<button class="tab" type="button" role="tab" data-panel="${id}" aria-selected="${pcPanel === id}">${label}</button>`;
   pcSheet.innerHTML =
-    `<div class="pc-tab"><div class="pc-tab-card">` +
-      `<span class="pc-tab-name"><b>${esc(shortName(p.n))}</b><small>${esc(p.pos)} · ${esc(p.tm || "FA")}</small></span>` +
-      `<button class="pc-close" id="pc-close" type="button" aria-label="Close">&#x2715;</button>` +
-    `</div></div>` +
+    `<button class="pc-close" id="pc-close" type="button" aria-label="Close">&#x2715;</button>` +
     `<div id="pc-hero">${pcHeroHtml(p, t)}</div>` +
-    `<div class="pc-body">` +
-      `<div class="pc-col">` +
-        `<section class="pc-game"><h4>This game</h4><div id="pc-game">${tilesHtml(p)}</div></section>` +
-        `<section class="pc-log"><h4>Game log</h4><div class="plog-wrap${p.sid ? " pending" : ""}" id="pc-log">${p.sid ? LOG_SKELETON : `<p class="pc-meta">No game log for this player.</p>`}</div></section>` +
-      `</div>` +
+    `<div class="pc-body" data-panel="${pcPanel}">` +
+      `<section class="pc-game"><h4>This game</h4><div id="pc-game">${tilesHtml(p)}</div></section>` +
+      `<div class="pc-tabs tabs" role="tablist" aria-label="Player">${tab("log", "Game log")}${tab("news", "News")}</div>` +
+      `<section class="pc-log"><h4>Game log</h4><div class="plog-wrap${p.sid ? " pending" : ""}" id="pc-log">${p.sid ? LOG_SKELETON : `<p class="pc-meta">No game log for this player.</p>`}</div></section>` +
       `<section class="pc-news${p.sid ? " loading" : ""}"><div class="pc-news-inner"><h4>News</h4>` +
         `<div class="pc-news-list${p.sid ? " pending" : ""}" id="pc-news-list">${p.sid ? NEWS_SKELETON : `<p class="pc-meta">No news feed for this player.</p>`}</div>` +
       `</div></section>` +
@@ -1670,7 +1669,12 @@ rosterEl.addEventListener("keydown", (e) => {
   openPlayer(row.dataset.pk, row);
 });
 pcard.addEventListener("click", (e) => {
-  if (e.target.closest("#pc-close") || e.target.id === "pc-scrim") closePlayer();
+  if (e.target.closest("#pc-close") || e.target.id === "pc-scrim") { closePlayer(); return; }
+  const tab = e.target.closest(".pc-tabs .tab");
+  if (!tab) return;
+  pcPanel = tab.dataset.panel;
+  pcSheet.querySelector(".pc-body").dataset.panel = pcPanel;
+  for (const b of pcSheet.querySelectorAll(".pc-tabs .tab")) b.setAttribute("aria-selected", String(b === tab));
 });
 // Re-render from beside a tick once the last render's flash and rolls
 // (.9s) have played out, not over them (main's rerenderSoon).
