@@ -482,7 +482,9 @@ element and scores are second.
   put the button somewhere else than on the phone; the team's colours
   still sit on the sheet, `--pc-ground` / `--pc-accent`), then the body
   in two columns under **display headings on ruled rows** ("This game"
-  / "Game log" / "News"): the stat tiles and under them the game log
+  / "Game log" / "News"): **this game as a box score** (2026-09-11;
+  a grid of rounded tiles before, which read as boring: `cardStatsHtml`,
+  `CARD_GROUPS`) and under it the game log
   left (the tiles stay, the log scrolls on its own), the news right
   scrolling on its own behind a hairline with its heading sticky; the
   four sections are flat siblings placed by the grid, so the phone can
@@ -535,7 +537,18 @@ element and scores are second.
   one names it; the fixture sets 2025). The table scrolls sideways in
   its own wrap with the week column sticky, which is how it fits a
   phone. It lands after the sheet like the news and sweeps in the same
-  way. Context beside the number, like the news. **The card
+  way. Context beside the number, like the news. **The box score** is
+  the line's stats in the position's groups as rows (Rushing /
+  Receiving, Passing / Rushing, Kicking, Tackles / Plays), a label at
+  the left and the stats across (the group label above them on a
+  phone), each a number over its label over a **bar scaled to the
+  player's season high** from the same game log (`pcLog`, the season's
+  other weeks; a full bar is a season best, a strict one tagged
+  "· best", a mint marker on a phone): the bars are empty until the log
+  lands and grow in then (`fillBars`), and on a poll's refresh they
+  land where they are. Which stats show is the old tiles' rule, the
+  position's core always with zeros muted, the rest once they count.
+  Week 1 has no season to scale against, so the bars stay empty. **The card
   opens in two acts**:
   the sheet sweeps up from the bottom edge with the player's data
   (`translateY(100%)`, .52s; before, the laptop card rose a little and
