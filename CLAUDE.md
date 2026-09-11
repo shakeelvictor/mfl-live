@@ -490,10 +490,11 @@ element and scores are second.
   width had lasted a day, the stats beside a lot of nothing, and at
   this width they have company. Under 600px the phone's sheet, full
   width and 90dvh, one column, the band staying put and the body
-  scrolling, and **the game log and the news behind a pair of tabs**
-  (`.pc-tabs`, the Starters/Bench control's classes, pinned under the
+  scrolling, and **the news and the game log behind a pair of tabs**
+  (`.pc-tabs`, News first, each label in the section heading's own
+  type with the open one bright over an accent rule, pinned under the
   band while the body scrolls; the sections' own headings hidden; the
-  choice kept across cards in `pcPanel`, the log by default; there the
+  choice kept across cards in `pcPanel`, the news by default; there the
   log and the news need `min-height: auto`: at the laptop's 0 the
   grid's auto rows collapsed and split the body's height between them,
   and the log painted over the news). **The game log** (`gameLogHtml`)
@@ -762,13 +763,13 @@ element and scores are second.
   render, since it replayed as a second flash when the class came off).
   The MVP of the week gets the same: the full opening when it arrives
   from nothing (a Monday night, the day and the week final together),
-  the reveal alone when a day's card turns gold in place. **It runs on the first visit after a day's end, on a refresh and on a
-  return to the app** (2026-09-11): a card present when the page loads
-  waits under the loader and opens once the board has cascaded in
+  the reveal alone when a day's card turns gold in place. **It runs on the first visit after a day's end and on a load or a
+  refresh** (2026-09-11): a card present when the page loads waits
+  under the loader and opens once the board has cascaded in
   (`spotQueued`, `boardReady` at the cascade's end, so the cascade never
-  counts it), and a card showing when the tab comes back after a minute
-  or more away (`SPOT_RETURN_MS`) opens again, the poll fired by the
-  same return leaving it alone; a short flip away leaves it be. A new
+  counts it). A return to the tab leaves it be (2026-09-12; for a day a
+  card showing when the tab came back after a minute away opened again,
+  and the replay wore thin). A new
   day's card replacing another opens too; the MVP turning gold in place,
   or a corrected top scorer, gets the reveal alone. A poll's re-render
   leaves the card alone while the reveal runs (`spotRevealUntil`).

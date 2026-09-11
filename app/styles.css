@@ -1582,10 +1582,25 @@ body.pcard-open { overflow: hidden; }
      them, and the log painted over the news. */
   .pc-log, .pc-news { min-height: auto; align-self: auto; overflow: visible; grid-column: auto; grid-row: auto; }
   .pc-game { grid-column: auto; grid-row: auto; }
-  /* The tabs: the log and the news one at a time, the pair pinned under
-     the band while the body scrolls; the sections' own headings go. */
-  .pc-tabs { display: flex; position: sticky; top: 0; z-index: 2; }
-  .pc-tabs .tab { height: 36px; }
+  /* The tabs: the news and the log one at a time, the pair pinned under
+     the band while the body scrolls, each label in the section heading's
+     type (the sections' own headings go), the open one bright over an
+     accent rule. */
+  .pc-tabs {
+    display: flex; gap: 24px; position: sticky; top: 0; z-index: 2;
+    padding: 10px 0 0; background: var(--surface); border-bottom: 1px solid var(--border-strong);
+  }
+  .pc-tabs .tab {
+    position: relative; flex: none; height: auto; padding: 0 0 10px; border: 0; border-radius: 0; cursor: pointer;
+    background: transparent; color: var(--text-muted);
+    font: italic 900 16px/1 var(--font-display); letter-spacing: .02em; text-transform: uppercase;
+    transition: color .25s;
+  }
+  .pc-tabs .tab[aria-selected="true"] { color: var(--text-primary); }
+  .pc-tabs .tab[aria-selected="true"]::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; border-radius: 2px;
+    background: var(--accent);
+  }
   .pc-log h4, .pc-news h4 { display: none; }
   .pc-body[data-panel="log"] .pc-news, .pc-body[data-panel="news"] .pc-log { display: none; }
   #pc-game { padding: 14px 0 22px; }
