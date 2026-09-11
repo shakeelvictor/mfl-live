@@ -82,8 +82,20 @@ fill = (np.hypot(xx - cx, yy - cy) <= r - 2) & (al < 255)
 wt = (1 - al[fill] / 255.0)[:, None]
 d[fill, :3] = np.clip(d[fill, :3] * (al[fill][:, None] / 255.0) + 255 * wt, 0, 255).astype(np.uint8); d[fill, 3] = 255
 disc_img = Image.fromarray(d); disc_img.save(DESIGN / "mfllive-logo.png")
-for name, s in (("favicon-32.png", 32), ("favicon-192.png", 192), ("apple-touch-icon.png", 180)):
+for name, s in (("favicon-32.png", 32), ("favicon-192.png", 192), ("apple-touch-icon.png", 180), ("icon-512.png", 512)):
     disc_img.resize((s, s), Image.LANCZOS).save(APP / name, optimize=True)
+
+# --- maskable: the install icon Android masks into its own shape. The disc
+# sits inside the 80% safe zone on the ring's own navy, so the ring melts
+# into the tile and a white badge with the hands is what the launcher shows.
+# (icon-512.png, the plain disc, is what the splash screen draws large.)
+NAVY = tuple(int(v) for v in d[int(cy), int(cx - r + 8), :3])      # sampled from the ring
+S, DISC = 512, 380                                                 # disc diameter: 74% of the tile
+scale = DISC / (2 * r); side = round(disc_img.width * scale)
+tile = Image.new("RGBA", (S, S), NAVY + (255,))
+small = disc_img.resize((side, side), Image.LANCZOS)
+tile.alpha_composite(small, ((S - side) // 2, (S - side) // 2))
+tile.convert("RGB").save(APP / "icon-maskable-512.png", optimize=True)
 
 # --- transparent: every white region cleared except the laces. A white
 # pocket is a lace when the ink around it is mostly the ball; the

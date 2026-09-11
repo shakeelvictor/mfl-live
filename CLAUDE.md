@@ -331,6 +331,20 @@ element and scores are second.
   `apple-touch-icon.png`, since a badge reads the same on a dark tab bar.
   The 686px masters are `design/mfllive-logo-transparent.png` and
   `design/mfllive-logo.png`. The loader still spins the line-art football.
+- **Installed as an app** (2026-09-11): `app/manifest.webmanifest`
+  (standalone, `background_color` and `theme_color` on the dark canvas)
+  and two 512px icons `cutout.py` writes beside the favicons: `icon-512.png`,
+  the plain disc, which Android's splash draws large on the canvas so it
+  hands off to the loader with no colour jump (before the manifest the
+  splash was white with the 192px favicon small in the middle); and
+  `icon-maskable-512.png`, the disc at 74% on the ring's own navy, so the
+  launcher's mask shows a navy tile with the white badge. Android's splash
+  layout is fixed (icon centred, the name at the bottom in the system
+  font), so only the ground, the icon and its size are ours. The
+  `theme-color` meta paints the status bar and `syncTheme` moves it onto
+  the theme's `--canvas`; the splash itself is always dark. An installed
+  copy keeps the old manifest until the platform refreshes it, so re-add
+  the shortcut to see a change.
 - The header is the mark and the wordmark: **MFL LIVE**, with LIVE in the live red
   and a pulsing dot after it, always (it is the name, not a status: it
   used to drop the dot before the season and once a week was official,

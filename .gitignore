@@ -2,6 +2,7 @@
 .claude/
 .netlify/
 node_modules/
+.venv/
 *.log
 
 # Spike output — measurements, not source. Each run writes a timestamped log.

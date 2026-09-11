@@ -2220,9 +2220,12 @@ const root = document.documentElement;
 const segBtns = [...document.querySelectorAll(".seg-btn")];
 const effective = () => (root.dataset.theme === "light" ? "light" : "dark");
 
+const themeMeta = document.querySelector('meta[name="theme-color"]');
 function syncTheme() {
   const now = effective();
   segBtns.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.theme === now)));
+  // The installed app's status bar follows the canvas of the theme in use.
+  if (themeMeta) themeMeta.content = getComputedStyle(root).getPropertyValue("--canvas").trim() || "#070b0a";
 }
 segBtns.forEach((b) => b.addEventListener("click", () => {
   root.dataset.theme = b.dataset.theme;
