@@ -821,7 +821,12 @@ element and scores are second.
   muted; short labels under 600px (Thu, Sun, Final), a swipe across the
   card (left for later, right for earlier) and the arrow keys flip too.
   A pair of small arrows around the day pill lasted the morning: too
-  faint to find. A flip re-renders with the body's own
+  faint to find. **The kicker ("Top scorer", "MVP of the week") is the
+  title's own italic 900 caps at 16px and the pills' text is the reading
+  ink** (`--news-ink`, pure white in dark and pure black in light; the
+  micro grey was hard to read on the card); the MVP's kicker stays gold.
+  On a phone the MVP kicker is wider than the pills leave room for, so
+  the row wraps and the pills sit under it (`.spot-top` wraps). A flip re-renders with the body's own
   rise and no reveal, and gold only for the MVP entry; a new day's card
   lands on the newest again, and a poll's render leaves a flipped day
   where it is. The fixture's entries are Thursday's and Sunday's; on

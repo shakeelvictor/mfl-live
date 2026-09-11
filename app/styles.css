@@ -458,7 +458,15 @@ button.hero { cursor: pointer; }
 /* The card's own display beats the UA's [hidden] rule; make hidden win. */
 .spot[hidden] { display: none; }
 .spot-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 10px; }
-.spot-label { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); transition: color .3s; }
+/* The kicker ("Top scorer", "MVP of the week") in the display face, the
+   title's own italic caps, and the day pills' text in the reading ink
+   (pure white in dark, pure black in light, 2026-09-11): the micro grey
+   was hard to read on the card. The MVP's kicker stays gold. */
+.spot-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: italic 900 16px/1 var(--font-display); letter-spacing: .01em; text-transform: uppercase;
+  color: var(--news-ink); transition: color .3s;
+}
 /* A pill per finished day (and the MVP) flips through their top scorers
    (the script); only there with more than one. The shown day is lit in
    the accent, gold for the MVP; the others sit muted on the surface. A
@@ -468,12 +476,12 @@ button.hero { cursor: pointer; }
 .spot-nav { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .spot-tab {
   padding: 5px 9px; border-radius: var(--radius-pill);
-  border: 1px solid transparent; background: var(--surface-raised); color: var(--text-muted);
+  border: 1px solid transparent; background: var(--surface-raised); color: var(--news-ink);
   font: 700 11px/1 var(--font-data); white-space: nowrap;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   transition: background .2s, color .2s, border-color .2s;
 }
-.spot-tab:hover:not(.on) { color: var(--text-secondary); border-color: var(--border-strong); }
+.spot-tab:hover:not(.on) { border-color: var(--border-strong); }
 .spot-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .spot-tab.on { background: var(--accent); color: var(--accent-ink); }
 .spot-tab.gold:not(.on) { color: var(--gold); }
@@ -482,7 +490,7 @@ button.hero { cursor: pointer; }
 @media (max-width: 599px) { .spot-tab .long { display: none; } .spot-tab .short { display: inline; } }
 .spot-when {
   padding: 5px 9px; border-radius: var(--radius-pill);
-  background: var(--surface-raised); color: var(--text-muted);
+  background: var(--surface-raised); color: var(--news-ink);
   font: 700 11px/1 var(--font-data);
   transition: background .3s, color .3s;
 }
