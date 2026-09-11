@@ -890,46 +890,7 @@ function statLine(pos, st) {
    with a rate where the volume supports one. Core tiles for the position
    always show (zeros muted) so an empty line still reads as a line;
    the rest only once they count. Context beside MFL's number, as ever. */
-const tile = (l, v, always = false) => ({ l, v, always });
 const rate = (yd, n) => (n > 0 ? (yd / n).toFixed(1) : null);
-function statTiles(pos, st) {
-  st = st || {};
-  const n = (k) => st[k] || 0;
-  const frac = (a, b) => `${n(a)}/${n(b) || n(a)}`;
-  let tiles;
-  if (pos === "QB") tiles = [
-    tile("CMP/ATT", frac("pass_cmp", "pass_att"), true), tile("PASS YDS", n("pass_yd"), true),
-    tile("PASS TD", n("pass_td"), true), tile("INT", n("pass_int"), true),
-    tile("Y/A", rate(n("pass_yd"), n("pass_att"))),
-    tile("RUSH", n("rush_att")), tile("RUSH YDS", n("rush_yd")), tile("RUSH TD", n("rush_td")),
-    tile("FUM LOST", n("fum_lost")),
-  ];
-  else if (pos === "RB") tiles = [
-    tile("CAR", n("rush_att"), true), tile("RUSH YDS", n("rush_yd"), true), tile("RUSH TD", n("rush_td"), true),
-    tile("Y/C", rate(n("rush_yd"), n("rush_att"))),
-    tile("REC/TGT", frac("rec", "rec_tgt"), true), tile("REC YDS", n("rec_yd"), true), tile("REC TD", n("rec_td")),
-    tile("FUM LOST", n("fum_lost")),
-  ];
-  else if (pos === "WR" || pos === "TE") tiles = [
-    tile("REC/TGT", frac("rec", "rec_tgt"), true), tile("REC YDS", n("rec_yd"), true), tile("REC TD", n("rec_td"), true),
-    tile("Y/R", rate(n("rec_yd"), n("rec"))),
-    tile("CAR", n("rush_att")), tile("RUSH YDS", n("rush_yd")), tile("RUSH TD", n("rush_td")),
-    tile("FUM LOST", n("fum_lost")),
-  ];
-  else if (pos === "K") tiles = [
-    tile("FG", frac("fgm", "fga"), true), tile("XP", frac("xpm", "xpa"), true),
-  ];
-  else tiles = [
-    tile("TKL", n("idp_tkl"), true), tile("SOLO", n("idp_tkl_solo"), true), tile("AST", n("idp_tkl_ast"), true),
-    tile("TFL", n("idp_tkl_loss")), tile("SACK", n("idp_sack")), tile("INT", n("idp_int")),
-    tile("FF", n("idp_ff")), tile("FR", n("idp_fum_rec")), tile("PD", n("idp_pass_def")),
-    tile("BLK", n("idp_blk_kick")), tile("SAF", n("idp_safe")),
-    tile("ST TKL", n("st_tkl_solo")), tile("ST FF", n("st_ff")), tile("ST FR", n("st_fum_rec")),
-    tile("TD", n("idp_td") + n("idp_def_td") + n("st_td")),
-  ];
-  const zero = (v) => v === null || v === 0 || /^0\/0$/.test(String(v));
-  return tiles.filter((t) => t.always || !zero(t.v)).map((t) => ({ ...t, zero: zero(t.v) }));
-}
 
 /* ---------------- spotlight ----------------
    A between-days card. After a day's games are all final, the day's
@@ -1160,12 +1121,57 @@ const gameStrip = (p) => {
 
 // The stat tiles, the player card's middle (they used to expand under
 // the row); the game strip sits in the card's hero.
-const tilesHtml = (p) => {
-  const tiles = Object.keys(p.st || {}).length ? statTiles(p.pos, p.st) : [];
-  return tiles.length
-    ? `<div class="ptiles">${tiles.map((t) => `<span class="ptile${t.zero ? " zero" : ""}"><b>${esc(t.v)}</b><span>${esc(t.l)}</span></span>`).join("")}</div>`
-    : `<p class="pnone">${esc(noStats(p))}</p>`;
+/* This game as a box score (2026-09-11; a grid of tiles before): the
+   line's stats in the position's groups, each number over a bar that
+   shows it against the player's season high from the game log, so a
+   full bar is a season best and a short one a quiet day. The bars are
+   empty until the log lands and grow once it has; on a poll's refresh
+   they land where they are. Which stats show is the tiles' rule: the
+   position's core always (zeros muted), the rest once they count. */
+let pcLog = null;   // the open player's season (profileOf's log), once it lands: the bars' scale
+const cs = {
+  num: (l, k, always = false) => ({ l, always, v: (st) => String(st[k] || 0), n: (st) => st[k] || 0 }),
+  sum: (l, ks, always = false) => ({ l, always, v: (st) => String(ks.reduce((a, k) => a + (st[k] || 0), 0)), n: (st) => ks.reduce((a, k) => a + (st[k] || 0), 0) }),
+  frac: (l, a, b, always = false) => ({ l, always, frac: true, v: (st) => `${st[a] || 0}/${st[b] || st[a] || 0}`, n: (st) => st[a] || 0, zero: (st) => !(st[a] || 0) && !(st[b] || 0) }),
+  rate: (l, yd, n) => ({ l, always: false, v: (st) => rate(st[yd] || 0, st[n] || 0) ?? "0.0", n: (st) => ((st[n] || 0) > 0 ? (st[yd] || 0) / st[n] : 0), zero: (st) => !((st[n] || 0) > 0) }),
 };
+const CARD_GROUPS = {
+  QB: [["Passing", [cs.frac("CMP/ATT", "pass_cmp", "pass_att", true), cs.num("YDS", "pass_yd", true), cs.num("TD", "pass_td", true), cs.num("INT", "pass_int", true), cs.rate("Y/A", "pass_yd", "pass_att")]],
+       ["Rushing", [cs.num("CAR", "rush_att"), cs.num("YDS", "rush_yd"), cs.num("TD", "rush_td"), cs.num("FUM", "fum_lost")]]],
+  RB: [["Rushing", [cs.num("CAR", "rush_att", true), cs.num("YDS", "rush_yd", true), cs.num("TD", "rush_td", true), cs.rate("Y/C", "rush_yd", "rush_att")]],
+       ["Receiving", [cs.frac("REC/TGT", "rec", "rec_tgt", true), cs.num("YDS", "rec_yd", true), cs.num("TD", "rec_td"), cs.num("FUM", "fum_lost")]]],
+  WR: [["Receiving", [cs.frac("REC/TGT", "rec", "rec_tgt", true), cs.num("YDS", "rec_yd", true), cs.num("TD", "rec_td", true), cs.rate("Y/R", "rec_yd", "rec")]],
+       ["Rushing", [cs.num("CAR", "rush_att"), cs.num("YDS", "rush_yd"), cs.num("TD", "rush_td"), cs.num("FUM", "fum_lost")]]],
+  K: [["Kicking", [cs.frac("FG", "fgm", "fga", true), cs.frac("XP", "xpm", "xpa", true), cs.num("LNG", "fgm_lng")]]],
+  IDP: [["Tackles", [cs.num("TKL", "idp_tkl", true), cs.num("SOLO", "idp_tkl_solo", true), cs.num("AST", "idp_tkl_ast", true), cs.num("TFL", "idp_tkl_loss"), cs.num("ST TKL", "st_tkl_solo")]],
+        ["Plays", [cs.num("SACK", "idp_sack", true), cs.num("INT", "idp_int", true), cs.num("FF", "idp_ff"), cs.num("FR", "idp_fum_rec"), cs.num("PD", "idp_pass_def"), cs.num("BLK", "idp_blk_kick"), cs.num("SAF", "idp_safe"), cs.sum("TD", ["idp_td", "idp_def_td", "st_td"])]]],
+};
+CARD_GROUPS.TE = CARD_GROUPS.WR;
+const statZero = (t, st) => (t.zero ? t.zero(st) : !t.n(st));
+// grow: the bars start empty and are widened a frame later (fillBars), for the log's arrival.
+function cardStatsHtml(p, grow = false) {
+  const st = p.st && Object.keys(p.st).length ? p.st : null;
+  if (!st) return `<p class="pnone">${esc(noStats(p))}</p>`;
+  const groups = (CARD_GROUPS[p.pos] || CARD_GROUPS.IDP)
+    .map(([name, ts]) => [name, ts.filter((t) => t.always || !statZero(t, st))]).filter(([, ts]) => ts.length);
+  const cols = Math.max(...groups.map(([, ts]) => ts.length));
+  // The season's other weeks, for the scale (this week is in the log too while its game is on).
+  const weeks = pcLog ? Object.values(pcLog).filter((e) => e?.stats && Object.keys(e.stats).length && Number(e.week) !== WEEK).map((e) => e.stats) : [];
+  const stat = (t) => {
+    const cur = t.n(st), zero = statZero(t, st);
+    const others = weeks.map((w) => t.n(w)), hi = Math.max(cur, ...others, 0);
+    const pct = hi > 0 ? Math.round((cur / hi) * 100) : 0;
+    const best = weeks.length >= 2 && cur > 0 && others.every((o) => cur > o);   // a strict best, not a tie
+    const v = t.frac ? t.v(st).replace("/", "<em>/") + (t.v(st).includes("/") ? "</em>" : "") : esc(t.v(st));
+    return `<span class="sv${zero ? " zero" : ""}"><b>${v}</b>` +
+      `<small>${esc(t.l)}${best ? `<em class="hi" title="Season best"><span> · best</span></em>` : ""}</small>` +
+      `<span class="sb"><span${grow ? ` data-w="${pct}"` : ` style="width:${pct}%"`}></span></span></span>`;
+  };
+  return `<div class="sbox" style="--cols:${cols}">` +
+    groups.map(([name, ts]) => `<div class="sg"><i>${esc(name)}</i><div class="sg-stats">${ts.map(stat).join("")}</div></div>`).join("") +
+  `</div>`;
+}
+const fillBars = (root) => requestAnimationFrame(() => { for (const b of root.querySelectorAll(".sb > span[data-w]")) b.style.width = `${b.dataset.w}%`; });
 
 // Small badges by a player's name (rowBadges): Sleeper's injury status
 // and a newspaper while there is news from the last day (rosterStatus,
@@ -1665,7 +1671,7 @@ function newsHtml(items, p) {
 }
 
 function openPlayer(key, row) {
-  pcKey = key; pcInjury = null; pcPanel = "news";
+  pcKey = key; pcInjury = null; pcPanel = "news"; pcLog = null;
   const hit = pcPlayer();
   if (!hit) { pcKey = null; return; }
   clearTimeout(pcTimer);
@@ -1682,7 +1688,7 @@ function openPlayer(key, row) {
     `<button class="pc-close" id="pc-close" type="button" aria-label="Close">&#x2715;</button>` +
     `<div id="pc-hero">${pcHeroHtml(p, t)}</div>` +
     `<div class="pc-body" data-panel="${pcPanel}">` +
-      `<section class="pc-game"><h4>This game</h4><div id="pc-game">${tilesHtml(p)}</div></section>` +
+      `<section class="pc-game"><h4>This game</h4><div id="pc-game">${cardStatsHtml(p)}</div></section>` +
       `<div class="pc-tabs" role="tablist" aria-label="Player">${tab("news", "News")}${tab("log", "Game log")}</div>` +
       `<section class="pc-news${p.sid ? " loading" : ""}"><div class="pc-news-inner"><h4>News</h4>` +
         `<div class="pc-news-list${p.sid ? " pending" : ""}" id="pc-news-list">${p.sid ? NEWS_SKELETON : `<p class="pc-meta">No news feed for this player.</p>`}</div>` +
@@ -1710,6 +1716,10 @@ function openPlayer(key, row) {
       if (!wrap) return;
       wrap.innerHTML = log || sched ? gameLogHtml(p, log || {}, sched) : `<p class="pc-meta">Couldn't load the game log.</p>`;
       sweepIn(wrap);
+      // The box score's bars: scaled to the season now that it is here, growing in.
+      pcLog = log || null;
+      const hit = pcPlayer(), game = document.getElementById("pc-game");
+      if (hit && game && pcLog) { game.innerHTML = cardStatsHtml(hit.p, true); fillBars(game); }
     }, wait);
   });
   setTimeout(() => {
@@ -1741,7 +1751,7 @@ function refreshPlayerCard() {
   if (!hit) { closePlayer(); return; }   // no longer on the open team
   const { p, t } = hit;
   document.getElementById("pc-hero").innerHTML = pcHeroHtml(p, t);
-  document.getElementById("pc-game").innerHTML = tilesHtml(p);
+  document.getElementById("pc-game").innerHTML = cardStatsHtml(p);
 }
 
 /* Roster status: for every player on the open team, Sleeper's injury
