@@ -468,14 +468,28 @@ element and scores are second.
   (`refreshPlayerCard`, called by `renderTeam`, reading `teamView`, the
   open team's last render) and leaves the news alone; the card is keyed
   by the player's tween key (`pcKey`). **A bottom sheet on every
-  screen** (2026-09-11): from 600px up it is three quarters of the
-  window wide and 76vh tall, flush to the bottom, the band across the
-  top and the body in two columns, the stat tiles left and the news
-  right scrolling on its own behind a hairline (a centred 600px card
-  before; a two-column cut at that width had lasted a day, the stats
-  beside a lot of nothing, and at this width they have company); under
-  600px the phone's sheet, full width and 90dvh, one column, the band
-  staying put and the body scrolling. **The card opens in two acts**:
+  screen** (2026-09-11): from 600px up it is cut after Sleeper's own
+  desktop player card, three quarters of the window wide and 84vh
+  tall in the bottom-left corner: a dark strip along the top with a
+  **name tab** on its left ("J. Gibbs", "RB · DET", the close button
+  beside it) in the band's colour (`.pc-tab`; the team's colours are
+  set on the sheet, `--pc-ground` / `--pc-accent`, so the tab and the
+  band share them), the band under it with a 150px portrait over the
+  club mark ghosted large, the position chip under the portrait
+  (`.pc-poschip`), the name at 44px with a white **team pill** (mark
+  and code, `.pc-team`) and the vitals in large figures, then the body
+  in two columns under **display headings on ruled rows** ("This game"
+  / "News"): the stat tiles left, the news right scrolling on its own
+  behind a hairline with its heading sticky; each story titled at 17px
+  over a bordered **date pill**, "Sep 2, 6:56 PM via RotoWire"
+  (`whenLabel`, the reader's clock; the row badge's tooltip keeps
+  `timeAgo`). A centred 600px card before; a two-column cut at that
+  width had lasted a day, the stats beside a lot of nothing, and at
+  this width they have company. Under 600px the phone's sheet, full
+  width and 90dvh, one column, the band staying put and the body
+  scrolling, the tab reduced to the close button at the band's
+  top-right and the position chip back in the sub line. **The card
+  opens in two acts**:
   the sheet sweeps up from the bottom edge with the player's data
   (`translateY(100%)`, .52s; before, the laptop card rose a little and
   faded in), sweeps back down to close (.24s), and
