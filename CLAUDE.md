@@ -684,7 +684,19 @@ element and scores are second.
   card gold and the leader hero into the Week winner; both clear when
   MFL rolls liveScoring to the next week and the new schedule has
   nothing final. The fixture has no schedule, so it keeps the staged
-  slate (`THU_NFL`, everything else Sunday). A soft colour wave drifts across its background (accent, gold
+  slate (`THU_NFL`, everything else Sunday). **The card's entrance** (2026-09-11, from `poc`): a day's
+  last whistle used to pop it in; now the space opens first, slowly,
+  from the top down (`revealSpotlight`: the card's height tweened from
+  nothing over 1.6s, the rows below easing down), and only then does
+  the scorer come into view a piece at a time (`.spot.reveal`, `--i`
+  per piece, 140ms apart; the body's own rise is pinned off for that
+  render, since it replayed as a second flash when the class came off).
+  The MVP of the week gets the same: the full opening when it arrives
+  from nothing (a Monday night, the day and the week final together),
+  the reveal alone when a day's card turns gold in place. Only for a
+  card appearing during the session: a page loaded after a day's end
+  shows it at once. A poll's re-render leaves the card alone while the
+  reveal runs (`spotRevealUntil`). Skipped under reduced motion. A soft colour wave drifts across its background (accent, gold
   as MVP). When the week is official the leader hero becomes the **Week
   winner**: gold wave, gold badge, and a money-bag emoji hanging over its
   top-right corner (it sits outside the hero, which clips overflow for the

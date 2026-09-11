@@ -489,6 +489,17 @@ button.hero { cursor: pointer; }
 .spot-pts { font: 800 28px/1 var(--font-data); letter-spacing: -.02em; text-align: right; transition: color .3s; }
 .spot-flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: var(--gold); mix-blend-mode: screen; animation: fflr-strobe .8s ease-out both; }
 
+/* The entrance (the script opens the space, then .reveal brings the
+   scorer in): each piece waits its turn after the opening (--open), a
+   beat apart (--i), and rises into place. The body's own rise is off
+   meanwhile, since its pieces are doing the rising. */
+.spot.reveal .spot-body { animation: none; }
+.spot.reveal .spot-top, .spot.reveal .spot-body > *, .spot.reveal .spot-who > * {
+  animation: fflr-spot-piece .65s cubic-bezier(.2, .8, .2, 1) both;
+  animation-delay: calc(var(--open, 0ms) + var(--i, 0) * 140ms);
+}
+@keyframes fflr-spot-piece { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
 .spot.mvp { border-color: var(--gold-line); box-shadow: var(--shadow-card), 0 0 0 1px var(--gold-soft) inset; }
 .spot.mvp .spot-label { color: var(--gold); }
 .spot.mvp .spot-when { background: var(--gold-soft); color: var(--gold); }
@@ -1854,6 +1865,7 @@ body.pcard-open { overflow: hidden; }
   .flash { animation: none; }
   .hero.takeover, .hero.takeover * { animation: none !important; }
   .spot::before, .hero-wave, .hero-money, .prow.top { animation: none; }
+  .spot.reveal .spot-top, .spot.reveal .spot-body > *, .spot.reveal .spot-who > * { animation: none; }
   .loader-scene, .loader-brand span { animation: none; }   /* shown at once; the WebP still loops */
   .row.enter { animation: none; }
   .row, .hero-wrap { transition-property: background, color, opacity, border-radius; }   /* lifts land at once */
