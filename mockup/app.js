@@ -849,6 +849,10 @@ function revealSpotlight(opening) {
   if (reducedMotion.matches) return;
   const pieces = [spotEl.querySelector(".spot-top"), ...spotEl.querySelectorAll(".spot-body > *, .spot-who > *")];
   pieces.forEach((el, i) => el.style.setProperty("--i", i));
+  // The body's own rise stays off for good on this render: it is only
+  // suppressed by .reveal, and came back as a second flash of the whole
+  // card the moment the class came off (2026-09-11).
+  spotEl.querySelector(".spot-body").style.animation = "none";
   const open = opening ? SPOT_OPEN_MS : 0;
   spotEl.style.setProperty("--open", `${open}ms`);
   spotEl.classList.add("reveal");
