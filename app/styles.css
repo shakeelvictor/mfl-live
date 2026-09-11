@@ -1119,8 +1119,25 @@ button.hero { cursor: pointer; }
   color: var(--hero-muted);
 }
 .td-meta .pos { padding: 0 10px; background: var(--hero-pill); color: var(--hero-text); }
-.td-for { position: relative; font: 700 13px/1.3 var(--font-data); color: var(--hero-muted); }
-.td-for b { color: var(--hero-text); }
+/* The franchise that scored, big enough to read at a glance (2026-09-11;
+   it was a 13px line): a micro "for" over the name in the display face,
+   which rises in once the headline has slammed and the portrait popped,
+   and an accent bar that draws under it a beat later. On the Bears card
+   both wait for the chant to finish, so nothing competes with it. */
+.td-for { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.td-for i { font: 800 10px/1 var(--font-data); font-style: normal; letter-spacing: .2em; text-transform: uppercase; color: var(--hero-muted); }
+.td-for b {
+  position: relative; padding: 0 4px 7px;
+  font: 700 20px/1.1 var(--font-display); letter-spacing: -.01em; color: var(--hero-text); text-wrap: balance;
+  animation: fflr-td-for .55s cubic-bezier(.2, .9, .3, 1.25) .5s both;
+}
+.td-for b::after {
+  content: ""; position: absolute; left: 12%; right: 12%; bottom: 0; height: 3px; border-radius: 2px;
+  background: var(--hero-accent); transform: scaleX(0);
+  animation: fflr-td-underline .45s cubic-bezier(.2, .8, .2, 1) .95s both;
+}
+@keyframes fflr-td-for { from { opacity: 0; transform: translateY(12px) scale(.9); } to { opacity: 1; transform: none; } }
+@keyframes fflr-td-underline { to { transform: scaleX(1); } }
 .td-pts {
   position: relative;
   font: 800 40px/1 var(--font-data); letter-spacing: -.03em;
@@ -1171,6 +1188,7 @@ button.hero { cursor: pointer; }
 .td-team .td-more, .td-team .td-meta .pos { background: rgba(255, 255, 255, .16); color: #fff; }
 .td-team .td-meta, .td-team .td-for { color: rgba(255, 255, 255, .72); }
 .td-team .td-for b { color: #fff; }
+.td-team .td-for b::after { background: var(--td-accent); box-shadow: 0 0 12px var(--td-glow); }
 .td-team .td-bar { background: var(--td-accent); }
 .td-team .td-pts { color: var(--td-accent); text-shadow: 0 0 18px var(--td-glow); }
 /* ---------- Bears: a tier above every other team ----------
@@ -1203,6 +1221,8 @@ button.hero { cursor: pointer; }
   box-shadow: var(--shadow-sheet), 0 0 0 2px color-mix(in srgb, var(--td-accent) 60%, transparent);
 }
 .td-chi .td-word { text-shadow: 0 0 22px var(--td-glow), 0 0 44px color-mix(in srgb, var(--td-accent) 40%, transparent); }
+.td-chi .td-for b { animation-delay: 1.95s; }   /* after the chant's stomps (.55s to 1.3s) and growl (1.35s to 1.85s) */
+.td-chi .td-for b::after { animation-delay: 2.4s; }
 @keyframes fflr-chi-breathe { from { opacity: .55; } to { opacity: 1; } }
 @keyframes fflr-chi-rumble {
   0%, 100% { transform: none; }
@@ -1854,6 +1874,7 @@ body.pcard-open { overflow: hidden; }
   .dot { animation: none; }
   .witch *, .witch { animation: none !important; }   /* the card alone, held briefly (the script shortens it) */
   .td-scrim, .td-scrim::before, .td-scrim::after, .td-card, .td-card * { animation: none !important; }
+  .td-for b::after { transform: none; }   /* the bar is drawn by its animation */
   .td-chi .td-scrim::before { display: none; }   /* a static strobe would be a solid orange sheet */
   .prow.enter { animation: none; }
   .pnews.skel i { animation: none; }

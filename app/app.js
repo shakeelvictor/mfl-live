@@ -1797,7 +1797,7 @@ function showNextTouchdown() {
     `<span class="td-face">${bigShot(p)}${teamLogo(p.tm)}</span>` +
     `<span class="td-name">${esc(p.n)}</span>` +
     `<span class="td-meta"><span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span><span>${esc(p.tm)}</span></span>` +
-    `<span class="td-for">for <b>${esc(ev.franchise)}</b></span>` +
+    `<span class="td-for"><i>for</i><b>${esc(ev.franchise)}</b></span>` +
     `<span class="td-pts">+${fmt(ev.pts)}</span>` +
     `<span class="td-bar" aria-hidden="true"></span>`;
   renderTdMore();

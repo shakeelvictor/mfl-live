@@ -631,8 +631,14 @@ element and scores are second.
   bolts, diagonal sweep, badge spin, name rise; ~1.6s) and the ex-leader
   fades into the list at #2. "Flip the lead" hands #2 just enough to pass
   #1 so the sequence can be seen on demand.
-- **Touchdowns** raise a celebration card over everything: headshot with
-  the NFL team logo badged on it, TOUCHDOWN slam, franchise, points. It
+- **Touchdowns** raise a celebration card over everything: headshot with the NFL team
+  logo badged on it, TOUCHDOWN slam, franchise, points. **The franchise
+  reads at a glance** (2026-09-11; it was a 13px line): a micro "for"
+  over the name at 20px in the display face, which rises in once the
+  headline has slammed and the portrait popped (.5s), and an accent bar
+  (the team's accent on a team-coloured card) that draws under it a beat
+  later; on the Bears card both wait for the chant to finish (1.95s), so
+  nothing competes with it. Same on `poc`. It
   stays 4s; further scores queue in arrival order ("+N more") and each gets
   its own card. Tap the scrim or Escape to skip. **Starters only:** a
   bench touchdown moves the row in the Bench tab and the "behind" total,
