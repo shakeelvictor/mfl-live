@@ -660,7 +660,19 @@ element and scores are second.
   a live treatment for players still on the field (mint headshot ring,
   soft mint wash fading across the row).
 - The team page is a full-screen route over the board (`position: fixed`),
-  so the board keeps its scroll position. **From 1024px up** the shell is a
+  so the board keeps its scroll position. **The back button closes it on
+  a phone** (2026-09-11): under 1024px the page pushes a history entry
+  as it opens and the player card another (`navPush`, `teamPushed` /
+  `cardPushed`; the URL never changes, so nothing reads a different
+  week), and `popstate` closes the topmost, so the browser's back
+  button, the system back gesture and the edge swipe all step back
+  through card, page, board. A close from the page's own controls
+  (Standings, the X, Escape, the swipe down) pops its entry silently
+  (`navBack`, `navSkip` swallows the pop it fires), so the history never
+  fills with stale entries; `closeTeam` pops the card's and the page's
+  together. The laptop pane is a selection, not a navigation, and
+  pushes nothing, the card there included. A state left over from a
+  refresh is cleared at script load. **From 1024px up** the shell is a
   two-column grid instead: board left, and the same team page becomes an
   in-flow pane on the right that always shows a team (the leader by
   default; `openTeam` just selects). The pane is a stretched grid item, so

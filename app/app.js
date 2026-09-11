@@ -1301,6 +1301,25 @@ function renderTeam(changed = new Set()) {
 // selecting it. The selected row becomes a tab into the panel.
 const desktop = matchMedia("(min-width: 1024px)");
 
+/* The back button on a phone (2026-09-11): the team page is a route over
+   the board there and the player card a sheet over that, so each pushes
+   a history entry as it opens, and the browser's back (the button, the
+   system gesture, the edge swipe) closes the topmost. A close from the
+   page's own controls pops its entry silently (navSkip), so the history
+   never fills with stale entries. The laptop pane is a selection, not a
+   navigation, and pushes nothing; the card there closes as before. The
+   URL never changes, so nothing reads a different week; a state left
+   over from a refresh is cleared at boot. */
+let teamPushed = false, cardPushed = false, navSkip = 0;
+if (history.state?.mfl) history.replaceState(null, "");   // a refresh on an open page: the entry is not ours any more
+const navPush = (kind) => { if (desktop.matches) return false; history.pushState({ mfl: kind }, ""); return true; };
+const navBack = (n) => { if (n > 0) { navSkip++; history.go(-n); } };
+window.addEventListener("popstate", () => {
+  if (navSkip > 0) { navSkip--; return; }   // our own pop: already closed
+  if (cardPushed) { cardPushed = false; closePlayer(false, false); }
+  else if (teamPushed) { teamPushed = false; closeTeam(false); }
+});
+
 // The pane is capped at the window and the roster card scrolls inside it;
 // data-more shows a fade over the card's bottom edge while there is more.
 function markMore() {
@@ -1341,17 +1360,23 @@ function openTeam(id, pick = true) {
   if (desktop.matches) return;   // the panel is already showing it
 
   lastFocus = document.activeElement;
+  const wasOpen = page.dataset.open === "true";
   page.dataset.open = "true";
+  if (!wasOpen && !teamPushed) teamPushed = navPush("team");
   page.scrollTop = 0;
   document.body.classList.add("team-open");   // board keeps its scroll position
   fitName(document.getElementById("team-name"));   // measurable now that the page is displayed
   document.getElementById("back").focus();
 }
 
-function closeTeam() {
+function closeTeam(pop = true) {   // pop: take the page's history entries back too (a back press already has)
   if (desktop.matches) return;   // nothing to close; the panel stays
   if (page.dataset.open !== "true") return;
-  closePlayer(true);
+  let entries = 0;
+  if (cardPushed) { cardPushed = false; entries++; }
+  if (teamPushed) { teamPushed = false; entries++; }
+  if (pop) navBack(entries);
+  closePlayer(true, false);
   page.dataset.open = "closing";   // fades out, then unmounts below
   document.body.classList.remove("team-open");
   open = null;
@@ -1700,7 +1725,9 @@ function openPlayer(key, row) {
       `</div></section>` +
       `<section class="pc-log"><h4>Game log</h4><div class="plog-wrap${p.sid ? " pending" : ""}" id="pc-log">${p.sid ? LOG_SKELETON : `<p class="pc-meta">No game log for this player.</p>`}</div></section>` +
     `</div>`;
+  const wasOpen = pcard.dataset.open === "true";
   pcard.dataset.open = "true";
+  if (!wasOpen && !cardPushed) cardPushed = navPush("card");
   document.body.classList.add("pcard-open");
   document.getElementById("pc-close").focus({ preventScroll: true });
   if (!p.sid) return;
@@ -1786,8 +1813,9 @@ function fetchRosterStatus(t) {
   }).catch(() => statusAskedAt.delete(t.id)).finally(() => { statusPending = null; });
 }
 
-function closePlayer(instant = false) {
+function closePlayer(instant = false, pop = true) {   // pop: take the card's history entry back too (a back press already has)
   if (pcard.dataset.open !== "true") return;
+  if (cardPushed) { cardPushed = false; if (pop) navBack(1); }
   clearTimeout(pcTimer);
   const key = pcKey;
   pcKey = null; pcInjury = null;
