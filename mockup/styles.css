@@ -1468,6 +1468,7 @@ body.pcard-open { overflow: hidden; }
   gap: 0; align-items: start;
 }
 .pc-game { grid-column: 1; grid-row: 1; }
+.pc-game.off { display: none; }   /* until the game has begun (the script) */
 .pc-log { grid-column: 1; grid-row: 2; min-width: 0; min-height: 0; align-self: stretch; overflow-y: auto; overscroll-behavior: contain; }
 .pc-news { grid-column: 2; grid-row: 1 / 3; }
 .pc-tabs { display: none; }   /* the phone's */

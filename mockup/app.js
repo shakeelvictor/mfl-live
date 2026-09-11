@@ -986,6 +986,11 @@ const CARD_GROUPS = {
 };
 CARD_GROUPS.TE = CARD_GROUPS.WR;
 const statZero = (t, st) => (t.zero ? t.zero(st) : !t.n(st));
+// Whether the player's game has begun: the section shows only once it
+// has (2026-09-11; before kickoff it said "Game not started" under its
+// heading, which is nothing to look at), and a poll's refresh turns it
+// on as the game kicks off.
+const gameBegun = (p) => isLive(p) || !!(p.st && Object.keys(p.st).length);   // the mockup stages every game as on or final
 // grow: the bars start empty and are widened after a layout (fillBars), for the log's arrival; only that render transitions.
 function cardStatsHtml(p, grow = false) {
   const st = p.st && Object.keys(p.st).length ? p.st : null;
@@ -1538,7 +1543,7 @@ function openPlayer(key, row) {
     `<button class="pc-close" id="pc-close" type="button" aria-label="Close">&#x2715;</button>` +
     `<div id="pc-hero">${pcHeroHtml(p, t)}</div>` +
     `<div class="pc-body" data-panel="${pcPanel}">` +
-      `<section class="pc-game"><h4>This game</h4><div id="pc-game">${cardStatsHtml(p)}</div></section>` +
+      `<section class="pc-game${gameBegun(p) ? "" : " off"}"><h4>This game</h4><div id="pc-game">${cardStatsHtml(p)}</div></section>` +
       `<div class="pc-tabs" role="tablist" aria-label="Player">${tab("news", "News")}${tab("log", "Game log")}</div>` +
       `<section class="pc-news${p.sid ? " loading" : ""}"><div class="pc-news-inner"><h4>News</h4>` +
         `<div class="pc-news-list${p.sid ? " pending" : ""}" id="pc-news-list">${p.sid ? NEWS_SKELETON : `<p class="pc-meta">No news feed for this player.</p>`}</div>` +
@@ -1604,6 +1609,7 @@ function refreshPlayerCard() {
   const { p, t } = hit;
   document.getElementById("pc-hero").innerHTML = pcHeroHtml(p, t);
   document.getElementById("pc-game").innerHTML = cardStatsHtml(p);
+  pcSheet.querySelector(".pc-game")?.classList.toggle("off", !gameBegun(p));
 }
 
 /* Roster status: for every player on the open team, Sleeper's injury
