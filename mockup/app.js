@@ -1218,7 +1218,9 @@ let pcKey = null;      // the open player's key (playerKey); null while closed
 let pcFocus = null;    // the row that opened it, for focus on close
 let pcInjury = null;   // Sleeper's injury fields for the open player, once they land
 let pcTimer = 0;
-const PC_IN_MS = 480;   // the sheet's entrance (styles.css: fflr-pc-in / fflr-pc-up)
+const PC_IN_MS = 520;   // the sheet's sweep up from the bottom (styles.css: fflr-pc-in / fflr-pc-up)
+const NEWS_WIPE_MS = 520;   // the news sweeping in from the left, once the sheet has landed
+const SWEEP_EASE = "cubic-bezier(.22, 1, .36, 1)";
 
 const PROFILE_TTL_MS = 3 * 60e3;
 const profiles = new Map();   // Sleeper id -> { at, news: Promise, injury: Promise }
@@ -1342,6 +1344,38 @@ function growSheet(fill) {
   a.onfinish = a.oncancel = () => a.cancel();   // back to its natural height, nothing inline left behind
 }
 
+/* The news is the card's second act (2026-09-11): the sheet sweeps up
+   from the bottom with the player's data, and once it has landed the
+   news sweeps in from the left: the stories themselves if they are
+   already here, the ghost stories otherwise, with the real ones sweeping
+   over the ghosts when they land (a wipe front crossing left to right,
+   the ghosts nudged off ahead of it), never before the ghosts have
+   finished arriving. Reduced motion lands each at once. */
+function sweepIn(el) {
+  el.classList.remove("pending");
+  if (reducedMotion.matches) return;
+  el.animate([{ clipPath: "inset(0 100% 0 0)", transform: "translateX(-12px)" }, { clipPath: "inset(0 0 0 0)", transform: "none" }],
+    { duration: NEWS_WIPE_MS, easing: SWEEP_EASE });
+}
+function showNews(list, items, p, overGhosts) {
+  list.closest(".pc-news")?.classList.remove("loading");
+  let ghost = null;
+  if (overGhosts && !reducedMotion.matches) {
+    ghost = document.createElement("div");
+    ghost.className = "pc-news-ghost"; ghost.setAttribute("aria-hidden", "true");
+    ghost.innerHTML = list.innerHTML; ghost.style.top = `${list.offsetTop}px`;
+    list.parentElement.appendChild(ghost);
+  }
+  growSheet(() => { list.innerHTML = newsHtml(items, p); });
+  sweepIn(list);
+  if (ghost) {
+    const a = ghost.animate([{ clipPath: "inset(0 0 0 0)", transform: "none" }, { clipPath: "inset(0 0 0 100%)", transform: "translateX(12px)" }],
+      { duration: NEWS_WIPE_MS, easing: SWEEP_EASE, fill: "forwards" });
+    a.onfinish = () => ghost.remove();
+    setTimeout(() => ghost.remove(), NEWS_WIPE_MS + 100);   // a backgrounded tab never finishes an animation
+  }
+}
+
 function newsHtml(items, p) {
   if (items === null) return `<p class="pc-meta">Couldn't load the news. <a href="https://news.google.com/search?q=${encodeURIComponent(`${p.n} ${p.tm || ""}`.trim())}" target="_blank" rel="noopener">Search the news &#8599;</a></p>`;
   if (!items.length) return `<p class="pc-meta">No recent news for ${esc(p.n)}.</p>`;
@@ -1367,8 +1401,8 @@ function openPlayer(key, row) {
     `<div id="pc-hero">${pcHeroHtml(p, t)}</div>` +
     `<div class="pc-body">` +
       `<section class="pc-game" id="pc-game">${tilesHtml(p)}</section>` +
-      `<section class="pc-news"><div class="pc-news-inner"><h4>News</h4>` +
-        `<div class="pc-news-list" id="pc-news-list">${p.sid ? NEWS_SKELETON : `<p class="pc-meta">No news feed for this player.</p>`}</div>` +
+      `<section class="pc-news${p.sid ? " loading" : ""}"><div class="pc-news-inner"><h4>News</h4>` +
+        `<div class="pc-news-list${p.sid ? " pending" : ""}" id="pc-news-list">${p.sid ? NEWS_SKELETON : `<p class="pc-meta">No news feed for this player.</p>`}</div>` +
       `</div></section>` +
     `</div>`;
   pcard.dataset.open = "true";
@@ -1377,17 +1411,22 @@ function openPlayer(key, row) {
   if (!p.sid) return;
   const prof = profileOf(p.sid);
   const still = () => pcKey === key && pcard.dataset.open === "true";   // not closed, or another player since
-  // The news lands once the sheet has landed: the sheet is as tall as
-  // its content, and a phone slides it up by its own height, so stories
-  // arriving mid-slide made it jump (2026-09-10).
-  const settle = (fn) => {
-    const wait = reducedMotion.matches ? 0 : Math.max(0, PC_IN_MS - (performance.now() - openedAt));
-    wait ? setTimeout(fn, wait) : fn();
-  };
-  prof.news.then((items) => settle(() => {
-    const list = still() && document.getElementById("pc-news-list");
-    if (list) growSheet(() => { list.innerHTML = newsHtml(items, p); });
-  }));
+  // Act two once the sheet has landed (sweepIn / showNews): the sheet is
+  // as tall as its content, and a phone slides it up by its own height,
+  // so stories arriving mid-slide made it jump (2026-09-10).
+  let landed;   // the stories, once they are here
+  prof.news.then((items) => { landed = items; });
+  setTimeout(() => {
+    if (!still()) return;
+    const list = document.getElementById("pc-news-list");
+    if (landed !== undefined) { showNews(list, landed, p, false); return; }
+    sweepIn(list);   // the ghost stories, while the news loads
+    const sweptAt = performance.now();
+    prof.news.then((items) => {
+      const wait = reducedMotion.matches ? 0 : Math.max(0, NEWS_WIPE_MS - (performance.now() - sweptAt));
+      setTimeout(() => { if (still()) showNews(document.getElementById("pc-news-list"), items, p, true); }, wait);
+    });
+  }, reducedMotion.matches ? 0 : Math.max(0, PC_IN_MS - (performance.now() - openedAt)));
   prof.injury.then((inj) => {
     if (!still()) return;
     pcInjury = inj;
@@ -1444,7 +1483,7 @@ function closePlayer(instant = false) {
   document.body.classList.remove("pcard-open");
   const finish = () => { pcard.dataset.open = "false"; pcSheet.innerHTML = ""; };
   if (instant || reducedMotion.matches) finish();
-  else { pcard.dataset.open = "closing"; pcTimer = setTimeout(finish, 220); }
+  else { pcard.dataset.open = "closing"; pcTimer = setTimeout(finish, 260); }
   // Back to the row that opened it (a poll may have rebuilt it: find it by key).
   const back = pcFocus?.isConnected ? pcFocus : rosterEl.querySelector(`[data-pk="${CSS.escape(key)}"]`);
   pcFocus = null;
