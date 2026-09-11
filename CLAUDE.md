@@ -473,7 +473,8 @@ element and scores are second.
   tall, centred and flush to the bottom: the band with a 150px portrait
   over the club mark ghosted large, the name at 44px, a white **team
   pill** (mark and code, `.pc-team`) and the position chip in the sub
-  line, the vitals in large figures, and **the close button in the
+  line, the vitals in large figures (the game strip as wide as its
+  content, not the row), and **the close button in the
   band's top-right corner on every screen** (a name tab on a dark strip
   along the top, "J. Gibbs" with the button beside it, lasted a day: it
   put the button somewhere else than on the phone; the team's colours
@@ -493,7 +494,11 @@ element and scores are second.
   scrolling, and **the news and the game log behind a pair of tabs**
   (`.pc-tabs`, News first, each label in the section heading's own
   type with the open one bright over an accent rule, pinned under the
-  band while the body scrolls; the sections' own headings hidden; the
+  band while the body scrolls, which needs the body to carry no top
+  padding (the tiles section carries it instead: a sticky element stops
+  at its parent's content edge, and a line of text showed in the gap
+  above the tabs) and the body never scrolls sideways (`overflow-x:
+  hidden`); the sections' own headings hidden; the
   choice kept across cards in `pcPanel`, the news by default; there the
   log and the news need `min-height: auto`: at the laptop's 0 the
   grid's auto rows collapsed and split the body's height between them,
@@ -513,7 +518,12 @@ element and scores are second.
   kicking, IDP defense) as a table with group headings over the
   columns, the current week's row raised, a week with a game and no
   line dashed, the bye named; without the schedule the weeks Sleeper
-  has, with no result. Team codes are mapped both ways (`ESPN_ABBR`,
+  has, with no result. **On a phone the log is a list, not the table**
+  (2026-09-11): a week to a row with the opponent, the result and the
+  points across it and the roster's stat line (`statLine`) under them,
+  "Did not play" for a final game with no line; `gameLogHtml` renders
+  both and CSS shows one per width (the table scrolled sideways on a
+  phone, and the body with it, which read as broken). Team codes are mapped both ways (`ESPN_ABBR`,
   `TO_MFL`: Sleeper's and ESPN's SF/NE/GB/KC/TB/NO/LV/JAX and ESPN's
   WSH against MFL's). `SEASON` comes from the proxy's answers (every
   one names it; the fixture sets 2025). The table scrolls sideways in
