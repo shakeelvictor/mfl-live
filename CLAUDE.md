@@ -296,6 +296,19 @@ element and scores are second.
   volt and fuchsia; the Bears' navy and orange; a red on the blue) and
   mint is the keeper; the orange close gap beside the mint still reads a
   little Dolphins, and a rose close gap is the fix if it ever matters.
+- **An aurora behind the regular season** (2026-09-11, from `poc`):
+  `#sky-bg`, the Bowl's flourish for every other week: the same four
+  soft clouds and slow wave in a fixed layer under the board, two teal
+  (the mint's family, `--sky-teal`) and two violet (`--sky-violet`, a
+  step past the ground's blue), so the page runs mint, teal, blue,
+  violet. Violet is the one hue on the board with no job (not live, not
+  urgent, not gold; only the K chip, small), which is why it can drift
+  behind everything and say nothing; a rose was tried and read as the
+  urgency scale, a burnt orange as the close gap. **The Bowl's gold
+  replaces it, never sits on it**: the same line that turns `#bowl-bg`
+  on turns `#sky-bg` off, so Week 17 still arrives as a change. At the
+  Bowl's own strength (Shakeel's call on seeing it; half was invisible
+  at laptop size), still under reduced motion, no blur filter.
 - **In dark the kicker ("Playoffs · Week 15") and the subhead are white**
   (`--text-primary`), every week: the muted greys were hard to read on
   the dark canvas, worst under the Bowl's gold clouds (2026-09-05). Light
