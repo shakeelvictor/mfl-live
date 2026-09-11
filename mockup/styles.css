@@ -448,21 +448,29 @@ button.hero { cursor: pointer; }
 }
 /* The card's own display beats the UA's [hidden] rule; make hidden win. */
 .spot[hidden] { display: none; }
-.spot-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.spot-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 10px; }
 .spot-label { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); transition: color .3s; }
-/* The arrows by the day pill flip through the finished days' top scorers
-   and the MVP (the script); only there when there is more than one. */
-.spot-nav { display: inline-flex; align-items: center; gap: 6px; }
-.spot-arrow {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; padding: 0 0 2px; border-radius: 50%;
-  border: 1px solid var(--border-strong); background: var(--surface-raised); color: var(--text-secondary);
-  font: 800 16px/1 var(--font-data); cursor: pointer; -webkit-tap-highlight-color: transparent;
-  transition: background .2s, color .2s, opacity .2s;
+/* A pill per finished day (and the MVP) flips through their top scorers
+   (the script); only there with more than one. The shown day is lit in
+   the accent, gold for the MVP; the others sit muted on the surface. A
+   swipe across the card and the arrow keys flip too. Under 600px the
+   pills wear the short labels (Thu, Sun, Final) so four fit beside the
+   kicker. */
+.spot-nav { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.spot-tab {
+  padding: 5px 9px; border-radius: var(--radius-pill);
+  border: 1px solid transparent; background: var(--surface-raised); color: var(--text-muted);
+  font: 700 11px/1 var(--font-data); white-space: nowrap;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background .2s, color .2s, border-color .2s;
 }
-.spot-arrow:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); }
-.spot-arrow:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.spot-arrow:disabled { opacity: .3; cursor: default; }
+.spot-tab:hover:not(.on) { color: var(--text-secondary); border-color: var(--border-strong); }
+.spot-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.spot-tab.on { background: var(--accent); color: var(--accent-ink); }
+.spot-tab.gold:not(.on) { color: var(--gold); }
+.spot-tab.gold.on { background: var(--gold); color: #3a2a00; }
+.spot-tab .short { display: none; }
+@media (max-width: 599px) { .spot-tab .long { display: none; } .spot-tab .short { display: inline; } }
 .spot-when {
   padding: 5px 9px; border-radius: var(--radius-pill);
   background: var(--surface-raised); color: var(--text-muted);
