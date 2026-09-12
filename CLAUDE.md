@@ -332,6 +332,15 @@ element and scores are second.
   on green. `?holiday=thanksgiving|christmas` forces one for checking;
   `syncHoliday` calls `syncTheme` so the status bar follows the
   holiday's canvas. On `poc` the demo bar's Holiday tags force one.
+  **Christmas also snows** (`#snow`, `snowOn`): a light fall over the
+  page, a fixed layer above the board and under the team page and the
+  cards (z 40), 48 small flakes the script builds while the holiday is
+  on and empties otherwise, each on its own lane, size, weight, fall
+  time (9-20s) and sway, with negative delays so the sky is full when it
+  first shows; the fall on the flake and the sway on the dot inside it,
+  transform and opacity only, no filter. White in dark, a pale blue-grey
+  in light (`--snow`) so it shows on the white cards. Hidden under
+  reduced motion.
 - **In dark the kicker ("Playoffs · Week 15") and the subhead are white**
   (`--text-primary`), every week: the muted greys were hard to read on
   the dark canvas, worst under the Bowl's gold clouds (2026-09-05). Light
