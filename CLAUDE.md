@@ -342,7 +342,8 @@ element and scores are second.
   `main` wears on those game days, the same token layer at the end of
   `styles.css` and the same `holidayOn()` date logic (Eastern, November's
   fourth Thursday and December 25th; None follows the date), and the
-  Christmas tag brings its light snowfall. See the "Holidays" item in
+  Christmas tag brings its light snowfall; each puts its emoji (a turkey,
+  a snowman) beside the WEEK title on the trophy's swing. See the "Holidays" item in
   `main`'s CLAUDE.md for the palettes and the snow.
 - The **Demo bar** (Simulate live scoring / Flip the lead / Score a TD /
   Bears TD / End the day / End the week / Start next week / Witching hour)
