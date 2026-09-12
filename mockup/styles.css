@@ -2525,3 +2525,34 @@ h1.bowl {
   --sky-violet: rgba(180, 30, 50, .20); --sky-violet-2: rgba(180, 30, 50, .08);
   --sky-wave: rgba(180, 30, 50, .07);
 }
+
+/* ---- Christmas snowfall (2026-09-12) ---- A light snow over the page:
+   a fixed layer above the board and under the team page and the cards
+   (z 40), small flakes falling on their own loose timings with a gentle
+   sway (the fall on the flake, the sway on the dot inside it, transform
+   and opacity only, no filter, so phones stay smooth). The script fills
+   the layer with flakes while data-holiday is christmas and empties it
+   otherwise (snowOn), so nothing animates the rest of the year. White in
+   dark; a pale blue-grey in light so it shows on the white cards. Hidden
+   under reduced motion. */
+:root { --snow: rgba(255, 255, 255, 0.9); }
+:root[data-theme="light"] { --snow: rgba(105, 140, 165, 0.55); }
+.snow { position: fixed; inset: 0; z-index: 40; overflow: hidden; pointer-events: none; }
+.snow:empty { display: none; }
+.flake {
+  position: absolute; top: -3vh; left: var(--x);
+  width: var(--s); height: var(--s);
+  opacity: var(--o);
+  animation: fflr-snow-fall var(--d) linear infinite;
+  animation-delay: var(--delay);
+  will-change: transform;
+}
+.flake i {
+  display: block; width: 100%; height: 100%; border-radius: 50%;
+  background: var(--snow);
+  animation: fflr-snow-sway var(--sd) ease-in-out infinite alternate;
+  animation-delay: var(--delay);
+}
+@keyframes fflr-snow-fall { to { transform: translateY(106vh); } }
+@keyframes fflr-snow-sway { from { transform: translateX(calc(-1 * var(--sway))); } to { transform: translateX(var(--sway)); } }
+@media (prefers-reduced-motion: reduce) { .snow { display: none; } }

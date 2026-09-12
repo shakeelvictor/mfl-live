@@ -2281,6 +2281,18 @@ syncTheme();
 
 const HOLIDAYS = ["thanksgiving", "christmas"];
 const HOLIDAY_DATE = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", weekday: "short" });
+// Christmas: a light snowfall over the page, built while the holiday is
+// on and emptied otherwise (see styles.css, "Christmas snowfall"). Every
+// flake gets its own lane, size, weight, fall time and sway; negative
+// delays so the sky is already full when it first shows.
+const snowEl = document.getElementById("snow");
+function snowOn(on) {
+  if (!on) { snowEl.innerHTML = ""; return; }
+  if (snowEl.childElementCount) return;
+  const r = (a, b) => a + Math.random() * (b - a);
+  snowEl.innerHTML = Array.from({ length: 48 }, () =>
+    `<span class="flake" style="--x:${r(0, 100).toFixed(1)}%;--s:${r(2, 5).toFixed(1)}px;--o:${r(.35, .85).toFixed(2)};--d:${r(9, 20).toFixed(1)}s;--delay:${r(-20, 0).toFixed(1)}s;--sway:${r(8, 30).toFixed(0)}px;--sd:${r(2.5, 5).toFixed(1)}s"><i></i></span>`).join("");
+}
 function holidayOn(ms = Date.now()) {
   const p = Object.fromEntries(HOLIDAY_DATE.formatToParts(ms).filter((x) => x.type !== "literal").map((x) => [x.type, x.value]));
   const m = Number(p.month), d = Number(p.day);
@@ -2294,6 +2306,7 @@ const holidayTags = [...document.querySelectorAll(".devbar [data-holiday]")];
 function syncHoliday() {
   const h = holidayForced || holidayOn();
   if (h) root.dataset.holiday = h; else delete root.dataset.holiday;
+  snowOn(h === "christmas");
   holidayTags.forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.holiday || "") === (holidayForced || ""))));
   syncTheme();   // the status bar follows the holiday's canvas
 }

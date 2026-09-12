@@ -341,8 +341,9 @@ element and scores are second.
   (None / Thanksgiving / Christmas) forces the holiday palettes that
   `main` wears on those game days, the same token layer at the end of
   `styles.css` and the same `holidayOn()` date logic (Eastern, November's
-  fourth Thursday and December 25th; None follows the date). See the
-  "Holidays" item in `main`'s CLAUDE.md for the palettes.
+  fourth Thursday and December 25th; None follows the date), and the
+  Christmas tag brings its light snowfall. See the "Holidays" item in
+  `main`'s CLAUDE.md for the palettes and the snow.
 - The **Demo bar** (Simulate live scoring / Flip the lead / Score a TD /
   Bears TD / End the day / End the week / Start next week / Witching hour)
   sits under the masthead, hidden by default behind the **Demo** toggle
