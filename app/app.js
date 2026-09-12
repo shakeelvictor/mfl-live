@@ -2266,6 +2266,35 @@ segBtns.forEach((b) => b.addEventListener("click", () => {
 }));
 syncTheme();
 
+/* ---------------- holidays ----------------
+   Thanksgiving and Christmas have games this season (2026-09-12), and
+   the page wears each day's colours: data-holiday on the root, a token
+   layer over both themes at the end of styles.css. The day is the NFL's,
+   Eastern, like the spotlight's days (a Karachi manager watches the
+   Thanksgiving games on Friday morning); checked at load, every minute
+   and when the tab is shown, so a page left open through midnight
+   changes with the day. Thanksgiving is November's fourth Thursday. */
+
+const HOLIDAYS = ["thanksgiving", "christmas"];
+const HOLIDAY_DATE = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", weekday: "short" });
+function holidayOn(ms = Date.now()) {
+  const p = Object.fromEntries(HOLIDAY_DATE.formatToParts(ms).filter((x) => x.type !== "literal").map((x) => [x.type, x.value]));
+  const m = Number(p.month), d = Number(p.day);
+  if (m === 12 && d === 25) return "christmas";
+  if (m === 11 && p.weekday === "Thu" && d >= 22 && d <= 28) return "thanksgiving";
+  return null;
+}
+// ?holiday=thanksgiving|christmas forces one for checking.
+const holidayForced = HOLIDAYS.includes(QUERY.get("holiday")) ? QUERY.get("holiday") : null;
+function syncHoliday() {
+  const h = holidayForced || holidayOn();
+  if (h) root.dataset.holiday = h; else delete root.dataset.holiday;
+  syncTheme();   // the status bar follows the holiday's canvas
+}
+syncHoliday();
+setInterval(syncHoliday, 60e3);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) syncHoliday(); });
+
 /* ---------------- loading the data ---------------- */
 
 const toArray = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);

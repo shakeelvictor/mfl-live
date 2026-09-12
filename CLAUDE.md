@@ -309,6 +309,29 @@ element and scores are second.
   on turns `#sky-bg` off, so Week 17 still arrives as a change. At the
   Bowl's own strength (Shakeel's call on seeing it; half was invisible
   at laptop size), still under reduced motion, no blur filter.
+- **Holidays** (2026-09-12): Thanksgiving and Christmas have games this
+  season, and the page wears each day's colours. `holidayOn()` in
+  `app.js` resolves the NFL's date in Eastern (November's fourth
+  Thursday, December 25th; a Karachi manager watches the Thanksgiving
+  games on Friday morning) and stamps `data-holiday` on the root, at
+  load, every minute and when the tab is shown, so a page left open
+  through midnight changes with the day. The token layer at the end of
+  `styles.css` reads it over BOTH themes (`:root[data-holiday=..]` and
+  `:root[data-holiday=..][data-theme="light"]`; the root attribute
+  outranks the bare theme rules on specificity, so the block can sit
+  last), so the Dark/Light toggle still works and each gets a holiday
+  cut: canvas, wash, surfaces, inks, accent (mint's jobs go to the
+  holiday's own), hero gradient, `--tab-a`/`--tab-b` (sRGB hex still),
+  `--hero-tab-start`, and the aurora's two clouds (`--sky-teal` and
+  `--sky-violet` take the holiday's pair). Urgency keeps its scale.
+  **Thanksgiving** is pumpkin and amber over a warm brown ground, the
+  hero pumpkin into a deep cranberry-brown, with the close gap moved to
+  a cranberry (the stock orange sat on the amber accent and vanished).
+  **Christmas** is holly green and crimson over an evergreen ground, the
+  hero and the pane running green into red, and the Week winner's gold
+  on green. `?holiday=thanksgiving|christmas` forces one for checking;
+  `syncHoliday` calls `syncTheme` so the status bar follows the
+  holiday's canvas. On `poc` the demo bar's Holiday tags force one.
 - **In dark the kicker ("Playoffs · Week 15") and the subhead are white**
   (`--text-primary`), every week: the muted greys were hard to read on
   the dark canvas, worst under the Bowl's gold clouds (2026-09-05). Light

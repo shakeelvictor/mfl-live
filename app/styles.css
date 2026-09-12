@@ -2381,3 +2381,132 @@ h1.bowl {
    for a current one. MFL's points are untouched either way. */
 .subhead .stale { color: var(--gap-live); font-weight: 700; }
 .stats-stale .pstat, .stats-stale .spot-stat { opacity: .45; }
+
+/* ===================================================================
+   Holidays (2026-09-12). Thanksgiving and Christmas have games this
+   season, and the page wears each day's colours: data-holiday on the
+   root, stamped by the script from the NFL's date (Eastern), lays a
+   token layer over BOTH themes, so Dark and Light each get a holiday
+   cut and the toggle still works. The root attribute outranks the bare
+   :root and :root[data-theme] rules on specificity alone, so this block
+   can sit at the end of the sheet. Urgency keeps its warm scale and mint's
+   jobs go to the holiday's own accent; the aurora's two clouds take the
+   holiday's pair. Thanksgiving: pumpkin and amber over a warm brown
+   ground, with a cranberry close gap (the stock orange close gap sat on
+   the amber accent and vanished). Christmas: holly green and crimson
+   over an evergreen ground, the leader's hero running green into red.
+   =================================================================== */
+
+/* ---- Thanksgiving, dark ---- */
+:root[data-holiday="thanksgiving"] {
+  --canvas: #130c07;
+  --wash: oklch(0.55 0.14 55 / 0.55);
+  --surface: #1f1610;
+  --surface-raised: #2b2017;
+  --surface-sunken: #160f0a;
+  --scrim: rgba(12, 6, 3, 0.72);
+  --text-primary: #fbf5ec;
+  --text-secondary: #bfae9a;
+  --text-muted: #7f6f5e;
+  --text-faint: #4a3d31;
+  --accent: #ffb13d;
+  --accent-ink: #2b1600;
+  --accent-soft: rgba(255, 177, 61, 0.16);
+  --hero-bg: linear-gradient(160deg, oklch(0.5 0.15 52) 0%, oklch(0.36 0.12 28) 52%, #1f1610 88%);
+  --hero-bg-gold: linear-gradient(160deg, oklch(0.5 0.15 52) 0%, #1f1610 70%);
+  --hero-muted: rgba(251, 245, 236, 0.7);
+  --hero-accent: #ffb13d;
+  --hero-accent-soft: rgba(255, 177, 61, 0.24);
+  --tab-a: #8a3f12;   /* pumpkin */
+  --tab-b: #4a1a16;   /* the pane ends on a deep cranberry-brown */
+  --hero-tab-start: oklch(0.5 0.15 52);
+  --gap-live: #ff6f9a;   /* cranberry, so the close gap never melts into the amber */
+  --gap-live-soft: rgba(255, 111, 154, 0.14);
+  --gap-live-ink: #2a0612;
+  --sky-teal: rgba(255, 177, 61, .22); --sky-teal-2: rgba(255, 177, 61, .09);
+  --sky-violet: rgba(190, 50, 70, .34); --sky-violet-2: rgba(190, 50, 70, .15);
+  --sky-wave: rgba(255, 177, 61, .10);
+}
+/* ---- Thanksgiving, light ---- */
+:root[data-holiday="thanksgiving"][data-theme="light"] {
+  --canvas: #f7f1e7;
+  --wash: oklch(0.88 0.08 70 / 0.55);
+  --surface: #fffdf9;
+  --surface-raised: #f5ede2;
+  --surface-sunken: #ece2d3;
+  --scrim: rgba(40, 24, 12, 0.38);
+  --text-primary: #1a120c;
+  --text-secondary: #5a4a3c;
+  --text-muted: #94826f;
+  --text-faint: #d3c6b6;
+  --accent: #c25a00;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(194, 90, 0, 0.12);
+  --hero-bg: linear-gradient(160deg, #6b2d0e 0%, #b8561c 38%, #5b1f1d 100%);
+  --hero-bg-gold: linear-gradient(160deg, #6b2d0e 0%, #b8561c 100%);
+  --hero-accent: #ffb13d;
+  --hero-accent-soft: rgba(255, 177, 61, 0.24);
+  --tab-a: #b8561c;
+  --tab-b: #5b1f1d;
+  --hero-tab-start: #6b2d0e;
+  --gap-live: #c8305d;
+  --gap-live-soft: rgba(200, 48, 93, 0.10);
+  --gap-live-ink: #ffffff;
+  --sky-teal: rgba(194, 90, 0, .16); --sky-teal-2: rgba(194, 90, 0, .06);
+  --sky-violet: rgba(150, 30, 60, .20); --sky-violet-2: rgba(150, 30, 60, .08);
+  --sky-wave: rgba(194, 90, 0, .07);
+}
+
+/* ---- Christmas, dark ---- */
+:root[data-holiday="christmas"] {
+  --canvas: #06110b;
+  --wash: oklch(0.5 0.12 152 / 0.55);
+  --surface: #0d1b13;
+  --surface-raised: #142619;
+  --surface-sunken: #09140e;
+  --scrim: rgba(3, 12, 6, 0.72);
+  --text-primary: #f4fbf5;
+  --text-secondary: #a9bcae;
+  --text-muted: #6c8072;
+  --text-faint: #3d4f43;
+  --accent: #46e07a;
+  --accent-ink: #03230f;
+  --accent-soft: rgba(70, 224, 122, 0.15);
+  --hero-bg: linear-gradient(160deg, oklch(0.42 0.13 152) 0%, oklch(0.38 0.15 22) 52%, #0d1b13 88%);
+  --hero-bg-gold: linear-gradient(160deg, oklch(0.42 0.13 152) 0%, #0d1b13 70%);
+  --hero-muted: rgba(244, 251, 245, 0.68);
+  --hero-accent: #46e07a;
+  --hero-accent-soft: rgba(70, 224, 122, 0.24);
+  --tab-a: #0f5a2e;   /* evergreen */
+  --tab-b: #5a1220;   /* the pane ends on a deep crimson */
+  --hero-tab-start: oklch(0.42 0.13 152);
+  --sky-teal: rgba(70, 224, 122, .22); --sky-teal-2: rgba(70, 224, 122, .09);
+  --sky-violet: rgba(230, 50, 70, .34); --sky-violet-2: rgba(230, 50, 70, .15);
+  --sky-wave: rgba(230, 50, 70, .10);
+}
+/* ---- Christmas, light ---- */
+:root[data-holiday="christmas"][data-theme="light"] {
+  --canvas: #f2f6f3;
+  --wash: oklch(0.9 0.06 152 / 0.55);
+  --surface: #ffffff;
+  --surface-raised: #edf4ef;
+  --surface-sunken: #e1ebe4;
+  --scrim: rgba(10, 30, 18, 0.38);
+  --text-primary: #0e1510;
+  --text-secondary: #42534a;
+  --text-muted: #82928a;
+  --text-faint: #c1ccc5;
+  --accent: #0f7a3a;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(15, 122, 58, 0.12);
+  --hero-bg: linear-gradient(160deg, #0b4d26 0%, #146b38 38%, #8a1a2b 100%);
+  --hero-bg-gold: linear-gradient(160deg, #0b4d26 0%, #146b38 100%);
+  --hero-accent: #46e07a;
+  --hero-accent-soft: rgba(70, 224, 122, 0.24);
+  --tab-a: #146b38;
+  --tab-b: #8a1a2b;
+  --hero-tab-start: #0b4d26;
+  --sky-teal: rgba(15, 122, 58, .16); --sky-teal-2: rgba(15, 122, 58, .06);
+  --sky-violet: rgba(180, 30, 50, .20); --sky-violet-2: rgba(180, 30, 50, .08);
+  --sky-wave: rgba(180, 30, 50, .07);
+}
