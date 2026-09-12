@@ -936,7 +936,8 @@ element and scores are second.
 - **The footer is a disclaimer** (`.foot`, 2026-09-11, the one footnote on
   `main`): live scores are approximations, the best guess from real-time
   stats while games are on, and the day's finals are tallied from MFL as
-  the source of truth. Last child of the layout shell: under the board on a
+  the source of truth, and if anything is off, blame Hoss, our commissioner
+  (Shakeel's line, 2026-09-11). Last child of the layout shell: under the board on a
   phone, spanning both columns on laptop. Small, in the reading ink
   (`--news-ink`, white in dark and black in light), every week.
 
