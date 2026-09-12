@@ -45,8 +45,6 @@
      card shadow's inset highlight read as a stray outline: neither here. */
   --hero-border: transparent;
   --hero-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
-  --hero-edge: color-mix(in srgb, var(--accent) 30%, #07110e);      /* the leader card's thick edge */
-  --hero-edge-2: color-mix(in srgb, var(--accent) 14%, #07110e);
   /* The hero gradient stays dark in both themes, so anything mint on it
      needs the bright mint, not the theme accent (deep teal in light). */
   --hero-accent: #4fe3c1;
@@ -119,8 +117,6 @@
   --hero-muted: rgba(255, 255, 255, 0.7);
   --hero-border: var(--border);
   --hero-shadow: var(--shadow-card);
-  --hero-edge: color-mix(in srgb, var(--accent) 55%, #083a30);
-  --hero-edge-2: color-mix(in srgb, var(--accent) 30%, #083a30);
   --gap-critical: #e0342f;
   --gap-critical-soft: rgba(224, 52, 47, 0.09);
   --gap-critical-ink: #ffffff;
@@ -661,18 +657,6 @@ button.hero { cursor: pointer; }
 }
 .hero-wrap.sel { transform: perspective(1200px) translateZ(28px); z-index: 3; }
 .hero-wrap.sel::before { opacity: 1; }
-/* The leader's card has depth (2026-09-10): a slight lean toward the
-   viewer with a touch of italic skew, and a thick two-step edge under its
-   right and bottom sides (offset box-shadows, no blur, so nothing repaints
-   per frame), so the week's leader pops off the board. Phone only: on
-   laptop the hero is a tab into the pane and its right edge has to meet
-   the seam flat. The pick lift keeps the lean and adds its rise. */
-@media (max-width: 1023.98px) {
-  .hero-wrap { transform: perspective(1100px) rotateX(1.5deg) rotateY(-2.5deg) skewX(-1.2deg); transform-origin: 50% 50%; }
-  .hero-wrap.sel { transform: perspective(1100px) rotateX(1.5deg) rotateY(-2.5deg) skewX(-1.2deg) translateZ(28px); }
-  .hero-wrap .hero { box-shadow: var(--hero-shadow), 4px 5px 0 var(--hero-edge), 8px 10px 0 var(--hero-edge-2), 0 28px 44px -18px rgba(0, 0, 0, .55); }
-}
-
 .rank {
   width: 36px; height: 36px; border-radius: 50%;
   display: grid; place-items: center;
