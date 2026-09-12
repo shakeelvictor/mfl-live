@@ -933,6 +933,12 @@ element and scores are second.
   is a later minute (2026-09-09: the export regenerates on MFL's ~200s
   cycle and most polls bring the same body back, so a poll-time stamp
   read fresh while the scores stood still).
+- **The footer is a disclaimer** (`.foot`, 2026-09-11, the one footnote on
+  `main`): live scores are approximations, the best guess from real-time
+  stats while games are on, and the day's finals are tallied from MFL as
+  the source of truth. Last child of the layout shell: under the board on a
+  phone, spanning both columns on laptop. Small, in the reading ink
+  (`--news-ink`, white in dark and black in light), every week.
 
 Thresholds (`CRITICAL`, `LIVE`, `WITHIN`) live in one place in the script and
 the legend and capsules read them. The headline stats and the hero are derived
