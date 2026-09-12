@@ -2270,6 +2270,38 @@ segBtns.forEach((b) => b.addEventListener("click", () => {
 }));
 syncTheme();
 
+/* ---------------- holidays ----------------
+   Thanksgiving and Christmas have games this season (2026-09-12), and
+   the page wears each day's colours: data-holiday on the root, a token
+   layer over both themes at the end of styles.css. The day is the NFL's,
+   Eastern, like the spotlight's days (a Karachi manager watches the
+   Thanksgiving games on Friday morning); checked at load, every minute
+   and when the tab is shown, so a page left open through midnight
+   changes with the day. Thanksgiving is November's fourth Thursday. */
+
+const HOLIDAYS = ["thanksgiving", "christmas"];
+const HOLIDAY_DATE = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", weekday: "short" });
+function holidayOn(ms = Date.now()) {
+  const p = Object.fromEntries(HOLIDAY_DATE.formatToParts(ms).filter((x) => x.type !== "literal").map((x) => [x.type, x.value]));
+  const m = Number(p.month), d = Number(p.day);
+  if (m === 12 && d === 25) return "christmas";
+  if (m === 11 && p.weekday === "Thu" && d >= 22 && d <= 28) return "thanksgiving";
+  return null;
+}
+// The demo bar's Holiday tags force one (or none) to see it out of season.
+let holidayForced = null;
+const holidayTags = [...document.querySelectorAll(".devbar [data-holiday]")];
+function syncHoliday() {
+  const h = holidayForced || holidayOn();
+  if (h) root.dataset.holiday = h; else delete root.dataset.holiday;
+  holidayTags.forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.holiday || "") === (holidayForced || ""))));
+  syncTheme();   // the status bar follows the holiday's canvas
+}
+holidayTags.forEach((b) => b.addEventListener("click", () => { holidayForced = b.dataset.holiday || null; syncHoliday(); }));
+syncHoliday();
+setInterval(syncHoliday, 60e3);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) syncHoliday(); });
+
 derive();
 render();
 if (desktop.matches) openTeam(teams[0].id, false);   // shown, not yet lifted: pickOnLoad() lifts it after the cascade

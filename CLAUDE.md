@@ -337,6 +337,12 @@ element and scores are second.
   the TD buttons work inside every view (in Week 18 the points land on a
   side's managers). Cut line, seed chips, bye row, the sides' flags and
   the rest are described under the app on `main`'s CLAUDE.md.
+- **Holidays on the demo bar** (2026-09-12): a "Holiday" row of tags
+  (None / Thanksgiving / Christmas) forces the holiday palettes that
+  `main` wears on those game days, the same token layer at the end of
+  `styles.css` and the same `holidayOn()` date logic (Eastern, November's
+  fourth Thursday and December 25th; None follows the date). See the
+  "Holidays" item in `main`'s CLAUDE.md for the palettes.
 - The **Demo bar** (Simulate live scoring / Flip the lead / Score a TD /
   Bears TD / End the day / End the week / Start next week / Witching hour)
   sits under the masthead, hidden by default behind the **Demo** toggle
