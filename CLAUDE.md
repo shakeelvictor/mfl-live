@@ -331,7 +331,10 @@ element and scores are second.
   hero and the pane running green into red, and the Week winner's gold
   on green. `?holiday=thanksgiving|christmas` forces one for checking;
   `syncHoliday` calls `syncTheme` so the status bar follows the
-  holiday's canvas. On `poc` the demo bar's Holiday tags force one.
+  holiday's canvas, and puts the holiday's emoji beside the WEEK title
+  (`#week-holiday`: a turkey, a snowman) on the Bowl trophy's own
+  swing, the same `.trophy` class, outside the h1 for the same reason.
+  On `poc` the demo bar's Holiday tags force one.
   **Christmas also snows** (`#snow`, `snowOn`): a light fall over the
   page, a fixed layer above the board and under the team page and the
   cards (z 40), 48 small flakes the script builds while the holiday is

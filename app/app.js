@@ -2302,6 +2302,10 @@ function syncHoliday() {
   const h = holidayForced || holidayOn();
   if (h) root.dataset.holiday = h; else delete root.dataset.holiday;
   snowOn(h === "christmas");
+  // A turkey or a snowman beside the WEEK title, on the trophy's swing.
+  const em = document.getElementById("week-holiday");
+  em.textContent = { thanksgiving: "\u{1F983}", christmas: "\u26C4" }[h] || "";
+  em.hidden = !h;
   syncTheme();   // the status bar follows the holiday's canvas
 }
 syncHoliday();
