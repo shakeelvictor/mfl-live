@@ -308,7 +308,13 @@ element and scores are second.
   replaces it, never sits on it**: the same line that turns `#bowl-bg`
   on turns `#sky-bg` off, so Week 17 still arrives as a change. At the
   Bowl's own strength (Shakeel's call on seeing it; half was invisible
-  at laptop size), still under reduced motion, no blur filter.
+  at laptop size), no blur filter. **Still, since 2026-09-13**: the
+  clouds drifted and the wave slid for two days, and it unsettled the
+  rest of the page (on `poc` the Witching Hour's text sometimes failed
+  to paint in full over four screen-sized layers moving under it), so
+  the aurora is a fixed gradient now, the same clouds and wave where
+  they stood, no animation and no `will-change`. Only the Bowl's gold
+  flourish still drifts.
 - **Holidays** (2026-09-12): Thanksgiving and Christmas have games this
   season, and the page wears each day's colours. `holidayOn()` in
   `app.js` resolves the NFL's date in Eastern (November's fourth
