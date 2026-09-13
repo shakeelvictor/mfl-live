@@ -2335,8 +2335,13 @@ h1.bowl {
    not urgent, not gold; only the K chip, small), so it can drift behind
    everything and say nothing. The Bowl's gold replaces it in Week 17
    rather than sitting on it, so the Bowl still arrives as a change
-   (app.js toggles the two against each other). Still under reduced
-   motion; no blur filter, as the Bowl's. */
+   (app.js toggles the two against each other). No blur filter, as the
+   Bowl's. STILL since 2026-09-13: the clouds drifted and the wave slid
+   for two days, and Shakeel saw it unsettle the rest of the page (on
+   poc the Witching Hour's text sometimes failed to paint in full while
+   four screen-sized layers were moving under it), so the aurora is now
+   a fixed gradient: the same clouds and wave where they stood, nothing
+   animating, no compositor hint. The Bowl's flourish still drifts. */
 :root {
   --sky-teal: rgba(79, 227, 193, .22); --sky-teal-2: rgba(79, 227, 193, .09);
   --sky-violet: rgba(140, 110, 255, .34); --sky-violet-2: rgba(140, 110, 255, .15);
@@ -2356,20 +2361,17 @@ h1.bowl {
 .sky-bg .cloud {
   position: absolute; width: 72vmax; height: 72vmax; border-radius: 50%;
   background: radial-gradient(circle, var(--sky-teal) 0%, var(--sky-teal-2) 28%, transparent 64%);
-  will-change: transform;
 }
 .sky-bg .c2, .sky-bg .c4 { background: radial-gradient(circle, var(--sky-violet) 0%, var(--sky-violet-2) 28%, transparent 64%); }
-.sky-bg .c1 { left: -28vmax; top: -30vmax; animation: fflr-cloud-a 26s ease-in-out infinite alternate; }
-.sky-bg .c2 { right: -34vmax; top: -12vmax; width: 84vmax; height: 84vmax; animation: fflr-cloud-b 31s ease-in-out infinite alternate; }
-.sky-bg .c3 { left: 6vmax; bottom: -40vmax; animation: fflr-cloud-c 29s ease-in-out infinite alternate; animation-delay: -9s; }
-.sky-bg .c4 { right: -10vmax; bottom: -34vmax; width: 60vmax; height: 60vmax; animation: fflr-cloud-a 23s ease-in-out infinite alternate-reverse; animation-delay: -14s; }
+.sky-bg .c1 { left: -28vmax; top: -30vmax; }
+.sky-bg .c2 { right: -34vmax; top: -12vmax; width: 84vmax; height: 84vmax; }
+.sky-bg .c3 { left: 6vmax; bottom: -40vmax; }
+.sky-bg .c4 { right: -10vmax; bottom: -34vmax; width: 60vmax; height: 60vmax; }
 .sky-bg .wave {
   position: absolute; inset: 0;
   background: linear-gradient(115deg, transparent 30%, var(--sky-wave) 50%, transparent 70%);
-  background-size: 250% 100%;
-  animation: fflr-wave 18s ease-in-out infinite alternate;
+  background-size: 250% 100%; background-position: 50% 0;   /* the band across the middle, where the drift's midpoint left it */
 }
-@media (prefers-reduced-motion: reduce) { .sky-bg .cloud, .sky-bg .wave { animation: none; } }
 
 /* ---------- the Bowl's leading score ----------
    Not gold: an iridescent sweep. The glyphs are white with a soft pearl
