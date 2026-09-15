@@ -89,23 +89,6 @@ const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 const sum = (list) => list.reduce((t, p) => t + p.pts, 0);
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
-/* ---------------- live state ----------------
-   Points added on top of the fixture, by team and by starter. A bump is
-   always applied to one starter AND its team together, so a team's total
-   keeps equalling its starters' sum -- the invariant build-data.mjs
-   asserts. With the feed wired, this is where a fresh liveScoring poll
-   would land instead. */
-
-const teamBump = {};    // team id -> points added
-const playerBump = {};  // `${teamId}:${starterIndex}` -> points added
-const benchBump = {};   // `${teamId}:b${benchIndex}` -> points added; never reaches the team total
-
-function bump(t, k, pts) {
-  teamBump[t.id] = r2((teamBump[t.id] || 0) + pts);
-  const key = `${t.id}:${k}`;
-  playerBump[key] = r2((playerBump[key] || 0) + pts);
-}
-
 let teams = [];   // sorted, with rank/record/live
 let gaps = [];    // gaps[i] is the gap below row i (between rank i+1 and rank i+2)
 let gapTiers = [];   // gapTiers[i] is that gap's tier: critical / live / settled, or idle while neither side has begun
@@ -139,7 +122,7 @@ function derive() {
   doneTeams = phase === "live" && !FIXTURE ? dayDoneTeams() : new Set();
   const withLive = (t) => ({
     ...t,
-    live: r2((phase === "live" ? t.starters.reduce((a, p) => a + ptsOf(p), 0) : t.pts) + (teamBump[t.id] || 0)),
+    live: r2(phase === "live" ? t.starters.reduce((a, p) => a + ptsOf(p), 0) : t.pts),
     official: t.pts,   // MFL's franchise total
     toPlay: slate.sunFinal ? 0 : (FIXTURE ? (YET_TO_PLAY[t.team] ?? 0) : (t.toPlay ?? 0)),
     onNow: t.starters.some(isLive),
@@ -554,7 +537,7 @@ function renderRows(changed) {
   const bowl = post !== null && Boolean(post.round.bowl);
   rowsEl.innerHTML = teams.map((t, i) => {
     if (i === 0 && !bowl) return "";
-    const above = gaps[i - 1], below = gaps[i];
+    const below = gaps[i];
     const fuseTop = i > 1 && hot(gapTiers[i - 1]), fuseBottom = hot(gapTiers[i]);
 
     // Rank circle takes the hotter of the two gaps the row touches.
@@ -755,20 +738,17 @@ function render(changed = new Set()) {
 }
 
 /* ---------------- stat lines ----------------
-   Real Week 12 lines from Sleeper, embedded per player as `st`. They are
-   context beside MFL's number and never feed it: recomputing points from
-   stats is disqualified (CLAUDE.md). The simulator edits a live player's
-   line so it keeps pace with the bump it just gave them. */
+   Sleeper's lines, live through the proxy's `stats` type (the fixture
+   embeds Week 12's per player as `st`). Context beside MFL's number;
+   the estimate they feed is `ptsOf`, never a recomputed score
+   (CLAUDE.md, "Which number is the number"). */
 
-// Illustrative slate: two late games still on the field at 4:12 PM.
-// Everyone else is Final. ON_NOW is derived from it, so a franchise reads
-// "on now" exactly when it has a starter in this game.
-// Where the week stands. Ending the day makes every game final; ending
-// the week is MFL marking it official (stats corrections done).
-const slate = { sunFinal: false, weekFinal: false, nextWeek: false };
+// Where the week stands: every game of the day final, and the week final
+// (MFL marking it official is not read; the schedule's last whistle is).
+const slate = { sunFinal: false, weekFinal: false };
 // The week's "final" treatment lasts until the next week begins. A playoff
 // round counts as final once its games are (roundFinal).
-const weekIsFinal = () => (slate.weekFinal && !slate.nextWeek) || roundFinal();
+const weekIsFinal = () => slate.weekFinal || roundFinal();
 
 const LIVE_NFL = new Map([
   ["JAC", "Q3 8:12"], ["KCC", "Q3 8:12"],   // Jaguars at Chiefs
@@ -839,36 +819,7 @@ const gameLabel = (p) => {
   return g ? `${g.kickoff.toLocaleDateString([], { weekday: "short" })} ${fmtTime(g.kickoff)}` : "";   // no schedule entry: nothing to say (a "Not started" crowded the phone row)
 };
 
-const liveStats = {};   // `${teamId}:${index}` (bench: `b${index}`) -> mutated copy of st
-const slotKey = (t, k, bench) => `${t.id}:${bench ? "b" : ""}${k}`;
-const slotPlayer = (t, k, bench) => (bench ? t.bench : t.starters)[k];
-const statsFor = (t, k, bench = false) => liveStats[slotKey(t, k, bench)] || slotPlayer(t, k, bench).st || {};
-
-const ri = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
-const inc = (st, key, by = 1) => { st[key] = (st[key] || 0) + by; };
-
-// Keep the line consistent with the bump: a TD adds the score and a
-// plausible play; a small bump adds yardage (or a tackle) in proportion.
-function bumpStats(t, k, pts, td, bench = false) {
-  const key = slotKey(t, k, bench);
-  const st = liveStats[key] || (liveStats[key] = { ...(slotPlayer(t, k, bench).st || {}) });
-  const pos = slotPlayer(t, k, bench).pos;
-  if (pos === "QB") {
-    inc(st, "pass_cmp"); inc(st, "pass_att"); inc(st, "pass_yd", td ? ri(8, 35) : Math.round(pts * 25));
-    if (td) inc(st, "pass_td");
-  } else if (pos === "RB") {
-    inc(st, "rush_att"); inc(st, "rush_yd", td ? ri(1, 25) : Math.round(pts * 10));
-    if (td) inc(st, "rush_td");
-  } else if (pos === "WR" || pos === "TE") {
-    inc(st, "rec"); inc(st, "rec_tgt"); inc(st, "rec_yd", td ? ri(5, 40) : Math.round(pts * 10));
-    if (td) inc(st, "rec_td");
-  } else if (pos === "K") {
-    if (pts >= 3) { inc(st, "fgm"); inc(st, "fga"); } else { inc(st, "xpm"); inc(st, "xpa"); }
-  } else {
-    inc(st, "idp_tkl"); inc(st, "idp_tkl_solo");
-    if (td) { inc(st, "idp_int"); inc(st, "idp_td"); }
-  }
-}
+const statsFor = (t, k, bench = false) => (bench ? t.bench : t.starters)[k].st || {};
 
 const j = (parts) => parts.filter(Boolean).join(" \u00b7 ");
 function statLine(pos, st) {
@@ -998,7 +949,6 @@ const BEARS_MVP = 40;   // a Bear past this is the MVP of the week, whoever scor
 const isBear = (p) => p.tm === "CHI";
 function spotlightEntries() {
   const all = teams.flatMap((t) => liveStarters(t, new Set()).map((p) => ({ ...p, franchise: p.from || t.team })));
-  if (slate.nextWeek) return [];                                      // new week, nothing final yet
   // The Bears rule (2026-09-14, Shakeel's call the night Josh Allen and
   // Caleb Williams tied at 43.43): a tie for the top goes to the Bear, and
   // a Bear over BEARS_MVP points is the MVP of the week outright, whoever
@@ -1321,19 +1271,19 @@ let tab = "starters";
 let lastFocus = null;
 let teamView = null;   // the open team as last rendered ({ t, starters, bench }): the player card reads from it
 
-// Starters with any live bumps applied, in fixture order. Keyed by player
+// Starters in lineup order, on the page's number (`ptsOf`). Keyed by player
 // id when the feed supplies one (2026-09-09): MFL's array order is not
 // stable between polls, so a slot-number key put one poll's flash, roll
 // and delta chip on whoever sat in that slot next, playing or not.
 const playerKey = (t, p, k, bench = false) => `${t.id}:${bench ? "b" : ""}${p.id ?? k}`;
 const liveStarters = (t, changed) => t.starters.map((p, k) => {
   const key = p.key || playerKey(t, p, k);
-  return { ...p, key, mfl: p.pts, pts: r2(ptsOf(p) + (playerBump[key] || 0)), flash: changed.has(key), st: statsFor(t, k) };
+  return { ...p, key, mfl: p.pts, pts: r2(ptsOf(p)), flash: changed.has(key), st: statsFor(t, k) };
 });
 
 const liveBench = (t, changed) => t.bench.map((p, k) => {
   const key = playerKey(t, p, k, true);
-  return { ...p, key, mfl: p.pts, pts: r2(ptsOf(p) + (benchBump[key] || 0)), flash: changed.has(key), st: statsFor(t, k, true) };
+  return { ...p, key, mfl: p.pts, pts: r2(ptsOf(p)), flash: changed.has(key), st: statsFor(t, k, true) };
 });
 
 function renderTeam(changed = new Set()) {
@@ -1636,7 +1586,6 @@ function teamSchedule(tm) {
 }
 const LOG_WEEKS = 18;
 const logCol = (l, f) => ({ l, f });
-const logNum = (k) => logCol(k.l, (st) => st[k.k] || 0);
 const logFrac = (l, a, b) => logCol(l, (st) => `${st[a] || 0}/${st[b] || st[a] || 0}`);
 const logRate = (l, yd, n) => logCol(l, (st) => rate(st[yd] || 0, st[n] || 0) ?? "0.0");
 function logGroups(pos) {
@@ -2023,10 +1972,10 @@ document.addEventListener("keydown", (e) => {
 
 /* ---------------- touchdown announcements ----------------
    One card at a time, TD_MS each, queued in arrival order so two scores
-   in the same poll both get their moment. In the mockup a touchdown is a
-   simulated event (below). With the feed wired, MFL exposes only fantasy
-   points, so the trigger would be a single starter jumping by a
-   touchdown's worth of points between polls. */
+   in the same poll both get their moment. MFL exposes only fantasy
+   points, so its signal is a single starter jumping by a touchdown's
+   worth between polls; Sleeper's line raises the card first when it can
+   (CLAUDE.md, "Every touchdown ... is worth 6"). */
 
 const TD_MS = 4000;
 const TD_CHI_MS = 5500;   // the Bears card holds longer: the chant needs its moment

@@ -257,10 +257,6 @@ const inflight = new Map();  // key -> Promise<res>
 
 const withHeader = (res, k, v) => ({ ...res, headers: { ...res.headers, [k]: v } });
 
-export function cacheStats() {
-  return { entries: cache.size, inflight: inflight.size, backoffFor: Math.max(0, backoffUntil - Date.now()) };
-}
-
 /**
  * query: { type, W?, PLAYERS?, DETAILS? }  ->  { status, headers, body }
  * Always JSON: { ok: true, type, data } or { ok: false, type, error }.
