@@ -468,7 +468,7 @@ function renderRows(changed) {
   const bowl = post !== null && Boolean(post.round.bowl);
   rowsEl.innerHTML = teams.map((t, i) => {
     if (i === 0 && !bowl) return "";
-    const above = gaps[i - 1], below = gaps[i];
+    const below = gaps[i];
     const fuseTop = i > 1 && hot(gapTiers[i - 1]), fuseBottom = hot(gapTiers[i]);
 
     // Rank circle takes the hotter of the two gaps the row touches.
@@ -1430,7 +1430,6 @@ function teamSchedule(tm) {
 }
 const LOG_WEEKS = 18;
 const logCol = (l, f) => ({ l, f });
-const logNum = (k) => logCol(k.l, (st) => st[k.k] || 0);
 const logFrac = (l, a, b) => logCol(l, (st) => `${st[a] || 0}/${st[b] || st[a] || 0}`);
 const logRate = (l, yd, n) => logCol(l, (st) => rate(st[yd] || 0, st[n] || 0) ?? "0.0");
 function logGroups(pos) {
@@ -2197,7 +2196,6 @@ document.getElementById("flip").addEventListener("click", () => {
    change (no takeover), and the simulator keeps running on whoever is
    on the field in the new view. */
 
-const REGULAR_WEEK = WEEK;
 const viewTags = [...document.querySelectorAll(".devbar [data-view]")];
 
 // Weeks 1-14 as played, then each earlier round scored by this board.
@@ -2279,7 +2277,6 @@ syncTheme();
    and when the tab is shown, so a page left open through midnight
    changes with the day. Thanksgiving is November's fourth Thursday. */
 
-const HOLIDAYS = ["thanksgiving", "christmas"];
 const HOLIDAY_DATE = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", weekday: "short" });
 // Christmas: a light snowfall over the page, built while the holiday is
 // on and emptied otherwise (see styles.css, "Christmas snowfall"). Every
@@ -2325,18 +2322,12 @@ if (desktop.matches) openTeam(teams[0].id, false);   // shown, not yet lifted: p
 
 /* ---------------- loading + first-load cascade ----------------
    The mockup has nothing to fetch: the interstitial holds for a beat (fonts,
-   image decode) and then hands off to the cascade. With the feed wired,
-   showLoading() would stay up until the first liveScoring poll lands. */
+   image decode) and then hands off to the cascade. On main it stays up
+   until the first liveScoring poll lands. */
 
 const loader = document.getElementById("loader");
-const loaderMsg = document.getElementById("loader-msg");
 const MIN_LOAD_MS = 2800;   // long enough for the scene to play through once
 
-function showLoading(msg) {
-  if (msg) loaderMsg.textContent = msg;
-  loader.hidden = false;
-  loader.classList.remove("out");
-}
 function hideLoading() {
   loader.classList.add("out");
   setTimeout(() => { loader.hidden = true; }, 450);
