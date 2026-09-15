@@ -480,7 +480,11 @@ element and scores are second.
   alone, and a close gap pulses** (2026-09-09): the "Coin flip" word came
   off the pill, and instead a ring breathes out of it (`.gap.live
   .pill::after`, transform and opacity only; faster and red for a coin
-  flip). **A gap between two franchises that have not begun is idle**
+  flip). **A close gap between two franchises that are done holds still**
+  (2026-09-14; `done`: begun, nobody on the field, nobody yet to play;
+  `.gap.still` drops the ring): it keeps its colour and still counts
+  for the capsules, since it is still a close gap, but the pulse says
+  "this could move" and nothing on either side can. **A gap between two franchises that have not begun is idle**
   (`gapTier`, `started`: nothing scored, nobody on the field, no starter
   kicked off): a plain divider with its 0.00, no pulse, no fusing, no
   rank colour, and it counts for no capsule; the hero's tier chip reads
@@ -495,7 +499,11 @@ element and scores are second.
   Jr./III suffixes); the red-zone pill takes the place of "on now" as
   before. "11 to play · on now" said nothing about which starters were
   playing. "N to play" still shows while none of them is on, and "all
-  played" once every game is.
+  played" once every game is. **"On now" is checked before the count**
+  (2026-09-14): MFL's `playersYetToPlay` counts starters whose game has
+  not kicked off, so it is 0 while a franchise's last starters are
+  playing, and on the Week 1 Monday night every franchise with a DEN or
+  KCC starter read "all played".
 - **Roster rows** are grouped by position in lineup order (QB, RB, WR,
   TE, K, IDP), and **within a position the order is fixed for the week**
   (name, then id; 2026-09-08). It used to be points, so two backs swapped
@@ -1152,6 +1160,15 @@ pattern to distrust in this codebase, not crashes:
 - **Franchise names can carry trailing whitespace** — MFL returns
   `"Reggaeton Forever "`. Trim at the boundary; the records pipeline already
   does this in `unescapeHtml`.
+
+**MFL's Live Scoring page and its liveScoring export round at different
+steps** (2026-09-14): the export's franchise `score` is the sum of the
+per-player scores after each is rounded to two decimals, while the site's
+Live Scoring page sums the unrounded values and rounds once. Rushing at a
+point per 7.5 yards is the only fractional rate, so the two differ by a
+cent for about half the franchises on any week (6 of 11 on Week 1). The
+page follows the export, which is what settles the week; a cent against
+MFL's page is this, not a scoring difference.
 
 **Never hardcode a summary number that the rows beneath it also express.** The
 mockup's headline stats are derived from the data for this reason — a constant

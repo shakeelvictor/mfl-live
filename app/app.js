@@ -212,6 +212,12 @@ const tier = (g) => (g < CRITICAL ? "critical" : g < LIVE ? "live" : "settled");
 const started = (t) => t.live !== 0 || t.onNow || (t.starters.length > 0 && t.toPlay < t.starters.length);
 const gapTier = (g, a, b) => (!started(a) && !started(b) ? "idle" : tier(g));
 const hot = (tr) => tr === "critical" || tr === "live";
+// A franchise is done when it has begun and has nobody left: nothing on the
+// field, nothing yet to kick off. A close gap between two done franchises
+// keeps its colour (it is still a close gap, and still counts for the
+// capsules) but stops breathing: the pulse says "this could move", and
+// nothing on either side can (2026-09-14). A stat correction is not live.
+const done = (t) => started(t) && !t.onNow && t.toPlay === 0;
 const TIER_LABEL = { critical: "Coin flip", live: "Close", settled: "Settled", idle: "Not started" };
 
 // Who is on the field for a franchise: its live starters by last name, in
@@ -235,10 +241,14 @@ const statusOf = (t) => phase === "preseason"
   // that never set a lineup, which is not "all played".
   : t.starters.length === 0
     ? (t.side ? "none in the lineup" : "no lineup set")
-  : t.toPlay === 0
-    ? "all played"
+  // Who is on the field comes before the count: MFL's playersYetToPlay
+  // counts starters whose game has not kicked off, so it is already 0
+  // while a franchise's last starters are playing (2026-09-14, the Week 1
+  // Monday night: every franchise read "all played" with DEN at KCC on).
   : t.onNow
     ? `${onNowNames(t)}${rzCount(t) ? ` &middot; <span class="rzn" title="${rzCount(t)} in the red zone">${rzCount(t)} RZ</span>` : " &middot; on now"}`
+  : t.toPlay === 0
+    ? "all played"
     : `${t.toPlay} to play`;
 
 const fmtDay = (d) => d ? d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) : "";
@@ -584,8 +594,9 @@ function renderRows(changed) {
     const cut = i === cutAt;
     // A coin-flip pill flashes when either score beside it moved.
     const pillFlash = gt === "critical" && (changed.has(t.id) || changed.has(teams[i + 1].id));
+    const still = hot(gt) && done(t) && done(teams[i + 1]);   // a close gap nothing can move: no pulse
     return row +
-      `<div class="gap ${gt}${cut ? " cut" : ""}" aria-label="${cut ? "Cut line, " : ""}Gap ${fmt(below)}${gt === "critical" ? ", coin flip" : gt === "idle" ? ", neither has played" : ""}">` +
+      `<div class="gap ${gt}${cut ? " cut" : ""}${still ? " still" : ""}" aria-label="${cut ? "Cut line, " : ""}Gap ${fmt(below)}${gt === "critical" ? ", coin flip" : gt === "idle" ? ", neither has played" : ""}">` +
         `<span class="line"></span>` +
         `<span class="pill${pillFlash ? " flash" : ""}"><span data-tween="gap:${t.id}:${teams[i + 1].id}">${fmt(below)}</span>` +
           (cut ? `<span class="flip">Cut line</span>` : "") +   // the number alone; a close gap pulses instead of saying so

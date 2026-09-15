@@ -737,6 +737,9 @@ button.hero { cursor: pointer; }
   animation: fflr-gap-ring 2.2s ease-out infinite;
 }
 .gap.critical .pill::after { border-color: var(--gap-critical); animation-duration: 1.4s; }
+/* Both franchises done (nothing on the field, nothing to kick off): the gap
+   keeps its colour and loses its breath, since nothing can move it. */
+.gap.still .pill::after { display: none; }
 @keyframes fflr-gap-ring {
   0% { transform: scale(1); opacity: .85; }
   70%, 100% { transform: scale(1.45, 1.9); opacity: 0; }
