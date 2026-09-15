@@ -994,12 +994,20 @@ const dayStates = () => {
    what a new day lands on; the arrows by the day pill flip back through
    the earlier days (spotIndex). Nothing while a day is in progress, as
    before. */
+const BEARS_MVP = 40;   // a Bear past this is the MVP of the week, whoever scored more
+const isBear = (p) => p.tm === "CHI";
 function spotlightEntries() {
   const all = teams.flatMap((t) => liveStarters(t, new Set()).map((p) => ({ ...p, franchise: p.from || t.team })));
   if (slate.nextWeek) return [];                                      // new week, nothing final yet
+  // The Bears rule (2026-09-14, Shakeel's call the night Josh Allen and
+  // Caleb Williams tied at 43.43): a tie for the top goes to the Bear, and
+  // a Bear over BEARS_MVP points is the MVP of the week outright, whoever
+  // scored more. The day cards get the tie rule only.
+  const better = (p, a) => p.pts > a.pts || (p.pts === a.pts && isBear(p) && !isBear(a));
   const entry = (pool, label, when, mvp) => {
     if (!pool.length) return null;
-    const top = pool.reduce((a, p) => (p.pts > a.pts ? p : a), pool[0]);
+    let top = pool.reduce((a, p) => (better(p, a) ? p : a), pool[0]);
+    if (mvp) { const bear = pool.filter((p) => isBear(p) && p.pts > BEARS_MVP).reduce((a, p) => (!a || better(p, a) ? p : a), null); if (bear) top = bear; }
     return { top, label, when, mvp, key: `${when}:${top.key}` };
   };
   const out = [];
