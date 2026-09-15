@@ -1841,6 +1841,7 @@ body.pcard-open { overflow: hidden; }
   .row.active .sub, .row.active .status { color: var(--hero-muted); }
   .row.active .status.on { color: var(--hero-accent); }
   .row.active .delta { color: var(--hero-accent); }
+  .row.active .delta.neg { color: var(--gap-critical); }   /* a loss stays red on the tab too (2026-09-14: the accent rule above outranked .delta.neg) */
   /* The leader hero as the tab: right corners squared, gradient landing on
      the panel green, and the same bridge across the gutter. */
   .hero-wrap.active { z-index: 2; }
