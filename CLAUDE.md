@@ -915,7 +915,15 @@ element and scores are second.
   rise and no reveal, and gold only for the MVP entry; a new day's card
   lands on the newest again, and a poll's render leaves a flipped day
   where it is. The fixture's entries are Thursday's and Sunday's; on
-  `poc` Thursday's, Sunday's and the MVP. The week is final once
+  `poc` Thursday's, Sunday's and the MVP. **The Bears rule** (2026-09-14,
+  Shakeel's call the night Josh Allen and Caleb Williams tied at 43.43):
+  a tie for a card's top goes to the Bear (`isBear`, MFL code CHI), and
+  a Bear over 40 points (`BEARS_MVP`) is the MVP of the week outright,
+  whoever scored more; the day cards get the tie rule only. Rehearsed on
+  `app-2025` `?w=12` by handing a Bear the top's points and then 40.5
+  (during a live game the archive's Sunday reads unfinished there, since
+  ESPN's current situation is laid over the 2025 clocks; clearing
+  `situations` and the clocks makes the week final). The week is final once
   every game is (`slate.weekFinal = slate.sunFinal`; MFL's "official"
   mark is not read, the same rule the playoffs use), which turns the
   card gold and the leader hero into the Week winner; both clear when
