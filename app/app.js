@@ -659,12 +659,18 @@ const tweens = new Map();
 const TWEEN_MS = 700;
 
 // Only surfaces that are actually showing; a closed team page holds
-// stale numbers for whoever was opened last.
-const liveNumberEls = () => [
+// stale numbers for whoever was opened last. Each element once: the team
+// page sits inside #app, so its numbers matched both selectors, and the
+// second pass over one of them, on a render while its roll was in flight,
+// read the half-rolled text as a new value against the roll's target and
+// popped a chip for the difference: red on a gain, mint on a loss, beside
+// the true chip a beat later (2026-09-14, Walker's row on the Week 1
+// Monday night).
+const liveNumberEls = () => [...new Set([
   ...document.querySelectorAll("#app [data-tween]"),
   ...(open !== null ? page.querySelectorAll("[data-tween]") : []),
   ...(pcKey !== null ? pcSheet.querySelectorAll("[data-tween]") : []),
-];
+])];
 
 // What each key shows right now, and the value it last settled on. Mid-roll
 // the two differ: the roll's target is the settled value. So a re-render

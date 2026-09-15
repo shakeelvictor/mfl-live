@@ -831,7 +831,14 @@ element and scores are second.
   the rebuilt element on its own curve; a changed one chips the delta from
   the settled value. One frame loop per key drives every surface showing
   it. The stats re-render itself now waits out the last render's flash
-  and rolls (`renderedAt`, 1s) instead of landing over them. The "Simulate live scoring" toggle under the
+  and rolls (`renderedAt`, 1s) instead of landing over them. **Every
+  live number is collected once** (`liveNumberEls`, 2026-09-14): the
+  team page sits inside `#app`, so its numbers matched both selectors,
+  and a render landing while a roll was in flight (the stat lines or the
+  situation beside the poll) read the half-rolled text on the second
+  pass as a new value against the roll's target and popped a chip for
+  the difference, red on a gain, beside the true chip. Seen as "the
+  chip is red when a player scores". The "Simulate live scoring" toggle under the
   footnote exercises this by bumping one starter at a time -- it is a mockup
   affordance, not a feed, and it keeps team total == starters sum.
 - **Lead change** fires a takeover on the hero (mint strobe, lightning
