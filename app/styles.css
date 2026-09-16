@@ -363,7 +363,7 @@ button.hero { cursor: pointer; }
 .hero-mid.stack .hero-id { display: contents; }   /* name across both columns, record beside the score */
 .hero-mid.stack .hero-name { grid-column: 1 / -1; }
 .hero-name.wrap-any { overflow-wrap: anywhere; }
-.hero-rec { font: 700 12px/1 var(--font-data); color: var(--hero-muted); }
+.hero-rec { font: 700 15px/1 var(--font-data); color: var(--hero-muted); }
 /* Franchise icons from MFL, when set: by the name in a hero, badged on the
    rank circle in the list (or in its place before the season). */
 .hero-icon { width: 34px; height: 34px; border-radius: 8px; object-fit: contain; vertical-align: -8px; margin-right: 10px; background: rgba(255, 255, 255, .12); }
@@ -675,12 +675,14 @@ button.hero { cursor: pointer; }
 }
 /* The sub-line wraps as a whole (seed chip, In/Out and status can outgrow a
    narrow phone in the playoffs); a chip never breaks inside. */
-.sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font: 600 11.5px/1 var(--font-data); color: var(--text-muted); }
+.sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font: 600 12.5px/1 var(--font-data); color: var(--text-muted); }
+/* The record chip reads at a glance (2026-09-16, Shakeel: 10.5px was far
+   too small to be legible); the status beside it steps up with it. */
 .rec {
   white-space: nowrap;
-  padding: 3px 7px; border-radius: var(--radius-pill);
+  padding: 4px 9px; border-radius: var(--radius-pill);
   background: var(--surface-raised);
-  font: 800 10.5px/1 var(--font-data);
+  font: 800 13.5px/1 var(--font-data);
   color: var(--text-secondary);
 }
 .status { display: flex; align-items: center; gap: 5px; transition: color .4s; white-space: nowrap; }
