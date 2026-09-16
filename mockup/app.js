@@ -4,7 +4,9 @@
 // gameSecondsRemaining) once the feed is wired.
 let WEEK = 12;   // the demo bar's view tags move it into the postseason
 let SEASON = 2025;   // the NFL season the mockup is seeded from
-const UPDATED = "4:12 PM";
+let UPDATED = "4:12 PM";   // when a number last changed: the staged time until the simulator moves one
+let updatedAt = 0;         // the same instant, for the age that ticks in the subhead while games are on
+const stampUpdated = () => { UPDATED = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); updatedAt = Date.now(); };
 const YET_TO_PLAY = {
   "I'm Just Here to Network": 0, "Reggaeton Forever": 1, "Ryaan": 2,
   "Uncle Rico": 0, "Vip": 1, "WhiskeyDitka": 2, "Lil' Sosos": 1,
@@ -240,8 +242,28 @@ function renderChrome() {
     (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head`
       : post ? roundBlurb()
       : "All-play &middot; every team plays every other team") +
-    ` &middot; updated ${esc(UPDATED)}`;
+    ` &middot; updated <span id="age">${esc(ageText())}</span>`;
+  syncAge();
   renderRounds();
+}
+
+// While games are on the subhead counts up from the last change (2026-09-15,
+// as on main): "updated 12s ago" ticking says the page is awake and how long
+// the board has stood. Here the simulator is the feed, so it starts counting
+// with its first bump and stops when the day ends. One timer, one element.
+let ageTimer = null;
+const ageTicks = () => updatedAt > 0 && !slate.sunFinal;
+const ageText = () => {
+  if (!ageTicks()) return UPDATED;
+  const s = Math.max(0, Math.floor((Date.now() - updatedAt) / 1000));
+  return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.floor(s / 60)}m ${s % 60}s ago` : `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m ago`;
+};
+function syncAge() {
+  const el = document.getElementById("age");
+  if (el) el.textContent = ageText();
+  const on = ageTicks();
+  if (on && !ageTimer) ageTimer = setInterval(syncAge, 1000);
+  if (!on && ageTimer) { clearInterval(ageTimer); ageTimer = null; }
 }
 
 // "Seeds 2–6 play, top 3 advance" / "4 play, top 2 advance" / the Bowl.
@@ -722,28 +744,66 @@ const statsFor = (t, k, bench = false) => liveStats[slotKey(t, k, bench)] || slo
 const ri = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
 const inc = (st, key, by = 1) => { st[key] = (st[key] || 0) + by; };
 
+// The last play of each staged game, in ESPN's manner (on main it is
+// ESPN's own text from the live situation, 2026-09-15): the simulator
+// writes one with every bump, so the game strip narrates and a live row
+// carries the play that names its player.
+const lastPlays = new Map();   // NFL team -> the last play of its game
+const pick = (xs) => xs[Math.floor(Math.random() * xs.length)];
+const espnName = (n) => `${String(n).trim()[0]}.${lastName(n)}`;
+const notePlay = (tm, text) => { const g = GAME_OF.get(tm); if (g) { lastPlays.set(g.away, text); lastPlays.set(g.home, text); } };
+
 // Keep the line consistent with the bump: a TD adds the score and a
 // plausible play; a small bump adds yardage (or a tackle) in proportion.
 function bumpStats(t, k, pts, td, bench = false) {
   const key = slotKey(t, k, bench);
-  const st = liveStats[key] || (liveStats[key] = { ...(slotPlayer(t, k, bench).st || {}) });
-  const pos = slotPlayer(t, k, bench).pos;
+  const p = slotPlayer(t, k, bench);
+  const st = liveStats[key] || (liveStats[key] = { ...(p.st || {}) });
+  const pos = p.pos, nm = espnName(p.n), cap = td ? ", TOUCHDOWN" : "";
+  let play;
   if (pos === "QB") {
-    inc(st, "pass_cmp"); inc(st, "pass_att"); inc(st, "pass_yd", td ? ri(8, 35) : Math.round(pts * 25));
+    const yd = td ? ri(8, 35) : Math.round(pts * 25);
+    inc(st, "pass_cmp"); inc(st, "pass_att"); inc(st, "pass_yd", yd);
     if (td) inc(st, "pass_td");
+    play = `${nm} pass ${pick(["short right", "short left", "deep middle", "short middle"])} complete for ${yd} yards${cap}`;
   } else if (pos === "RB") {
-    inc(st, "rush_att"); inc(st, "rush_yd", td ? ri(1, 25) : Math.round(pts * 10));
+    const yd = td ? ri(1, 25) : Math.round(pts * 10);
+    inc(st, "rush_att"); inc(st, "rush_yd", yd);
     if (td) inc(st, "rush_td");
+    play = `${nm} ${pick(["left end", "right tackle", "up the middle", "left guard"])} for ${yd} yards${cap}`;
   } else if (pos === "WR" || pos === "TE") {
-    inc(st, "rec"); inc(st, "rec_tgt"); inc(st, "rec_yd", td ? ri(5, 40) : Math.round(pts * 10));
+    const yd = td ? ri(5, 40) : Math.round(pts * 10);
+    inc(st, "rec"); inc(st, "rec_tgt"); inc(st, "rec_yd", yd);
     if (td) inc(st, "rec_td");
+    play = `pass ${pick(["short right", "deep left", "short middle", "deep right"])} to ${nm} for ${yd} yards${cap}`;
   } else if (pos === "K") {
-    if (pts >= 3) { inc(st, "fgm"); inc(st, "fga"); } else { inc(st, "xpm"); inc(st, "xpa"); }
+    if (pts >= 3) { inc(st, "fgm"); inc(st, "fga"); play = `${nm} ${ri(24, 54)} yard field goal is GOOD`; }
+    else { inc(st, "xpm"); inc(st, "xpa"); play = `${nm} extra point is GOOD`; }
   } else {
     inc(st, "idp_tkl"); inc(st, "idp_tkl_solo");
-    if (td) { inc(st, "idp_int"); inc(st, "idp_td"); }
+    if (td) { inc(st, "idp_int"); inc(st, "idp_td"); play = `pass INTERCEPTED by ${nm}, returned for a TOUCHDOWN`; }
+    else play = `run ${pick(["up the middle", "left end", "right tackle"])} for ${ri(1, 6)} yards (${nm})`;
   }
+  notePlay(p.tm, play);
 }
+
+// The play under the strip and on the row it names: ESPN's text with a
+// formation prefix and full stop dropped; a player is named by his initial
+// and last name as ESPN writes them (the tackler in the brackets included);
+// on his own row a leading "J.Warren " comes off so the play reads as his.
+const playText = (t) => String(t).replace(/^\([^)]*\)\s*/, "").replace(/\s*\.\s*$/, "");
+const playNames = (text, p) => {
+  const last = lastName(p.n), init = String(p.n).trim()[0];
+  if (!last || !init) return false;
+  const re = new RegExp(`(^|[^A-Za-z])${init}[a-z]*\\.\\s?${last.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![A-Za-z])`, "i");
+  return re.test(text);
+};
+const lastPlayOf = (p) => {
+  const t = isLive(p) ? lastPlays.get(p.tm) : null;
+  if (!t || !playNames(t, p)) return "";
+  const init = String(p.n).trim()[0], last = lastName(p.n).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return playText(t).replace(new RegExp(`^${init}[a-z]*\\.\\s?${last}\\s+`, "i"), "");
+};
 
 const j = (parts) => parts.filter(Boolean).join(" \u00b7 ");
 function statLine(pos, st) {
@@ -1016,6 +1076,7 @@ const gameStrip = (p) => {
   return `<div class="pgame${live ? " live" : ""}">` +
     team(g.away, g.as) + `<span class="pg-at">@</span>` + team(g.home, g.hs) +
     `<span class="pg-state">${live ? `<span class="dot"></span>${clockFor(p)}` : "Final"}</span>` +
+    (live && lastPlays.get(p.tm) ? `<span class="pg-play">${esc(playText(lastPlays.get(p.tm)))}</span>` : "") +
   `</div>`;
 };
 
@@ -1114,6 +1175,7 @@ const playerRow = (p, bench, top = false, enter = -1) =>
         (p.from ? `<span aria-hidden="true">·</span><span class="pfrom">${esc(p.from)}</span>` : "") +
       `</span>` +
       `<span class="pstat">${esc(statLine(p.pos, p.st))}</span>` +
+      (lastPlayOf(p) ? `<span class="pplay">${esc(lastPlayOf(p))}</span>` : "") +
     `</span>` +
     `<span class="pright">` +
       `<span class="ppts${p.pts === 0 ? " zero" : ""}${p.flash ? " flash" : ""}"${p.key ? ` data-tween="p:${p.key}" data-delta` : ""}>${fmt(p.pts)}</span>` +
@@ -2124,6 +2186,7 @@ function simTick() {
     bumpStats(t, k, pts, false);
     changed.add(t.id).add(`${t.id}:${k}`);
   }
+  if (changed.size) stampUpdated();
   derive();
   render(changed);
 }
