@@ -41,6 +41,7 @@ jobs:
           MINUTES="${{ github.event.inputs.minutes || '210' }}"
           EVERY="${{ github.event.inputs.every || '10' }}"
           WEEK="${{ github.event.inputs.week }}"
+          mkdir -p spike/data
           node spike/log-feeds.mjs --minutes "$MINUTES" --every "$EVERY" ${WEEK:+--week "$WEEK"} 2>&1 | tee spike/data/feeds-summary.txt
       - name: Keep the file and the table
         if: always()
