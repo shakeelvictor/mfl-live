@@ -1174,6 +1174,21 @@ button.hero { cursor: pointer; }
   background: var(--hero-accent); transform-origin: left;
   animation: fflr-td-bar var(--td-ms, 4000ms) linear both;
 }
+/* Overturned on review (2026-09-15): the same card in the same colours,
+   muted. No rays, no flash, the portrait in grey, the headline plain,
+   the play's points struck through, and a line saying why. */
+.td-over .td-rays, .td-over .td-flash { display: none; }
+.td-over .td-card { filter: saturate(.55); }
+.td-over .td-word { text-shadow: none; }
+.td-over .td-face .td-shot { filter: grayscale(1); border-color: var(--hero-muted); box-shadow: 0 0 0 7px transparent, 0 16px 40px rgba(0, 0, 0, .35); }
+.td-over .td-pts { color: var(--hero-muted); }
+.td-over .td-pts s { text-decoration-thickness: 4px; }
+.td-over .td-bar, .td-over .td-for b::after { background: var(--hero-muted); }
+.td-review {
+  position: relative; margin-top: -8px;
+  font: 800 11px/1 var(--font-data); letter-spacing: .18em; text-transform: uppercase; color: var(--hero-muted);
+  animation: fflr-rise .5s cubic-bezier(.2, .9, .3, 1.3) .28s both;
+}
 
 /* ---------- Team-colour touchdown ----------
    The whole card goes the scorer's team: --td-ground and --td-accent (set

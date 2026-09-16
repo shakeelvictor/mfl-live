@@ -271,11 +271,28 @@ Each of these was verified against real 2025 data, not inferred:
   is how many touchdowns a card has covered, `tdPlays` how many the
   plays (or the line) have counted, and a signal raises a card only
   when it knows of more than have been shown; `tdConfirmed` holds each
-  card for the MFL jump still to come. Rehearsed on `app-2025-w15-live`
+  card for the MFL jump still to come. **Overturned on review**
+  (2026-09-15, Shakeel's pick over waiting for the try): the card reads
+  the ruling on the field, so when the booth reverses a touchdown the
+  page raises the same card muted (`.td-over`: no rays or flash, the
+  portrait in grey, "Overturned" over "No touchdown on review", the
+  play's points struck through) for every card the play raised, and
+  takes the touchdown back out of the bookkeeping so the player's next
+  one counts (`overturn`). ESPN revises the play's own text in place
+  ("... TOUCHDOWN. The Replay Official reviewed the ... ruling, and the
+  play was REVERSED. J.Warren left end to MIA 1 for 11 yards"), which
+  `playSeen` notices by the text changing under the same id; a reversal
+  posted as its own entry within the window, naming one of the scorers
+  and not a try, counts too. A reversed play's row and strip show the
+  corrected result marked "Reversed ·" (`playText`). Sleeper's line
+  had the same exposure before (it credits in a minute and corrects
+  after the review); the board's points were never the play's.
+  Rehearsed on `app-2025-w15-live`
   by editing `spike/data/fake-w15/situation.json` (both sides of a game
   must carry the same play and id): run, pass (two cards), interception
   return (the defender alone), nullified (nothing), the line and the
-  jump after a play's card (nothing). The jump alone cannot tell a touchdown from any other
+  jump after a play's card (nothing), a reversal revised in place and
+  one posted as its own entry (the muted cards, counts back to zero). The jump alone cannot tell a touchdown from any other
   6-point jump: a 45-yard run (0.13333/yd), a 60-yard catch (6 + 0.5) or a
   60-yard field goal also clear it, and two plays landing in the same 30s
   poll add up. So the two signals are paired (`noteJump` /

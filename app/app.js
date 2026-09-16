@@ -1187,7 +1187,14 @@ const gameStrip = (p) => {
 // IDP's tackle reads on his row too), and drops it when the next play
 // does not. Context: the play narrates, the number is still MFL's or the
 // line's.
-const playText = (t) => String(t).replace(/^\([^)]*\)\s*/, "").replace(/\s*\.\s*$/, "");
+// A play revised on review carries the ruling and the corrected result
+// after it ("... REVERSED. J.Warren left end to MIA 1 for 11 yards"):
+// the result is what stands, so it is what shows, marked as reversed.
+const playText = (t) => {
+  const s = String(t).replace(/^\([^)]*\)\s*/, "").replace(/\s*\.\s*$/, "");
+  const m = /REVERSED\.\s*(.+)$/i.exec(s);
+  return m ? `Reversed \u00b7 ${m[1]}` : s;
+};
 // A player as ESPN names him: his initial (one letter or two, "Ja.")
 // and last name, with room for a "St. " or "Van " in between ("A.St.
 // Brown"). Matches anywhere in a play, the tackler in the brackets too.
@@ -2090,24 +2097,27 @@ function showNextTouchdown() {
   if (!ev) { tdShowing = false; tdModal.dataset.open = "false"; return; }
   tdShowing = true;
   const p = ev.player;
-  const ms = p.tm === "CHI" ? TD_CHI_MS : TD_MS;
+  const over = Boolean(ev.overturned);
+  const ms = over ? TD_MS : p.tm === "CHI" ? TD_CHI_MS : TD_MS;
   tdCard.style.setProperty("--td-ms", `${ms}ms`);
   const colors = TEAM_COLORS[p.tm];   // a free agent's card keeps the theme's own
   tdModal.classList.toggle("td-team", Boolean(colors));
-  tdModal.classList.toggle("td-chi", p.tm === "CHI");
+  tdModal.classList.toggle("td-chi", p.tm === "CHI" && !over);
+  tdModal.classList.toggle("td-over", over);   // overturned on review: the same card, muted, the points struck
   tdModal.style.setProperty("--td-ground", colors ? colors[0] : "");
   tdModal.style.setProperty("--td-accent", colors ? colors[1] : "");
   tdCard.innerHTML =
     `<span class="td-rays" aria-hidden="true"></span>` +
     `<span class="td-flash" aria-hidden="true"></span>` +
     `<span class="td-more" id="td-more" hidden></span>` +
-    `<span class="td-word">Touchdown</span>` +
-    (p.tm === "CHI" ? chant("Bear down!") : "") +
+    `<span class="td-word">${over ? "Overturned" : "Touchdown"}</span>` +
+    (over ? `<span class="td-review">No touchdown on review</span>` : "") +
+    (p.tm === "CHI" && !over ? chant("Bear down!") : "") +
     `<span class="td-face">${bigShot(p)}${teamLogo(p.tm)}</span>` +
     `<span class="td-name">${esc(p.n)}</span>` +
     `<span class="td-meta"><span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span><span>${esc(p.tm)}</span></span>` +
     `<span class="td-for"><i>for</i><b>${esc(ev.franchise)}</b></span>` +
-    `<span class="td-pts">+${fmt(ev.pts)}</span>` +
+    (over ? `<span class="td-pts"><s>+${fmt(ev.pts)}</s></span>` : `<span class="td-pts">+${fmt(ev.pts)}</span>`) +
     `<span class="td-bar" aria-hidden="true"></span>`;
   renderTdMore();
   tdModal.dataset.open = "true";
@@ -2572,7 +2582,7 @@ function confirmTouchdowns(first) {
 // scorer(s) among the league's starters on either side. The ball carrier
 // is the starter the play names last; on a pass with no turnover the
 // passer scores too. The play's value comes from the yards it names.
-const playSeen = new Map();   // "away@home" -> the last play handled (ESPN's id, or its text)
+const playSeen = new Map();   // "away@home" -> the last play handled: { id, text, at, raised: [{ t, p, pts }] }
 let situationPrevAt = 0;
 const playPoints = (role, yds) => r2(Scoring.scoreLine(
   role === "pass" ? { pass_td: 1, pass_yd: yds, pass_cmp: 1, pass_att: 1 }
@@ -2584,19 +2594,45 @@ const playPoints = (role, yds) => r2(Scoring.scoreLine(
 function tdFromPlay(t, p, pts) {
   const key = tdKey(t, p), plays = (tdPlays.get(key) || 0) + 1;
   tdPlays.set(key, plays);
-  if (plays <= (tdShown.get(key) || 0)) return;   // the line or the jump got there first
+  if (plays <= (tdShown.get(key) || 0)) return false;   // the line or the jump got there first
   tdShown.set(key, plays);
   raiseCard(t, p, { player: p, franchise: t.team, pts, est: true, starter: true });
+  return true;
+}
+// Overturned on review (2026-09-15): the card read the ruling on the
+// field, and the booth reversed it. Every card the play raised gets a
+// muted "Overturned" card, and the touchdown comes back out of the
+// bookkeeping so the player's next one still counts. ESPN revises the
+// play's own text in place ("... TOUCHDOWN. The Replay Official reviewed
+// the ... ruling, and the play was REVERSED. ..."), and a reversal posted
+// as its own entry within the window, naming one of the scorers and not
+// a try, counts too. The board's points were never the play's.
+function overturn(seen) {
+  for (const { t, p, pts } of seen.raised) {
+    const key = tdKey(t, p);
+    tdShown.set(key, Math.max(0, (tdShown.get(key) || 0) - 1));
+    tdPlays.set(key, Math.max(0, (tdPlays.get(key) || 0) - 1));
+    const c = tdConfirmed.get(key);
+    if (c?.length) c.pop();   // the jump it was holding a place for is not coming
+    announceTouchdown({ player: p, franchise: t.team, pts, overturned: true, starter: true });
+  }
+  seen.raised = [];
 }
 function playTouchdowns() {
   const fresh = situationPrevAt > 0 && Date.now() - situationPrevAt < TD_PLAY_FRESH_MS;
   for (const g of new Set(situations.values())) {
     const id = g.playId || g.lastPlay;
     if (!id) continue;
-    const gk = `${g.away}@${g.home}`;
-    if (playSeen.get(gk) === id) continue;
-    playSeen.set(gk, id);
-    const text = String(g.lastPlay || "");
+    const gk = `${g.away}@${g.home}`, text = String(g.lastPlay || "");
+    const prev = playSeen.get(gk);
+    if (prev && prev.id === id) {
+      if (prev.text !== text) { prev.text = text; if (/REVERSED/i.test(text) && prev.raised.length) overturn(prev); }
+      continue;
+    }
+    const seen = { id, text, at: Date.now(), raised: [] };
+    playSeen.set(gk, seen);
+    if (/REVERSED/i.test(text) && prev?.raised.length && Date.now() - prev.at < TD_WINDOW_MS
+      && !/TWO-POINT|extra point/i.test(text) && prev.raised.some((r) => playNames(text, r.p))) overturn(prev);
     if (!fresh || g.state !== "in" || !/TOUCHDOWN/.test(text) || /NULLIFIED|REVERSED|NO PLAY|TWO-POINT/i.test(text)) continue;
     const head = text.slice(0, text.search(/TOUCHDOWN/));
     const passAt = head.search(/\bpass\b/i), turnover = /INTERCEPT|FUMBLE|RECOVER|LATERAL/i.test(head);
@@ -2605,14 +2641,13 @@ function playTouchdowns() {
     for (const t of rosters) for (const p of t.starters) if (p.tm === g.away || p.tm === g.home) { const at = nameAt(head, p); if (at >= 0) named.push({ t, p, at }); }
     if (!named.length) continue;
     named.sort((a, b) => b.at - a.at);
+    const card = (x, role) => { const pts = playPoints(role, yds); if (tdFromPlay(x.t, x.p, pts)) seen.raised.push({ t: x.t, p: x.p, pts }); };
     if (passAt >= 0 && !turnover) {
       const receiver = named.find((x) => x.at > passAt), passer = named.find((x) => x.at < passAt);
-      if (receiver) tdFromPlay(receiver.t, receiver.p, playPoints("rec", yds));
-      if (passer) tdFromPlay(passer.t, passer.p, playPoints("pass", yds));
+      if (receiver) card(receiver, "rec");
+      if (passer) card(passer, "pass");
     } else {
-      const runner = named[0];
-      const role = turnover ? "def" : /\bkicks\b/i.test(head) ? "kr" : /\bpunts\b/i.test(head) ? "pr" : "rush";
-      tdFromPlay(runner.t, runner.p, playPoints(role, yds));
+      card(named[0], turnover ? "def" : /\bkicks\b/i.test(head) ? "kr" : /\bpunts\b/i.test(head) ? "pr" : "rush");
     }
   }
   settleTouchdowns();
