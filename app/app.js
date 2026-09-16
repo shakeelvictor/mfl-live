@@ -2633,8 +2633,13 @@ function playTouchdowns() {
     playSeen.set(gk, seen);
     if (/REVERSED/i.test(text) && prev?.raised.length && Date.now() - prev.at < TD_WINDOW_MS
       && !/TWO-POINT|extra point/i.test(text) && prev.raised.some((r) => playNames(text, r.p))) overturn(prev);
-    if (!fresh || g.state !== "in" || !/TOUCHDOWN/.test(text) || /NULLIFIED|REVERSED|NO PLAY|TWO-POINT/i.test(text)) continue;
+    if (!fresh || g.state !== "in" || !/TOUCHDOWN/.test(text)) continue;
+    // The play's text carries the try after the score ("... TOUCHDOWN.
+    // TWO-POINT CONVERSION ATTEMPT. ..."; seen on a 2024 game), so a try
+    // only rules the play out when it comes BEFORE the touchdown, i.e. it
+    // is the play. Nullified, reversed and no-play can sit anywhere.
     const head = text.slice(0, text.search(/TOUCHDOWN/));
+    if (/NULLIFIED|REVERSED|NO PLAY/i.test(text) || /TWO-POINT/i.test(head)) continue;
     const passAt = head.search(/\bpass\b/i), turnover = /INTERCEPT|FUMBLE|RECOVER|LATERAL/i.test(head);
     const yds = Number(([...head.matchAll(/for (\d+) yards?/g)].pop() || [])[1]) || 0;
     const named = [];

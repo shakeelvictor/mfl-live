@@ -292,7 +292,14 @@ Each of these was verified against real 2025 data, not inferred:
   must carry the same play and id): run, pass (two cards), interception
   return (the defender alone), nullified (nothing), the line and the
   jump after a play's card (nothing), a reversal revised in place and
-  one posted as its own entry (the muted cards, counts back to zero). The jump alone cannot tell a touchdown from any other
+  one posted as its own entry (the muted cards, counts back to zero). **A
+  play's text carries the try after it** ("... TOUCHDOWN. TWO-POINT
+  CONVERSION ATTEMPT. ...", seen on a 2024 game through the logger), so
+  a two-point try only rules the play out when it comes before the
+  touchdown. **Whether ESPN's box score beats Sleeper's line is
+  unmeasured**: `spike/log-feeds.mjs` logs each feed's first sighting of
+  every touchdown against the play's wall clock (spike/README.md, Spike
+  3); run it on a game night before considering ESPN for the estimate. The jump alone cannot tell a touchdown from any other
   6-point jump: a 45-yard run (0.13333/yd), a 60-yard catch (6 + 0.5) or a
   60-yard field goal also clear it, and two plays landing in the same 30s
   poll add up. So the two signals are paired (`noteJump` /

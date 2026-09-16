@@ -212,3 +212,33 @@ Rough reading of the ratio, once there is real movement:
 | ~1x | Same class. Feel is a UI problem, and a solvable one. |
 | up to ~1.5x | Fine. A board updating every 45s reads as live with good transitions. |
 | > 2x | MFL is the bottleneck. The app would feel slower than what it replaces. |
+
+## Spike 3: which feed credits a touchdown first (2026-09-15)
+
+The page leads the touchdown card with ESPN's play text and scores the day
+on Sleeper's lines. Whether ESPN's box score would make a faster estimate
+than Sleeper is an inference, not a measurement. `spike/log-feeds.mjs`
+measures it: for every touchdown in every live game, seconds after the
+play's own wall clock (ESPN's play-by-play carries one) until each feed
+first showed it: the play-by-play entry, the scoreboard's last play (what
+the page reads), ESPN's box score crediting the scorer, Sleeper's line
+crediting him, and MFL's six-point jump (rostered players only, polled at
+30s). Run it through a game night:
+
+```bash
+MFL_UA='imp19716' node spike/log-feeds.mjs --minutes 210 --every 10
+```
+
+It appends every sighting to `spike/data/feeds-<stamp>.jsonl` as it
+happens and prints the table on exit (or `--analyze <file>` later).
+`--dry <espn event id>` reads a finished game's summary to check the
+parsing and the joins without waiting for a game. ESPN athletes join to
+Sleeper through MFL's `espn_id` for the league's rostered players and by
+name and team for everyone else (Sleeper's own `espn_id` covers a quarter
+of active players).
+
+Reading it: if ESPN's box score sits 30s or more ahead of Sleeper across
+the sample, an ESPN-based estimate is worth a week's work (a new join, a
+new stat vocabulary, per-game calls, re-verification against MFL). If it
+is within 10s, Sleeper stays, since its join covers every rostered player
+and the 96.9% agreement was measured on its lines.
