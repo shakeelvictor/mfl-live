@@ -230,7 +230,8 @@ async function situation() {
       yardLine: sit.yardLine ?? null,     // ESPN's absolute spot, 0-100
       spot: sit.possessionText || null,   // "SEA 24"
       dd: sit.shortDownDistanceText || sit.downDistanceText || null,
-      lastPlay: sit.lastPlay?.text?.slice(0, 120) || null,
+      lastPlay: sit.lastPlay?.text?.slice(0, 240) || null,   // a turnover return's text runs long; the TOUCHDOWN at its end must fit
+      playId: sit.lastPlay?.id != null ? String(sit.lastPlay.id) : null,   // one card per play, however many ticks show it
     };
     for (const x of sides) games[x.code] = g;
   }

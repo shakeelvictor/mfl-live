@@ -1188,21 +1188,30 @@ const gameStrip = (p) => {
 // does not. Context: the play narrates, the number is still MFL's or the
 // line's.
 const playText = (t) => String(t).replace(/^\([^)]*\)\s*/, "").replace(/\s*\.\s*$/, "");
-const playNames = (text, p) => {
+// A player as ESPN names him: his initial (one letter or two, "Ja.")
+// and last name, with room for a "St. " or "Van " in between ("A.St.
+// Brown"). Matches anywhere in a play, the tackler in the brackets too.
+const escRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const nameRe = (p, flags = "i") => {
   const last = lastName(p.n), init = String(p.n).trim()[0];
-  if (!last || !init) return false;
-  const re = new RegExp(`(^|[^A-Za-z])${init}[a-z]*\\.\\s?${last.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![A-Za-z])`, "i");
-  return re.test(text);
+  return last && init ? new RegExp(`(^|[^A-Za-z])${escRe(init)}[a-z]*\\.\\s?(?:[A-Z][a-z]*\\.?\\s)?${escRe(last)}(?![A-Za-z])`, flags) : null;
 };
-// On his own row the play reads as his: a leading "J.Warren " comes off
-// ("left end to MIA 18 for 12 yards"); a pass to him keeps the passer.
+const playNames = (text, p) => { const re = nameRe(p); return Boolean(re && re.test(text)); };
+// Where a play last names the player (the ball carrier is named last), or -1.
+const nameAt = (text, p) => {
+  const re = nameRe(p, "gi");
+  if (!re) return -1;
+  let at = -1, m;
+  while ((m = re.exec(text))) at = m.index + m[1].length;
+  return at;
+};
 const lastPlayOf = (p) => {
   if (!isLive(p)) return "";
   const sit = sitOf(p.tm);
   const t = sit?.state === "in" ? sit.lastPlay : null;
   if (!t || !playNames(t, p)) return "";
-  const init = String(p.n).trim()[0], last = lastName(p.n).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return playText(t).replace(new RegExp(`^${init}[a-z]*\\.\\s?${last}\\s+`, "i"), "");
+  const re = nameRe(p);
+  return playText(t).replace(new RegExp(`^${re.source.replace(/^\(\^\|\[\^A-Za-z\]\)/, "")}\\s+`, "i"), "");
 };
 
 // The stat tiles, the player card's middle (they used to expand under
@@ -2429,8 +2438,10 @@ function fetchSituation() {
 function applySituationBody(r) {
   if (!r.ok) { if (!r.pending) console.warn("game situations unavailable, keeping the last ones:", r.error); return; }
   situations = new Map(Object.entries(r.data.games || {}));
+  situationPrevAt = situationAt;
   situationAt = Date.now();
   overlaySituations();
+  if (phase === "live" && !FIXTURE) playTouchdowns();   // a play ending in TOUCHDOWN raises the card first
   if (!polling && teams.length) rerenderSoon();
 }
 
@@ -2473,88 +2484,158 @@ const statsNote = () => {
   return Date.now() - statsAt > STATS_STALE_MS ? "stats delayed" : "";
 };
 
-/* Touchdowns. Sleeper's stat line raises the card (2026-09-10): one more
-   touchdown on a starter's line than last time (any touchdown key: pass,
-   rush, rec, defensive, special teams, kick or punt return) raises it at
-   once, within a minute of the play, with the play's value from the
-   engine as the points (the line after minus the line before, shown as
-   Sleeper's number). MFL's 6-point jump, on its ~200s cycle, is then the
-   confirmation: a jump within TD_WINDOW_MS of a card already shown is
-   matched to it and raises nothing. It used to be the other way round, the
-   jump held until Sleeper confirmed it, which in practice meant every card
-   waited for MFL (2026-09-08 .. 09-10). When MFL's jump lands first (the
-   lines running late but not yet stale) the touchdown raises the card
-   with MFL's delta, as before. A jump with no touchdown in the window
-   lapses silently. Fallback: while the lines are unavailable or stale
-   (statsNote), have not arrived yet, or for a player with no Sleeper join,
-   the jump alone raises the card. But a jump is pended even then, and
-   only falls back after a short grace (TD_GRACE_MS): on the first poll
-   after a tab comes back from the background the lines are stale by age
-   alone, and the fresh ones are in flight beside that very poll, so a
-   jump raised at once as the fallback and the line landing a second
-   later raised a second card with Sleeper's points for the same
-   touchdown (Kyren Williams, 2026-09-10). */
+/* Touchdowns. Three signals, one card (2026-09-15). ESPN's play text is
+   the first: a play ending in TOUCHDOWN in a live game raises the card
+   within a poll of the whistle (15 to 30 seconds), for the ball carrier
+   and, on a pass, the passer too, with the play's value under the league's
+   rules (the yards it names through app/scoring.js) as the points. Then
+   Sleeper's stat line (2026-09-10): one more touchdown on a starter's
+   line than the cards already shown raises it, with the line's delta as
+   the points (a stretch missed in the background raises one card for all
+   of it). Then MFL's 6-point jump on its ~200s cycle: a jump within
+   TD_WINDOW_MS of a card already shown is matched to it and raises
+   nothing; a jump that gets there first (the others late) waits, and the
+   next signal raises its card with MFL's delta; a jump with nothing to
+   match in the window lapses, unless the lines are unavailable or stale
+   (statsNote), when the jump alone raises the card after a short grace
+   (TD_GRACE_MS: on the first poll after a tab comes back the lines are
+   stale by age alone and the fresh ones are in flight beside that poll,
+   so an immediate fallback doubled a line's card, Kyren Williams
+   2026-09-10). The bookkeeping is per starter (`fid:pid`): how many
+   touchdowns a card has covered (tdShown), how many the plays have named
+   (tdPlays) and, for the line, how many it counts; a signal raises a
+   card only when it knows of more than have been shown. The first play
+   after a page load or a gap of two minutes only primes the memory: it
+   may be old, and the line will have it. A play marked NULLIFIED,
+   REVERSED, NO PLAY or a two-point try is not a touchdown. Nothing here
+   feeds a score. */
 const TD_WINDOW_MS = 3 * 60e3;
 const TD_GRACE_MS = 45e3;   // a jump pended while the lines were not fine waits this long for them
+const TD_PLAY_FRESH_MS = 2 * 60e3;   // a play raises a card only when the previous situation is this recent
 const tdBase = new Map();        // sid -> touchdowns on the last stat line
 const tdEstBase = new Map();     // sid -> the engine's points for the last stat line
-const tdConfirmed = new Map();   // sid -> times a touchdown was announced from the line, its jump not yet seen
+const tdShown = new Map();       // "fid:pid" -> touchdowns a card has covered
+const tdPlays = new Map();       // "fid:pid" -> touchdowns the plays (or the line) have counted
+const tdConfirmed = new Map();   // "fid:pid" -> times a card was shown, its jump not yet seen
 const tdPending = new Map();     // "fid:pid" -> { ev, at }: a jump waiting for its touchdown
 const statsConfirm = () => statsAt !== 0 && statsNote() === "";
+const tdKey = (t, p) => `${t.id}:${p.id}`;
+const shownOne = (key) => tdShown.set(key, (tdShown.get(key) || 0) + 1);
+const confirmOne = (key) => { const seen = tdConfirmed.get(key) || []; seen.push(Date.now()); tdConfirmed.set(key, seen); };
 
 function noteJump(team, p, delta) {
   const ev = { player: p, franchise: team.team, pts: r2(delta), starter: true };
-  if (!p.sid) { announceTouchdown(ev); return; }
-  const seen = tdConfirmed.get(p.sid);
-  if (seen?.length) { seen.shift(); return; }   // the line got there first and the card has shown
-  const key = `${team.id}:${p.id}`, prev = tdPending.get(key);
+  const key = tdKey(team, p);
+  const seen = tdConfirmed.get(key);
+  if (seen?.length) { seen.shift(); return; }   // a play or the line got there first and the card has shown
+  if (!p.sid) { shownOne(key); announceTouchdown(ev); return; }   // no line will ever come for him
+  const prev = tdPending.get(key);
   tdPending.set(key, prev ? { ...prev, ev: { ...ev, pts: r2(prev.ev.pts + delta) } } : { ev, at: Date.now(), grace: !statsConfirm() });
 }
 // The starter carrying a Sleeper id, and his franchise, on the current
 // rosters; a bench player gets no card.
 const starterBySid = (sid) => { for (const t of rosters) for (const p of t.starters) if (p.sid === sid) return { t, p }; return null; };
-// On every stat arrival: one more touchdown on a player's line than last
-// time raises the card, unless MFL's jump is already waiting for it, in
-// which case the jump's card goes up. The first arrival only sets the
-// baselines; a player with no line before counts from zero.
+// A card for a starter from a play or the line: the jump's card if MFL's
+// jump is already waiting, else this signal's; and a note for the jump
+// still to come.
+function raiseCard(t, p, ev) {
+  const key = tdKey(t, p), waiting = tdPending.get(key);
+  if (waiting) { tdPending.delete(key); announceTouchdown(waiting.ev); return; }   // MFL got there first
+  announceTouchdown(ev);
+  confirmOne(key);
+}
+// On every stat arrival: a line counting more touchdowns than a card has
+// covered raises the card. The first arrival only sets the baselines; a
+// player with no line before counts from zero.
 function confirmTouchdowns(first) {
-  const now = Date.now();
   for (const [sid, st] of Object.entries(statsBySid)) {
     const n = tdCount(st), was = tdBase.get(sid) ?? 0;
     const est = r2(Scoring.scoreLine(st)), estWas = tdEstBase.get(sid) ?? 0;
     tdBase.set(sid, n); tdEstBase.set(sid, est);
-    if (first || n <= was) continue;
     const hit = starterBySid(sid);
-    const key = hit ? `${hit.t.id}:${hit.p.id}` : null, waiting = key && tdPending.get(key);
-    // One card per arrival, however many touchdowns the line gained since
-    // the last one (two in a window, or a stretch in the background): the
-    // line's delta covers them all, and so does a jump waiting for them.
-    if (waiting) { tdPending.delete(key); announceTouchdown(waiting.ev); }   // MFL got there first
-    else if (hit) announceTouchdown({ player: hit.p, franchise: hit.t.team, pts: r2(Math.max(0, est - estWas)), est: true, starter: true });
-    // Every touchdown the line gained may still bring its own jump on
-    // MFL's cycle (or one jump may cover them all: the spares expire).
-    const seen = tdConfirmed.get(sid) || [];
-    for (let i = was + (waiting ? 1 : 0); i < n; i++) seen.push(now);
-    if (seen.length) tdConfirmed.set(sid, seen);
+    if (!hit || n <= was) continue;
+    const key = tdKey(hit.t, hit.p), shown = tdShown.get(key) || 0;
+    if (!first && n > shown) {
+      // One card per arrival, however many touchdowns the line gained
+      // since the last one: the line's delta covers them all, and so does
+      // a jump waiting for them. Each may still bring its own jump on
+      // MFL's cycle (or one jump may cover them all: the spares expire).
+      raiseCard(hit.t, hit.p, { player: hit.p, franchise: hit.t.team, pts: r2(Math.max(0, est - estWas)), est: true, starter: true });
+      for (let i = shown + 1; i < n; i++) confirmOne(key);
+    }
+    tdShown.set(key, Math.max(shown, n));
+    tdPlays.set(key, Math.max(tdPlays.get(key) || 0, n));
+  }
+  settleTouchdowns();
+}
+// On every situation arrival: a new play ending in TOUCHDOWN names its
+// scorer(s) among the league's starters on either side. The ball carrier
+// is the starter the play names last; on a pass with no turnover the
+// passer scores too. The play's value comes from the yards it names.
+const playSeen = new Map();   // "away@home" -> the last play handled (ESPN's id, or its text)
+let situationPrevAt = 0;
+const playPoints = (role, yds) => r2(Scoring.scoreLine(
+  role === "pass" ? { pass_td: 1, pass_yd: yds, pass_cmp: 1, pass_att: 1 }
+  : role === "rec" ? { rec_td: 1, rec_yd: yds, rec: 1, rec_tgt: 1 }
+  : role === "rush" ? { rush_td: 1, rush_yd: yds, rush_att: 1 }
+  : role === "kr" ? { kr_td: 1, kr_yd: yds }
+  : role === "pr" ? { pr_td: 1, pr_yd: yds }
+  : { idp_def_td: 1 }));
+function tdFromPlay(t, p, pts) {
+  const key = tdKey(t, p), plays = (tdPlays.get(key) || 0) + 1;
+  tdPlays.set(key, plays);
+  if (plays <= (tdShown.get(key) || 0)) return;   // the line or the jump got there first
+  tdShown.set(key, plays);
+  raiseCard(t, p, { player: p, franchise: t.team, pts, est: true, starter: true });
+}
+function playTouchdowns() {
+  const fresh = situationPrevAt > 0 && Date.now() - situationPrevAt < TD_PLAY_FRESH_MS;
+  for (const g of new Set(situations.values())) {
+    const id = g.playId || g.lastPlay;
+    if (!id) continue;
+    const gk = `${g.away}@${g.home}`;
+    if (playSeen.get(gk) === id) continue;
+    playSeen.set(gk, id);
+    const text = String(g.lastPlay || "");
+    if (!fresh || g.state !== "in" || !/TOUCHDOWN/.test(text) || /NULLIFIED|REVERSED|NO PLAY|TWO-POINT/i.test(text)) continue;
+    const head = text.slice(0, text.search(/TOUCHDOWN/));
+    const passAt = head.search(/\bpass\b/i), turnover = /INTERCEPT|FUMBLE|RECOVER|LATERAL/i.test(head);
+    const yds = Number(([...head.matchAll(/for (\d+) yards?/g)].pop() || [])[1]) || 0;
+    const named = [];
+    for (const t of rosters) for (const p of t.starters) if (p.tm === g.away || p.tm === g.home) { const at = nameAt(head, p); if (at >= 0) named.push({ t, p, at }); }
+    if (!named.length) continue;
+    named.sort((a, b) => b.at - a.at);
+    if (passAt >= 0 && !turnover) {
+      const receiver = named.find((x) => x.at > passAt), passer = named.find((x) => x.at < passAt);
+      if (receiver) tdFromPlay(receiver.t, receiver.p, playPoints("rec", yds));
+      if (passer) tdFromPlay(passer.t, passer.p, playPoints("pass", yds));
+    } else {
+      const runner = named[0];
+      const role = turnover ? "def" : /\bkicks\b/i.test(head) ? "kr" : /\bpunts\b/i.test(head) ? "pr" : "rush";
+      tdFromPlay(runner.t, runner.p, playPoints(role, yds));
+    }
   }
   settleTouchdowns();
 }
 // Match waiting jumps to cards already shown and let old signals lapse.
-// Runs on every stat arrival and every poll, so a jump still lapses when
-// the lines stop coming; if they have gone stale by then, the fallback
-// raises it.
+// Runs on every signal and every poll, so a jump still lapses when the
+// lines stop coming; if they have gone stale by then, the fallback raises
+// it.
 function settleTouchdowns() {
   const now = Date.now();
   for (const [key, { ev, at, grace }] of tdPending) {
-    const seen = tdConfirmed.get(ev.player.sid);
+    const seen = tdConfirmed.get(key);
     if (seen?.length) { seen.shift(); tdPending.delete(key); }
     // Pended while the lines were not fine and still not fine: the short
     // grace, then the jump's own card. Fine lines get the full window.
-    else if (now - at > (grace && !statsConfirm() ? TD_GRACE_MS : TD_WINDOW_MS)) { tdPending.delete(key); if (!statsConfirm()) announceTouchdown(ev); }
+    else if (now - at > (grace && !statsConfirm() ? TD_GRACE_MS : TD_WINDOW_MS)) {
+      tdPending.delete(key);
+      if (!statsConfirm()) { shownOne(key); announceTouchdown(ev); }
+    }
   }
-  for (const [sid, seen] of tdConfirmed) {
+  for (const [key, seen] of tdConfirmed) {
     const live = seen.filter((t) => now - t <= TD_WINDOW_MS);
-    if (live.length) tdConfirmed.set(sid, live); else tdConfirmed.delete(sid);
+    if (live.length) tdConfirmed.set(key, live); else tdConfirmed.delete(key);
   }
 }
 

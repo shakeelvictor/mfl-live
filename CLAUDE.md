@@ -256,7 +256,26 @@ Each of these was verified against real 2025 data, not inferred:
   from `TYPE=rules`: passing, rushing, receiving, kick and punt return,
   defensive and fumble return, and the team-defense TD all pay `*6`), so the
   page's "starter jumps >= 6 between polls" touchdown gate matches the QB
-  passing value too. The jump alone cannot tell a touchdown from any other
+  passing value too. **Since 2026-09-15 ESPN's play raises the card
+  first**: a play in a live game ending in TOUCHDOWN (`playTouchdowns`,
+  on every situation arrival) raises it within a poll of the whistle,
+  for the ball carrier (the league starter the play names last, on
+  either side) and, on a pass with no turnover, the passer too, with the
+  play's value under the league's rules as the points (the yards it
+  names through `playPoints`, so a 12-yard run reads +7.60, a 9-yard
+  pass +6.36 for the passer; a return or a defensive score reads the
+  flat 6). A play marked NULLIFIED, REVERSED, NO PLAY or a two-point try
+  raises nothing, and the first play after a load or a two-minute gap
+  only primes the memory (`playSeen`, keyed by ESPN's play id), since
+  it may be old. The bookkeeping is per starter (`fid:pid`): `tdShown`
+  is how many touchdowns a card has covered, `tdPlays` how many the
+  plays (or the line) have counted, and a signal raises a card only
+  when it knows of more than have been shown; `tdConfirmed` holds each
+  card for the MFL jump still to come. Rehearsed on `app-2025-w15-live`
+  by editing `spike/data/fake-w15/situation.json` (both sides of a game
+  must carry the same play and id): run, pass (two cards), interception
+  return (the defender alone), nullified (nothing), the line and the
+  jump after a play's card (nothing). The jump alone cannot tell a touchdown from any other
   6-point jump: a 45-yard run (0.13333/yd), a 60-yard catch (6 + 0.5) or a
   60-yard field goal also clear it, and two plays landing in the same 30s
   poll add up. So the two signals are paired (`noteJump` /
@@ -266,7 +285,8 @@ Each of these was verified against real 2025 data, not inferred:
   `kr_td`, `pr_td`) rising raises it at once, within a minute of the
   play, with the play's value from `app/scoring.js` as the points, shown
   as Sleeper's number ("S +10.40"); MFL's jump within the three-minute
-  window is matched to it and raises nothing. From 2026-09-08 to 09-10 it
+  window is matched to it and raises nothing (now the third signal, after
+  the play and the line). From 2026-09-08 to 09-10 it
   was the other way round, the jump held until the line confirmed it,
   which meant every card waited for MFL's ~200s cycle. When the jump lands
   first (lines late but not stale) the touchdown raises the card with
