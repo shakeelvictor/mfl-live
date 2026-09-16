@@ -799,7 +799,15 @@ element and scores are second.
   tick, applied by `applySituationBody`; `fetchSituation` is the fallback
   beside the poll); `sitOf(tm)` hands it out
   while under two minutes old, after which the page falls back to MFL's
-  flags. `inRedZone` is then "my team has the ball and ESPN says red
+  flags. **A situation counts only for the game the schedule has for
+  the team** (2026-09-16, `sameGame`; the proxy stamps each record with
+  ESPN's `kickoff`, which matches MFL's to the second): ESPN's
+  scoreboard is always the current week, and once it rolled to Week 2
+  its "pre" games were laid over Week 1's finished clocks on a `?w=1`
+  page, so the week read as started and not final, `doneTeams` came
+  out empty, every starter fell back to Sleeper's estimate, and
+  `gamesOn()` polled every 15s for it. A staged situation with no
+  kickoff, or a team with no schedule entry, is taken as it comes. `inRedZone` is then "my team has the ball and ESPN says red
   zone"; the game strip takes the ball, RZ, NFL score and the clock from it
   and adds a line with the down, distance and spot (`.pg-spot`), and
   **the last play under that** (2026-09-15, `.pg-play`: ESPN's text,
@@ -1003,9 +1011,10 @@ element and scores are second.
   a Bear over 40 points (`BEARS_MVP`) is the MVP of the week outright,
   whoever scored more; the day cards get the tie rule only. Rehearsed on
   `app-2025` `?w=12` by handing a Bear the top's points and then 40.5
-  (during a live game the archive's Sunday reads unfinished there, since
-  ESPN's current situation is laid over the 2025 clocks; clearing
-  `situations` and the clocks makes the week final). The week is final once
+  (until 2026-09-16 the archive's Sunday read unfinished there during a
+  live game, ESPN's current situation laid over the 2025 clocks; a
+  situation now counts only for the schedule's own game, see
+  `sameGame`). The week is final once
   every game is (`slate.weekFinal = slate.sunFinal`; MFL's "official"
   mark is not read, the same rule the playoffs use), which turns the
   card gold and the leader hero into the Week winner; both clear when

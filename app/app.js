@@ -820,7 +820,24 @@ const clockFor = (p) => (FIXTURE ? LIVE_NFL.get(p.tm) : clockText(secsOf(p)));
 // in the red zone at halftime. Then only when the other side does not
 // clearly have the ball.
 const SITUATION_STALE_MS = 2 * 60e3;
-const sitOf = (tm) => (Date.now() - situationAt < SITUATION_STALE_MS ? situations.get(tm) : null) || null;
+// A situation counts only for the game the schedule has for the team
+// (2026-09-16): ESPN's scoreboard is always the current week, so a page on
+// a past week (?w=1 once ESPN rolled to Week 2) had the new week's "pre"
+// games laid over every finished game's clock. The week then read as
+// started and not final, doneTeams came out empty, every starter fell
+// back to Sleeper's estimate, and gamesOn() polled every 15s for it. The
+// kickoffs match to the second; a situation with no kickoff (a staged
+// one) or a team with no schedule entry is taken as it comes.
+const SAME_GAME_MS = 6 * 3600e3;
+const sameGame = (tm, sit) => {
+  const g = games.get(tm);
+  return !g || sit.kickoff == null || Math.abs(g.kickoff - sit.kickoff) < SAME_GAME_MS;
+};
+const sitOf = (tm) => {
+  if (Date.now() - situationAt >= SITUATION_STALE_MS) return null;
+  const sit = situations.get(tm);
+  return sit && sameGame(tm, sit) ? sit : null;
+};
 const inRedZone = (p) => {
   if (!isLive(p) || !POS_CLASS[p.pos]) return false;
   const sit = sitOf(p.tm);
@@ -2623,7 +2640,7 @@ function playTouchdowns() {
   const fresh = situationPrevAt > 0 && Date.now() - situationPrevAt < TD_PLAY_FRESH_MS;
   for (const g of new Set(situations.values())) {
     const id = g.playId || g.lastPlay;
-    if (!id) continue;
+    if (!id || !sameGame(g.home, g)) continue;   // another week's game says nothing about this one
     const gk = `${g.away}@${g.home}`, text = String(g.lastPlay || "");
     const prev = playSeen.get(gk);
     if (prev && prev.id === id) {

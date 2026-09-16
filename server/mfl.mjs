@@ -218,8 +218,15 @@ async function situation() {
     // visitors at 20 and under. No possession, no red zone.
     const yl = Number.isFinite(Number(sit.yardLine)) ? Number(sit.yardLine) : null;
     const rz = !possSide ? false : yl != null ? (possSide.home ? yl >= 80 : yl <= 20) : sit.isRedZone === true;
+    // The game's kickoff, so the page can tell whether this is the game its
+    // schedule has for the team: ESPN's scoreboard is always the current
+    // week, and laid over a past week's clocks (a page on ?w=1 once ESPN
+    // rolled to Week 2, 2026-09-16) its "pre" games put every finished
+    // game back on the field. Matches MFL's kickoff to the second.
+    const kick = Date.parse(c.date || e.date);
     const g = {
       away: sides.find((x) => !x.home)?.code, home: sides.find((x) => x.home)?.code,
+      kickoff: Number.isFinite(kick) ? kick : null,   // epoch ms
       state: st.state || null,            // pre | in | post
       detail: st.shortDetail || st.detail || null,
       period: c.status?.period ?? null, clock: c.status?.displayClock || null,
