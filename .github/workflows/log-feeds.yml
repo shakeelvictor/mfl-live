@@ -1,0 +1,53 @@
+# Spike 3 on a runner, so nothing at home has to stay awake: log which feed
+# credits each touchdown first through a game (spike/log-feeds.mjs, see
+# spike/README.md). Start it from the Actions tab a few minutes before
+# kickoff, or let the schedule catch Thursday night. The file and the
+# printed table come back as a downloadable artifact. Separate from the
+# records site's pipeline on purpose (CLAUDE.md); no secrets: the
+# registered User-Agent is not one.
+name: log-feeds
+
+on:
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: How long to run (the logger also stops 25 minutes after the last live game ends)
+        default: "210"
+      every:
+        description: Seconds between polls
+        default: "10"
+      week:
+        description: NFL week (blank = Sleeper's current week)
+        default: ""
+  schedule:
+    # Thursday 7:55 PM Eastern while the clocks are on daylight time (kickoff
+    # is 8:15). After the November change this is 6:55 PM; the logger waits
+    # through the empty hour. A scheduled run can start a few minutes late.
+    - cron: "55 23 * * 4"
+
+jobs:
+  log:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      MFL_UA: imp19716
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Log the feeds through the game
+        run: |
+          MINUTES="${{ github.event.inputs.minutes || '210' }}"
+          EVERY="${{ github.event.inputs.every || '10' }}"
+          WEEK="${{ github.event.inputs.week }}"
+          node spike/log-feeds.mjs --minutes "$MINUTES" --every "$EVERY" ${WEEK:+--week "$WEEK"} 2>&1 | tee spike/data/feeds-summary.txt
+      - name: Keep the file and the table
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: feeds-${{ github.run_id }}
+          path: |
+            spike/data/feeds-*.jsonl
+            spike/data/feeds-summary.txt
+          if-no-files-found: warn

@@ -230,7 +230,12 @@ MFL_UA='imp19716' node spike/log-feeds.mjs --minutes 210 --every 10
 ```
 
 It appends every sighting to `spike/data/feeds-<stamp>.jsonl` as it
-happens and prints the table on exit (or `--analyze <file>` later).
+happens, stops on its own 25 minutes after the last live game ends, and
+prints the table on exit (or `--analyze <file>` later). **It runs on a
+GitHub runner so nothing at home has to stay awake**: the `log-feeds`
+workflow (`.github/workflows/log-feeds.yml`) starts from the Actions tab
+with a duration, or on its own at 7:55 PM Eastern every Thursday, and
+hands the file and the printed table back as an artifact on the run.
 `--dry <espn event id>` reads a finished game's summary to check the
 parsing and the joins without waiting for a game. ESPN athletes join to
 Sleeper through MFL's `espn_id` for the league's rostered players and by

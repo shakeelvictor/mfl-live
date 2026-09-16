@@ -23,7 +23,9 @@
 //
 // Usage:
 //   MFL_UA='imp19716' node spike/log-feeds.mjs                    # until Ctrl-C
-//   MFL_UA='imp19716' node spike/log-feeds.mjs --minutes 200 --every 10
+//   MFL_UA='imp19716' node spike/log-feeds.mjs --minutes 210 --every 10
+//   (it also stops on its own 25 minutes after the last live game ends;
+//   .github/workflows/log-feeds.yml runs it on a GitHub runner instead)
 //   node spike/log-feeds.mjs --analyze spike/data/feeds-<stamp>.jsonl
 //   node spike/log-feeds.mjs --dry 401671715   # a finished game's summary, to check the parsing and the joins
 
@@ -289,12 +291,15 @@ async function main() {
   }
 
   const stopAt = MINUTES ? Date.now() + MINUTES * 60e3 : Infinity;
-  let loop = 0, stopping = false;
+  const IDLE_MS = 25 * 60e3;   // once a game has been seen, stop this long after the last one ends: the late credits are in by then
+  let loop = 0, stopping = false, sawGame = false, lastLiveAt = 0;
   process.on('SIGINT', () => { stopping = true; say('stopping'); });
   while (!stopping && Date.now() < stopAt) {
     const t0 = Date.now();
     let live = [];
     try { live = await pollScoreboard(); } catch (e) { log({ feed: 'scoreboard', error: String(e?.message || e) }); }
+    if (live.length) { sawGame = true; lastLiveAt = Date.now(); }
+    else if (sawGame && Date.now() - lastLiveAt > IDLE_MS) { say('no live game for 25 minutes, done'); break; }
     for (const ev of live) { try { await pollSummary(ev); } catch (e) { log({ feed: 'summary', event: ev.id, error: String(e?.message || e) }); } }
     try { await pollSleeper(); } catch (e) { log({ feed: 'sleeper', error: String(e?.message || e) }); }
     if (loop % Math.max(1, Math.round(30 / EVERY_S)) === 0) { try { await pollMfl(); } catch (e) { log({ feed: 'mfl', error: String(e?.message || e) }); } }
