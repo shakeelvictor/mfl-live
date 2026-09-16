@@ -49,15 +49,37 @@ never come from them. See "Player images and stats".)
   so don't.
 - **Polling budget (MFL rate-limits; an older POC got throttled).** The
   proxy keeps a per-instance response cache by (type, params) with each
-  type's max-age (liveScoring 15s, schedule 15s, lineups 5m, rosters 10m, league
-  15m, players 1h, stats 30s from Sleeper), coalesces identical in-flight requests, serves stale on
+  type's max-age (liveScoring 30s, schedule 30s, lineups 5m, rosters 10m,
+  league 15m, players 1h, stats 15s from Sleeper, situation 15s from
+  ESPN; 2026-09-15: MFL's two were 15s and stats 30s), coalesces
+  identical in-flight requests, serves stale on
   MFL errors, and on a 429 stops calling MFL for 5 minutes (stale answers
   meanwhile, 503 + Retry-After otherwise). So N open pages cost one MFL
-  call per window per type. The page polls liveScoring every 30s in season
-  (the schedule every 5m, and with every poll while a game is on, since
-  it carries the game scores, possession and red zone; `gamesOn()`),
-  everything every 5m before the season, and
-  nothing while the tab is hidden (a poll fires when it is shown again).
+  call per window per type. **And one function invocation** (2026-09-15):
+  every answer carries `Netlify-CDN-Cache-Control: public, durable,
+  s-maxage=<what is left of its window>`, so Netlify's edge shares it
+  across every node and viewer, and only invokes the function when no
+  node has it (`cdn()` / `served()` in `server/mfl.mjs`; a stale answer
+  is shared 5s, errors never). Without `durable` each edge node asked the
+  function itself: three requests in a row from one place all missed, and
+  Week 1 cost 9,705 invocations of the Free plan's 125,000 with one
+  viewer. **The page polls one `tick`** (2026-09-15): `GET
+  /api/mfl?type=tick&W=..&parts=liveScoring,nflSchedule,stats,situation`
+  names the parts this poll wants and the proxy answers with each from
+  its own cache (`{ ok, parts: { liveScoring: <that type's answer>, ... }
+  }`), MFL's parts waited for, Sleeper's and ESPN's given 2.5s
+  (`SIDE_MS`) and then the last cached one or a `pending` placeholder
+  while the fetch in flight fills the cache for the next tick; the
+  answer's own edge window is the shortest left among its parts. If the
+  tick itself fails the page polls each type on its own, the old way
+  (`refreshLive`). **Every 15s while a game is on** (`POLL_GAME_MS`;
+  30s before), 30s otherwise in season, everything every 5m before the
+  season, and nothing while the tab is hidden (a poll fires when it is
+  shown again). The schedule comes every 5m, and with every poll while a
+  game is on (`gamesOn()`); the lines and the situation with every poll
+  while a game is on, the lines once a minute otherwise. Read the
+  invocation count after a Sunday: `GET
+  api.netlify.com/api/v1/sites/<site id>/usage` with the CLI's token.
 - **`app/app.js`** boots by loading league + rosters, then polls
   `liveScoring` (and, less often, `nflSchedule`) on that budget. Before the season, liveScoring's
   "not available until the season starts" puts the page in the
@@ -99,10 +121,11 @@ never come from them. See "Player images and stats".)
   pre-season). Plain `<img>` from MFL's host; a failed load removes itself.
 - **The Week 1 opener measured MFL's liveScoring export refreshing on a
   fixed ~200s cycle** (2026-09-09, `spike/log-cadence.mjs` at 30s: every
-  gap between changes was 183s or 214s, zero 429s). The page cannot be
-  fresher than that, and polling faster than the proxy's 15s cache buys
-  nothing; the schedule (`nflSchedule`) and ESPN's situation move faster
-  than the points do. Sunday's eight-game window is the measurement the
+  gap between changes was 183s or 214s, zero 429s). MFL's number cannot be
+  fresher than that, which is why the proxy asks MFL every 30s and no
+  faster (the cadence the spike ran clean); Sleeper's lines and ESPN's
+  situation move within seconds of a play, and those are what the 15s
+  poll is for. Sunday's eight-game window is the measurement the
   spike was designed around; see spike/README.md for the bars.
 - **`MFL_FAKE_LIVE=<liveScoring json>`** on the dev server serves a file as
   the live feed, so the in-season path can be exercised before kickoff
@@ -247,9 +270,11 @@ Each of these was verified against real 2025 data, not inferred:
   was the other way round, the jump held until the line confirmed it,
   which meant every card waited for MFL's ~200s cycle. When the jump lands
   first (lines late but not stale) the touchdown raises the card with
-  MFL's delta. A jump with no touchdown in the window lapses. The stat lines are fetched every poll
-  while games are on (30s, the proxy holds them 30s) so the confirmation
-  lands within one. **Fallback:** while the lines are unavailable, stale or
+  MFL's delta. A jump with no touchdown in the window lapses. The stat lines come with every poll
+  while games are on (15s since 2026-09-15, the proxy holds them 15s;
+  30s before) so the card lands within one, and inside a tick the lines
+  are applied before the rosters are rebuilt, so the line's card is up
+  before the poll's jump is seen. **Fallback:** while the lines are unavailable, stale or
   not yet arrived, or for a player with no Sleeper join, the jump alone
   raises the card, as before; a pending jump that lapses while the lines
   have gone stale is raised too. **The jump is pended even while the
@@ -724,12 +749,23 @@ element and scores are second.
   score, with nobody in possession): `yardLine` is yards from the home
   team's goal line, verified that night, so the home offense is in at 80
   and beyond, the visitors at 20 and under, and no possession means no
-  red zone. `fetchSituation` asks with every poll while games are
-  on, beside the poll like the stat lines; `sitOf(tm)` hands it out
+  red zone. It comes with every poll while games are on (a part of the
+  tick, applied by `applySituationBody`; `fetchSituation` is the fallback
+  beside the poll); `sitOf(tm)` hands it out
   while under two minutes old, after which the page falls back to MFL's
   flags. `inRedZone` is then "my team has the ball and ESPN says red
   zone"; the game strip takes the ball, RZ, NFL score and the clock from it
-  and adds a line with the down, distance and spot (`.pg-spot`). **Every
+  and adds a line with the down, distance and spot (`.pg-spot`), and
+  **the last play under that** (2026-09-15, `.pg-play`: ESPN's text,
+  "(Shotgun) J.Gibbs right tackle to SEA 45 for 12 yards (D.Reed)." with
+  the formation and the full stop dropped, `playText`). **A live roster
+  row carries the last play when it names the player** (`.pplay`,
+  `lastPlayOf`, in the accent under the stat line: his initial and last
+  name as ESPN writes them, `playNames`, the tackler in the brackets
+  included so an IDP's tackle reads on his row; on his own row a leading
+  "J.Warren " comes off so the play reads as his; two lines on a phone,
+  one in the laptop pane) and drops it when the next play names someone
+  else. The board narrates. **Every
   player's clock, "live" and "final" follow the situation too**
   (`sitSecs`, first in `secsOf`; `overlaySituations` lays it over the
   schedule's game clocks so the day's and week's final follow ESPN's
@@ -990,12 +1026,16 @@ element and scores are second.
   is a copy of `app/playoffs.js`; keep them the same), seeded from the
   real 2025 season and folded from the board's own points; see the `poc`
   branch's CLAUDE.md. On `main` they are removed, along with the subtitle
-  line; in season the subtitle slot shows "MFL updated <time>", the time
-  MFL's snapshot last changed (any score or lineup status; `snapshotSig`
-  in `refreshLive`), with "checked <time>" beside it once the last poll
-  is a later minute (2026-09-09: the export regenerates on MFL's ~200s
-  cycle and most polls bring the same body back, so a poll-time stamp
-  read fresh while the scores stood still).
+  line; in season the subtitle slot shows "Updated <time>", the time a
+  number on the page last changed from either feed (`stampUpdated`;
+  MFL's snapshot by `snapshotSig` in `refreshLive`, since the export
+  regenerates on MFL's ~200s cycle and most polls bring the same body
+  back, so a poll-time stamp read fresh while the scores stood still).
+  **While a game is on it is an age that ticks** (2026-09-15, `#age`,
+  `syncAge`, one 1s timer): "Updated 12s ago" counting up says the page
+  is awake and how long the board has stood; a frozen board would
+  visibly stop counting. Off the field it is the time again ("3h 12m
+  ago" says nothing).
 - **The footer is a disclaimer** (`.foot`, 2026-09-11, the one footnote on
   `main`): live scores are approximations, the best guess from real-time
   stats while games are on, and the day's finals are tallied from MFL as
@@ -1057,8 +1097,9 @@ bump. The line is context next to MFL's number and never feeds it.
 `stats` type fetches Sleeper's weekly stats (`/v1/stats/nfl/regular/<season>/<W>`,
 free, updates during games, ~570KB for every NFL player), cuts them to the
 league's rostered players (Sleeper ids from the playersMap join, remembered
-an hour) and to `STAT_KEYS`, and holds the ~10KB result 30s; the page
-asks every poll while games are on (30s), once a minute otherwise, and
+an hour) and to `STAT_KEYS`, and holds the ~10KB result 15s (30s until
+2026-09-15); the page
+asks every poll while games are on (15s, as a part of the tick), once a minute otherwise, and
 hands each player its line as `st`, so rows, the spotlight and the TD chip
 read real lines, and the touchdown card's confirmation reads the same
 lines. The fetch runs

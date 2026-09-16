@@ -24,22 +24,26 @@ const UA = process.env.MFL_UA || 'imp19716';
 // Follow it rather than pinning a host: MFL moves leagues between seasons.
 const MFL = `https://api.myfantasyleague.com/${SEASON}/export`;
 
-// What the page may ask for, and how long each answer may be cached.
 // What the page may ask for, and how long each answer is held. The proxy
-// keeps these in memory (see the cache below), so N open pages cost ONE MFL
-// call per window per type, not N. liveScoring is the only thing that moves
-// fast; everything else is measured in minutes or hours.
+// keeps these in memory (see the cache below) and tells Netlify's edge to
+// share them (see json), so N open pages cost ONE source call per window
+// per type, not N, and one function invocation. MFL's windows are 30s:
+// its export regenerates on a ~200s cycle (measured on the Week 1 opener),
+// so nothing is lost, and the spike's zero-429 run was at 30s. Sleeper's
+// lines and ESPN's situation move within seconds of a play, so those are
+// the fast windows, 15s (2026-09-15; stats were 30s).
 const TYPES = {
   league:        { params: [], maxAge: 900 },
   rosters:       { params: [], maxAge: 600 },
   players:       { params: ['PLAYERS', 'DETAILS'], maxAge: 3600 },
-  liveScoring:   { params: ['W', 'DETAILS'], maxAge: 15 },
+  liveScoring:   { params: ['W', 'DETAILS'], maxAge: 30 },
   weeklyResults: { params: ['W'], maxAge: 300 },   // lineups (status: starter) exist before liveScoring does
-  nflSchedule:   { params: ['W'], maxAge: 15, noLeague: true },   // game scores, possession, red zone: polled with liveScoring while games are on
+  nflSchedule:   { params: ['W'], maxAge: 30, noLeague: true },   // kickoffs and MFL's game clocks; ESPN's situation carries the live scores and clocks
   playersMap:    { params: ['PLAYERS'], maxAge: 3600 },   // built here, see below
   seasonScores:  { params: [], maxAge: 600 },             // built here: every week's franchise scores, for the playoffs
-  stats:         { params: ['W'], maxAge: 30 },           // built here: Sleeper's live stat lines for rostered players; context, and the touchdown confirmation
-  situation:     { params: [], maxAge: 15, noLeague: true },  // built here: ESPN's live game situations (possession, red zone, ball spot); context only
+  stats:         { params: ['W'], maxAge: 15 },           // built here: Sleeper's live stat lines for rostered players; context, and the touchdown confirmation
+  situation:     { params: [], maxAge: 15, noLeague: true },  // built here: ESPN's live game situations (possession, red zone, ball spot, last play); context only
+  tick:          { params: ['W', 'parts'], maxAge: 0 },   // built here: one poll's parts in one answer, each from its own cache above
 };
 
 // MFL asks clients to cache and back off, not retry. A 429 puts the whole
@@ -235,11 +239,20 @@ async function situation() {
 
 /* ---------------- request handler ---------------- */
 
+// Netlify's edge caches a function's answer only when told to, and shares
+// it across every edge node only with `durable`: without it each node asks
+// the function itself, so eleven viewers cost eleven invocations per window
+// (three requests in a row from one place all missed, 2026-09-15). With it
+// a window's answer is generated once for everyone watching, the same
+// collapse the cache below gives the sources, one level up. Errors are
+// never held.
+const cdn = (s) => (s > 0 ? `public, durable, s-maxage=${s}` : 'no-store');
 const json = (status, body, maxAge = 0, extra = {}) => ({
   status,
   headers: {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': maxAge ? `public, max-age=${maxAge}` : 'no-store',
+    'Netlify-CDN-Cache-Control': cdn(maxAge),
     ...extra,
   },
   body: JSON.stringify(body),
@@ -256,33 +269,46 @@ const cache = new Map();     // key -> { at, maxAge, res }
 const inflight = new Map();  // key -> Promise<res>
 
 const withHeader = (res, k, v) => ({ ...res, headers: { ...res.headers, [k]: v } });
+// A cached answer goes out with its age and what is left of its window, so
+// the edge never holds it past the source's own cadence. A stale one (the
+// source down or backing off) is shared for a few seconds only, so the
+// source is retried promptly once every node has been served.
+const served = (res, tag, left, ageS) => ({ ...res, headers: { ...res.headers, 'X-Cache': tag, 'Age': String(Math.floor(ageS)), 'Netlify-CDN-Cache-Control': cdn(Math.max(1, Math.ceil(left))) } });
+const STALE_SHARE_S = 5;
+
+const paramsOf = (spec, query) => {
+  const params = {};
+  for (const k of spec.params) if (query[k] != null) params[k] = String(query[k]);
+  return params;
+};
+const keyOf = (type, params) => type + ' ' + JSON.stringify(params);
 
 /**
- * query: { type, W?, PLAYERS?, DETAILS? }  ->  { status, headers, body }
- * Always JSON: { ok: true, type, data } or { ok: false, type, error }.
+ * query: { type, W?, PLAYERS?, DETAILS?, parts? }  ->  { status, headers, body }
+ * Always JSON: { ok: true, type, data } or { ok: false, type, error }
+ * (tick: { ok: true, type, parts }).
  */
 export async function handleMfl(query) {
   const type = String(query.type || '');
   const spec = TYPES[type];
   if (!spec) return json(400, { ok: false, error: `unknown type "${type}"` });
+  if (type === 'tick') return tick(query);
 
-  const params = {};
-  for (const k of spec.params) if (query[k] != null) params[k] = String(query[k]);
-
-  const key = type + ' ' + JSON.stringify(params);
+  const params = paramsOf(spec, query);
+  const key = keyOf(type, params);
   const hit = cache.get(key);
   const ageS = hit ? (Date.now() - hit.at) / 1000 : Infinity;
-  if (hit && ageS < hit.maxAge) return withHeader(withHeader(hit.res, 'X-Cache', 'hit'), 'Age', String(Math.floor(ageS)));
+  if (hit && ageS < hit.maxAge) return served(hit.res, 'hit', hit.maxAge - ageS, ageS);
   if (Date.now() < backoffUntil) {
     const wait = Math.ceil((backoffUntil - Date.now()) / 1000);
-    if (hit) return withHeader(hit.res, 'X-Cache', 'stale-backoff');
+    if (hit) return served(hit.res, 'stale-backoff', STALE_SHARE_S, ageS);
     return json(503, { ok: false, type, error: `MFL asked us to back off; retry in ${wait}s` }, 0, { 'Retry-After': String(wait) });
   }
   if (inflight.has(key)) return inflight.get(key).then((r) => withHeader(r, 'X-Cache', 'coalesced'));
 
   const p = fetchFresh(type, spec, params).then((res) => {
     if (res.status === 200) cache.set(key, { at: Date.now(), maxAge: cacheAgeOf(res, spec), res });
-    else if (hit) return withHeader(hit.res, 'X-Cache', 'stale-error');
+    else if (hit) return served(hit.res, 'stale-error', STALE_SHARE_S, ageS);
     return res;
   }).finally(() => inflight.delete(key));
   inflight.set(key, p);
@@ -293,6 +319,54 @@ export async function handleMfl(query) {
 // for at most a minute so the flip to live is noticed promptly.
 const cacheAgeOf = (res, spec) => (JSON.parse(res.body).ok ? spec.maxAge : Math.min(spec.maxAge, 60));
 
+/* ---------------- tick ----------------
+   One poll's worth in one answer (2026-09-15): the parts the page names
+   (liveScoring, nflSchedule, stats, situation), each served through the
+   cache above with its own window, so a page polling every 15s while
+   games are on costs one invocation, not four, and every viewer within a
+   window gets the same snapshot from the edge. MFL's parts are the poll
+   and are waited for. Sleeper's and ESPN's are context: they get SIDE_MS
+   to answer, after which the last cached one goes out (or a placeholder
+   marked pending) and the fetch still in flight fills the cache for the
+   next tick, so they stay beside the poll, never in its path. The stats
+   need the week; when the page does not know it yet (its first poll)
+   liveScoring's answer says. The answer's own edge window is the shortest
+   left among its parts, so a fresh part is never held behind a stale one. */
+const TICK_PARTS = {
+  liveScoring: (q) => ({ type: 'liveScoring', W: q.W, DETAILS: '1' }),
+  nflSchedule: (q) => ({ type: 'nflSchedule', W: q.W }),
+  stats:       (q) => ({ type: 'stats', W: q.W }),
+  situation:   () => ({ type: 'situation' }),
+};
+const SIDE_PARTS = ['stats', 'situation'];
+const SIDE_MS = 2500;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const leftOf = (res) => Number(/s-maxage=(\d+)/.exec(res.headers['Netlify-CDN-Cache-Control'] || '')?.[1]) || 3;
+
+async function tick(query) {
+  const want = String(query.parts || 'liveScoring').split(',').map((s) => s.trim()).filter((p) => TICK_PARTS[p]);
+  if (!want.length) return json(400, { ok: false, type: 'tick', error: 'tick names no parts' });
+  const parts = {}, lefts = [];
+  const take = (part, res) => { parts[part] = JSON.parse(res.body); lefts.push(leftOf(res)); };
+
+  const q = { W: query.W };
+  const main = want.filter((p) => !SIDE_PARTS.includes(p));
+  await Promise.all(main.map(async (part) => take(part, await handleMfl(TICK_PARTS[part](q)))));
+  if (!q.W) q.W = parts.liveScoring?.data?.liveScoring?.week;
+
+  const sides = want.filter((p) => SIDE_PARTS.includes(p));
+  await Promise.all(sides.map(async (part) => {
+    const sq = TICK_PARTS[part](q);
+    const stale = cache.get(keyOf(part, paramsOf(TYPES[part], sq)));
+    const late = sleep(SIDE_MS).then(() => (stale
+      ? served(stale.res, 'stale-late', STALE_SHARE_S, (Date.now() - stale.at) / 1000)
+      : json(200, { ok: false, type: part, pending: true, error: `${part} still fetching` })));
+    take(part, await Promise.race([handleMfl(sq), late]));
+  }));
+
+  return json(200, { ok: true, type: 'tick', season: SEASON, league: LEAGUE, parts }, Math.max(3, Math.min(15, ...lefts)));
+}
+
 async function fetchFresh(type, spec, params) {
 
   // Dev only: MFL_FAKE_LIVE=<path to a liveScoring JSON> serves that file as
@@ -301,7 +375,7 @@ async function fetchFresh(type, spec, params) {
   if (type === 'liveScoring' && process.env.MFL_FAKE_LIVE) {
     const fs = await import('node:fs');
     const body = JSON.parse(fs.readFileSync(process.env.MFL_FAKE_LIVE, 'utf8'));
-    return json(200, { ok: true, type, season: SEASON, league: LEAGUE, fake: process.env.MFL_FAKE_LIVE, data: body });
+    return json(200, { ok: true, type, season: SEASON, league: LEAGUE, fake: process.env.MFL_FAKE_LIVE, data: body }, spec.maxAge);
   }
   // Dev only, likewise: MFL_FAKE_DIR=<dir> serves <type>-w<W>.json or
   // <type>.json from there when the file exists (the body is what `data`
@@ -312,7 +386,7 @@ async function fetchFresh(type, spec, params) {
     for (const name of [params.W ? `${type}-w${params.W}.json` : null, `${type}.json`].filter(Boolean)) {
       const file = path.join(process.env.MFL_FAKE_DIR, name);
       if (fs.existsSync(file)) {
-        return json(200, { ok: true, type, season: SEASON, league: LEAGUE, fake: file, data: JSON.parse(fs.readFileSync(file, 'utf8')) });
+        return json(200, { ok: true, type, season: SEASON, league: LEAGUE, fake: file, data: JSON.parse(fs.readFileSync(file, 'utf8')) }, spec.maxAge);
       }
     }
   }

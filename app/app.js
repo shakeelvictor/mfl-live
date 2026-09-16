@@ -15,6 +15,8 @@ let logoSrc = () => null;      // (NFL team code) -> img src, or null
 let WEEK = 12;
 let SEASON = 2026;   // the NFL season (the proxy names it on every answer)
 let UPDATED = "4:12 PM";   // when a number on the page last changed: MFL's snapshot (scores, lineups) or Sleeper's lines
+let updatedAt = 0;         // the same instant, for the age that ticks in the subhead while games are on
+const stampUpdated = () => { UPDATED = fmtTime(new Date()); updatedAt = Date.now(); };
 let snapshotSig = "";
 let phase = "live";            // "live" | "preseason" (liveScoring not available yet)
 let kickoff = null;            // Date of the week's first game (live source)
@@ -283,10 +285,31 @@ function renderChrome() {
   const sub = document.getElementById("subhead");
   sub.hidden = phase === "preseason";
   const note = statsNote();
-  sub.innerHTML = (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head &middot; ` : post ? `${roundBlurb()} &middot; ` : "") + `Updated ${esc(UPDATED)}` +
+  sub.innerHTML = (duel ? `One super lineup a side, $${EXHIBITION.perHead} a head &middot; ` : post ? `${roundBlurb()} &middot; ` : "") + `Updated <span id="age">${esc(ageText())}</span>` +
     (note ? ` &middot; <span class="stale">${note}</span>` : "");
   document.body.classList.toggle("stats-stale", note !== "");
+  syncAge();
   renderRounds();
+}
+
+// While games are on the subhead counts up from the last change (2026-09-15):
+// "Updated 12s ago" ticking says the page is awake and how long the board
+// has stood, where a clock time read the same at twelve seconds and at four
+// minutes. Off the field it is the time again ("3h 12m ago" says nothing).
+// One timer, one element; it stops when there is nothing to count.
+let ageTimer = null;
+const ageTicks = () => phase === "live" && !FIXTURE && updatedAt > 0 && gamesOn();
+const ageText = () => {
+  if (!ageTicks()) return UPDATED;
+  const s = Math.max(0, Math.floor((Date.now() - updatedAt) / 1000));
+  return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.floor(s / 60)}m ${s % 60}s ago` : `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m ago`;
+};
+function syncAge() {
+  const el = document.getElementById("age");
+  if (el) el.textContent = ageText();
+  const on = ageTicks();
+  if (on && !ageTimer) ageTimer = setInterval(syncAge, 1000);
+  if (!on && ageTimer) { clearInterval(ageTimer); ageTimer = null; }
 }
 
 // "Seeds 2–6 play, top 3 advance" / "4 play, top 2 advance" / the Bowl.
@@ -1140,6 +1163,7 @@ const gameStrip = (p) => {
   const { g, started, live, sit, state } = gs;
   const view = (s) => (sit ? { ...s, score: sit.scores?.[s.id] ?? s.score, poss: sit.poss === s.id, rz: sit.poss === s.id && sit.rz } : s);
   const spot = sit && sit.dd && sit.spot ? `${sit.dd} at ${sit.spot}` : sit?.spot ? `ball at ${sit.spot}` : "";
+  const play = live && sit?.state === "in" && sit.lastPlay ? playText(sit.lastPlay) : "";
   const team = (s) =>
     `<span class="pg-team${s.id === p.tm ? " mine" : ""}${live && s.poss ? " poss" : ""}">` +
       (logoSrc(s.id) ? `<img src="${logoSrc(s.id)}" alt="" loading="lazy">` : "") +
@@ -1151,7 +1175,34 @@ const gameStrip = (p) => {
     team(view(g.away)) + `<span class="pg-at">${started ? "@" : "at"}</span>` + team(view(g.home)) +
     `<span class="pg-state">${live ? `<span class="dot"></span>` : ""}${esc(state)}</span>` +
     (spot ? `<span class="pg-spot">${esc(spot)}</span>` : "") +
+    (play ? `<span class="pg-play">${esc(play)}</span>` : "") +
   `</div>`;
+};
+
+// The last play, from the live situation (2026-09-15): ESPN's own text
+// ("(Shotgun) J.Gibbs right tackle to SEA 45 for 12 yards (D.Reed)."),
+// its formation prefix and full stop dropped. The strip shows it for the
+// game; a live row shows it when it names the player, his initial and
+// last name as ESPN writes them (the tackler in the brackets counts, so an
+// IDP's tackle reads on his row too), and drops it when the next play
+// does not. Context: the play narrates, the number is still MFL's or the
+// line's.
+const playText = (t) => String(t).replace(/^\([^)]*\)\s*/, "").replace(/\s*\.\s*$/, "");
+const playNames = (text, p) => {
+  const last = lastName(p.n), init = String(p.n).trim()[0];
+  if (!last || !init) return false;
+  const re = new RegExp(`(^|[^A-Za-z])${init}[a-z]*\\.\\s?${last.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![A-Za-z])`, "i");
+  return re.test(text);
+};
+// On his own row the play reads as his: a leading "J.Warren " comes off
+// ("left end to MIA 18 for 12 yards"); a pass to him keeps the passer.
+const lastPlayOf = (p) => {
+  if (!isLive(p)) return "";
+  const sit = sitOf(p.tm);
+  const t = sit?.state === "in" ? sit.lastPlay : null;
+  if (!t || !playNames(t, p)) return "";
+  const init = String(p.n).trim()[0], last = lastName(p.n).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return playText(t).replace(new RegExp(`^${init}[a-z]*\\.\\s?${last}\\s+`, "i"), "");
 };
 
 // The stat tiles, the player card's middle (they used to expand under
@@ -1255,6 +1306,7 @@ const playerRow = (p, bench, top = false, enter = -1) => {
         p.from ? `<span class="pfrom">${esc(p.from)}</span>` : "",
       ].filter(Boolean).join(`<span aria-hidden="true">·</span>`)}</span>` +
       `<span class="pstat">${esc(statLine(p.pos, p.st))}</span>` +
+      (lastPlayOf(p) ? `<span class="pplay">${esc(lastPlayOf(p))}</span>` : "") +
     `</span>` +
     `<span class="pright">` +
       `<span class="ppts${p.pts === 0 ? " zero" : ""}${p.flash ? " flash" : ""}"${p.key ? ` data-tween="p:${p.key}" data-delta` : ""}>${phase === "preseason" ? "&mdash;" : fmt(p.pts)}</span>` +
@@ -2347,7 +2399,7 @@ let statsAt = 0;           // when lines last arrived
 let statsFailed = false;   // a fetch has failed since the last success
 let statsPending = null;
 const STATS_TIMEOUT_MS = 8000, STATS_STALE_MS = 5 * 60e3;
-const statsEvery = () => (gamesOn() ? 30e3 : 60e3);   // every poll while games are on: a touchdown's confirmation should land within one
+const statsEvery = () => (gamesOn() ? 0 : 60e3);   // every poll while games are on: a touchdown's card should land within one
 
 const applyStats = () => {
   for (const t of rosters) for (const p of [...t.starters, ...t.bench]) p.st = (p.sid && statsBySid[p.sid]) || {};
@@ -2370,15 +2422,16 @@ let situationPending = null;
 function fetchSituation() {
   if (situationPending) return;
   situationPending = api("situation", {}, 6000)
-    .then((r) => {
-      if (!r.ok) throw new Error(r.error);
-      situations = new Map(Object.entries(r.data.games || {}));
-      situationAt = Date.now();
-      overlaySituations();
-      if (!polling && teams.length) rerenderSoon();
-    })
+    .then(applySituationBody)
     .catch((e) => console.warn("game situations unavailable, keeping the last ones:", e))
     .finally(() => { situationPending = null; });
+}
+function applySituationBody(r) {
+  if (!r.ok) { if (!r.pending) console.warn("game situations unavailable, keeping the last ones:", r.error); return; }
+  situations = new Map(Object.entries(r.data.games || {}));
+  situationAt = Date.now();
+  overlaySituations();
+  if (!polling && teams.length) rerenderSoon();
 }
 
 function fetchStats(week) {
@@ -2387,17 +2440,30 @@ function fetchStats(week) {
     .then((st) => {
       if (!st.ok) throw new Error(st.error);
       const next = st.data.stats || {};
-      if (JSON.stringify(next) !== JSON.stringify(statsBySid)) UPDATED = fmtTime(new Date());
-      statsBySid = next;
-      const first = statsAt === 0;
-      statsAt = Date.now();
-      statsFailed = false;
-      confirmTouchdowns(first);
-      applyStats();
-      if (!polling && teams.length) rerenderSoon();
+      applyStatsBody(st);
     })
     .catch((e) => { statsFailed = true; console.warn("stat lines unavailable, keeping the last ones:", e); })
     .finally(() => { statsPending = null; });
+}
+// The lines landing, from beside the poll or inside a tick: the touchdown
+// check first (a line's new touchdown raises the card before the poll's
+// jump can, so the jump is matched to it), then every roster row's `st`.
+// A part the proxy marked pending (Sleeper still answering when the tick
+// went out) is not a failure: the next tick carries it.
+function applyStatsBody(st) {
+  if (!st.ok) {
+    if (!st.pending) { statsFailed = true; console.warn("stat lines unavailable, keeping the last ones:", st.error); }
+    return;
+  }
+  const next = st.data.stats || {};
+  if (JSON.stringify(next) !== JSON.stringify(statsBySid)) stampUpdated();
+  statsBySid = next;
+  const first = statsAt === 0;
+  statsAt = Date.now();
+  statsFailed = false;
+  confirmTouchdowns(first);
+  applyStats();
+  if (!polling && teams.length) rerenderSoon();
 }
 // "" while fine; otherwise the word for the subhead. Only while games are
 // on: final lines cannot go stale.
@@ -2521,15 +2587,34 @@ async function loadLeague() {
   await refreshLive(true);
 }
 
-// One poll: schedule + liveScoring for the week. Returns the set of changed
-// keys for the renderer (team ids and `${teamId}:${starterIndex}`), and
-// announces any starter whose score jumped by a touchdown's worth.
+// One poll: liveScoring for the week, the schedule, the stat lines and the
+// game situations, as one `tick` from the proxy (2026-09-15) naming the
+// parts this poll wants, so a 15-second poll while games are on is one
+// request and one function invocation, and every viewer in a window gets
+// the same snapshot from the edge. The lines and the situations are
+// applied before the rosters are rebuilt, so a line's touchdown raises
+// the card before the poll's jump can. Should the fold itself fail, the
+// poll goes the old way, each type on its own and the context beside it.
+// Returns the set of changed keys for the renderer (team ids and
+// `${teamId}:${playerId}`), and announces any starter whose score jumped
+// by a touchdown's worth.
 async function refreshLive(first = false) {
   const w = QUERY.get("w") || "";
   // The schedule is fetched every few minutes, not every poll: kickoffs do
   // not move, and in season each player's own clock comes with liveScoring.
   const wantSchedule = first || !games.size || gamesOn() || Date.now() - scheduleAt > SCHEDULE_EVERY;
-  const [ls, sch] = await Promise.all([api("liveScoring", { W: w, DETAILS: "1" }), wantSchedule ? api("nflSchedule", { W: w }) : null]);
+  const wantStats = first || Date.now() - statsAt > statsEvery();
+  const wantSituation = first || gamesOn();
+  let ls, sch = null, side = null;
+  try {
+    const parts = ["liveScoring", wantSchedule && "nflSchedule", wantStats && "stats", wantSituation && "situation"].filter(Boolean);
+    const t = await api("tick", { W: w, parts: parts.join(",") });
+    if (!t.ok || !t.parts?.liveScoring) throw new Error(t.error || "no liveScoring in the tick");
+    ({ liveScoring: ls, nflSchedule: sch = null, ...side } = t.parts);
+  } catch (e) {
+    console.warn("tick failed, polling each type:", e);
+    [ls, sch] = await Promise.all([api("liveScoring", { W: w, DETAILS: "1" }), wantSchedule ? api("nflSchedule", { W: w }) : null]);
+  }
 
   if (sch) {
   scheduleAt = Date.now();
@@ -2566,6 +2651,8 @@ async function refreshLive(first = false) {
   dayTeams.days = [...byDay.values()].sort((a, b) => a.kickoff - b.kickoff);
   dayTeams.early = new Set(dayTeams.days.length > 1 ? dayTeams.days[0].teams : []);
   }
+  if (side?.situation) applySituationBody(side.situation);
+  else if (!side && wantSituation) fetchSituation();   // the old way, beside the poll
 
   const changed = new Set();
   if (!ls.ok) {
@@ -2598,8 +2685,8 @@ async function refreshLive(first = false) {
   WEEK = Number(L.week) || WEEK;
   await loadPlayoffs();
   await loadSeason();
-  if (first || Date.now() - statsAt > statsEvery()) fetchStats(WEEK);   // beside the poll, not in it
-  if (first || gamesOn()) fetchSituation();                              // likewise
+  if (side?.stats) applyStatsBody(side.stats);
+  else if (!side && wantStats) fetchStats(WEEK);   // the old way, beside the poll, not in it
   const franchises = toArray(L.franchise);
   // "Updated" is when MFL's snapshot last changed, not when we last polled:
   // the export regenerates on MFL's own cycle (~200s on the Week 1 opener)
@@ -2607,7 +2694,7 @@ async function refreshLive(first = false) {
   // fresh while the scores stood still. Any score or lineup status moving
   // counts; the check time sits beside it once they drift apart.
   const sig = franchises.map((f) => `${f.id}:${f.score}:${toArray(f.players?.player).map((p) => `${p.id}:${p.score}:${p.status}`).join(",")}`).join(";");
-  if (sig !== snapshotSig) { snapshotSig = sig; UPDATED = fmtTime(new Date()); }
+  if (sig !== snapshotSig) { snapshotSig = sig; stampUpdated(); }
   await ensurePlayers([...rosterIds.values()].flat().concat(franchises.flatMap((f) => toArray(f.players?.player).map((p) => p.id))));
 
   const next = new Map();
@@ -2694,12 +2781,19 @@ async function loadPlayoffs() {
      locally and lineups do not change by the second;
    - nothing at all while the tab is hidden; a poll runs as soon as it is
      shown again. */
-const POLL_LIVE_MS = 30e3, POLL_PRESEASON_MS = 5 * 60e3;
+// Every 15s while a game is on (2026-09-15; 30s before): Sleeper's lines
+// and ESPN's situation move within seconds of a play and the proxy holds
+// them 15s, so a touchdown's card and the last play land within a poll.
+// MFL is still asked every 30s behind it (its window in the proxy), the
+// cadence the spike ran with no 429s; its export moves every ~200s anyway.
+// 30s in season between games, five minutes before the season.
+const POLL_GAME_MS = 15e3, POLL_LIVE_MS = 30e3, POLL_PRESEASON_MS = 5 * 60e3;
 let pollTimer = null, polling = false;
 
+const pollEvery = () => (phase !== "live" ? POLL_PRESEASON_MS : gamesOn() ? POLL_GAME_MS : POLL_LIVE_MS);
 function schedulePoll() {
   clearTimeout(pollTimer);
-  pollTimer = setTimeout(pollLive, phase === "live" ? POLL_LIVE_MS : POLL_PRESEASON_MS);
+  pollTimer = setTimeout(pollLive, pollEvery());
 }
 
 async function pollLive() {
