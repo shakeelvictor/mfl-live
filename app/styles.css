@@ -2160,6 +2160,10 @@ a.round.past:hover { color: var(--text-primary); filter: brightness(1.06); }
   background: transparent; color: var(--text-muted);
   box-shadow: inset 0 0 0 1.5px var(--border-strong);
 }
+/* The Fantasy Bowl champion's row wears a gold ring once the Bowl is
+   final (the runner-up under it gets nothing). Declared after the fused
+   rule, since a close Bowl fuses the two rows and drops their shadow. */
+.row.champ, .row.champ.fused { box-shadow: 0 0 0 2px var(--hero-gold); }
 
 /* The cut line: a dashed hairline and a labelled pill while settled; the
    live and coin-flip treatments above take over as it tightens. */
@@ -2185,6 +2189,13 @@ a.round.past:hover { color: var(--text-primary); filter: brightness(1.06); }
   .row.active .fate.in { background: var(--hero-pill); color: var(--hero-accent); }
   .row.active .fate.out { background: var(--hero-pill); color: var(--hero-muted); }
   .row.active .rank { box-shadow: none; }
+  /* On laptop the champion's row is a tab into the pane, so the ring runs
+     along its three closed edges and the bridge carries the top and
+     bottom lines into the pane. */
+  .row.active.champ, .row.active.champ.fused {
+    box-shadow: inset 2px 0 0 var(--hero-gold), inset 0 2px 0 var(--hero-gold), inset 0 -2px 0 var(--hero-gold);
+  }
+  .row.active.champ::after { box-shadow: inset 0 2px 0 var(--hero-gold), inset 0 -2px 0 var(--hero-gold); }
 }
 
 /* ---------- Week 18: Pakistan vs. the World ----------

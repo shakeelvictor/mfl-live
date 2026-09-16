@@ -173,7 +173,9 @@ be total.
   so its hero is the Pro Bowl's face-off (both finalists, higher seed on
   the left, under their franchise icon or an initial, the leader bright,
   the margin in the strip) and the board lists both finalists with no
-  divider between them (Champion / Runner-up once final). The Bowl's
+  divider between them (Champion / Runner-up once final; the champion's
+  row wears a 2px gold ring, `.row.champ`, on laptop along the tab's
+  three closed edges and its bridge, 2026-09-15). The Bowl's
   title wears the drift as an **iridescent sweep, not gold** (`h1.bowl`,
   `--iri-*` tokens per theme: white glyphs with a pearl band in dark,
   near-black with a muted glint in light; gold glyphs over the green

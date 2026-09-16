@@ -570,9 +570,10 @@ function renderRows(changed) {
     // Playoffs: rows under the cut line are "out" (still playing, but not
     // through as things stand), and each row says which side it is on.
     const out = post !== null && !t.through;
+    const champ = bowl && roundFinal() && !out;   // the Fantasy Bowl champion wears a gold ring once the games are done
     const rowCls = ["row",
       fuseTop ? "fuse-top" : "", fuseBottom ? "fuse-bottom" : "",
-      fuseTop || fuseBottom ? "fused" : "", out ? "out" : ""].filter(Boolean).join(" ");
+      fuseTop || fuseBottom ? "fused" : "", out ? "out" : "", champ ? "champ" : ""].filter(Boolean).join(" ");
     const fate = !post ? ""
       : bowl ? (roundFinal() ? (out ? `<span class="fate out">Runner-up</span>` : `<span class="fate in">Champion</span>`) : "")
       : out ? `<span class="fate out">${roundFinal() ? "Eliminated" : "Out"}</span>`
