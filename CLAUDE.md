@@ -98,7 +98,11 @@ never come from them. See "Player images and stats".)
   ties, shown as a third number); `derive()` adds the week. Week 1, the
   fixture and a failed fetch show the week alone (`t.week` keeps the
   week's own record for whoever wants it). Playoff weeks keep the seed
-  chip.
+  chip. **Between weeks the board is the season's table** (2026-09-16):
+  a tie on the week's points falls to the season's win pct, then points
+  for, then name, and until a franchise has begun (`started`) the chip
+  adds nothing for the week and no lead-change takeover fires; before
+  this, every 0.00 row kept MFL's array order and took a record from it.
 - **The fixture is the fallback.** `data.js` (2025 Week 12) loads only when
   the proxy is unreachable or `?source=fixture` is set; the artifact bundle
   inlines it and sets `window.MFL_FIXTURE`. (The simulator that drove it on

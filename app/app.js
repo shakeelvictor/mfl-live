@@ -159,18 +159,26 @@ function derive() {
     return;
   }
   duelMembers = [];
-  teams = (post ? rosters.filter((t) => post.alive.includes(t.id)) : rosters)
-    .map(withLive)
+  // A tie on the week (every franchise at 0.00 between weeks) falls to the
+  // season so far: win pct, then points for, then name, so the board reads
+  // best record to worst until a game starts (2026-09-16; MFL's array order
+  // before that).
+  const sr = (t) => seasonRec?.get(t.id);
+  const bySeason = (a, b) => (sr(b)?.pct ?? 0) - (sr(a)?.pct ?? 0) || (sr(b)?.pf ?? 0) - (sr(a)?.pf ?? 0) || a.team.localeCompare(b.team);
+  const listed = (post ? rosters.filter((t) => post.alive.includes(t.id)) : rosters).map(withLive);
+  const begun = listed.some(started);
+  teams = listed
     // Pre-season nobody has a score, so the list is alphabetical, not ranked.
     .sort((a, b) => phase === "preseason" ? a.team.localeCompare(b.team)
       : post ? (b.live - a.live || a.seed - b.seed)
-      : b.live - a.live)
+      : b.live - a.live || bySeason(a, b))
     .map((t, i, arr) => {
       // The week's all-play from the rank, on top of the season so far
       // (seasonRec, the weeks before this one): unofficial, live, and it
       // moves as the row does. Week 1, the fixture and a failed fetch show
-      // the week alone.
-      const w = arr.length - 1 - i, l = i, so = seasonRec?.get(t.id) || { w: 0, l: 0, t: 0 };
+      // the week alone. Before the week's first franchise begins the rank
+      // is only the season's order, so the chip is the season alone.
+      const w = begun ? arr.length - 1 - i : 0, l = begun ? i : 0, so = seasonRec?.get(t.id) || { w: 0, l: 0, t: 0 };
       return {
         ...t, rank: i + 1,
         record: post ? `#${t.seed} seed` : `${so.w + w}-${so.l + l}${so.t ? `-${so.t}` : ""}`,
@@ -751,8 +759,9 @@ function render(changed = new Set()) {
   const shown = snapshotShown();
   // Pre-season rows are alphabetical, so nobody "leads": the first live
   // board is a debut, not a lead change, and fires no takeover.
+  // Nor does a board nobody has begun: its order is the season's, not a lead.
   const takeover = leaderId !== null && teams[0].id !== leaderId;
-  leaderId = phase === "live" ? teams[0].id : null;
+  leaderId = phase === "live" && started(teams[0]) ? teams[0].id : null;
   renderCapsules();
   renderHero(changed, takeover);
   renderRows(changed);
