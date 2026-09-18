@@ -128,7 +128,7 @@ function derive() {
     live: r2(phase === "live" ? t.starters.reduce((a, p) => a + ptsOf(p), 0) : t.pts),
     official: t.pts,   // MFL's franchise total
     toPlay: slate.sunFinal ? 0 : (FIXTURE ? (YET_TO_PLAY[t.team] ?? 0) : (t.toPlay ?? 0)),
-    onNow: t.starters.some(isLive),
+    onNow: t.starters.some(onField),
     seed: post ? post.seedOf.get(t.id) : null,
     season: post ? post.recordOf.get(t.id) : null,   // regular-season all-play record
   });
@@ -223,7 +223,7 @@ const lastName = (n) => {
   return w[w.length - 1] || String(n);
 };
 const onNowNames = (t) => {
-  const live = t.starters.filter(isLive).sort(byLineup);
+  const live = t.starters.filter(onField).sort(byLineup);
   return live.slice(0, 2).map((p) => esc(lastName(p.n))).join(", ") + (live.length > 2 ? ` +${live.length - 2}` : "");
 };
 
@@ -766,7 +766,7 @@ function render(changed = new Set()) {
   // Nor does a board nobody has begun: its order is the season's, not a lead.
   const takeover = leaderId !== null && teams[0].id !== leaderId;
   leaderId = phase === "live" && started(teams[0]) ? teams[0].id : null;
-  if (phase === "live") feedPlays();
+  if (phase === "live") { feedPlays(); fetchBoardStatus(); }
   renderCapsules();
   renderHero(changed, takeover);
   renderRows(changed);
@@ -822,6 +822,13 @@ const clockText = (secs) => {
 const isLive = (p) => !slate.sunFinal && (FIXTURE
   ? LIVE_NFL.has(p.tm)
   : (secsOf(p) != null && secsOf(p) > 0 && secsOf(p) < 3600));
+// A starter Sleeper has ruled doubtful, out or inactive is not "on now"
+// for his franchise, though his game is (2026-09-17): the status names
+// who is playing, and he is not. His row and his clock stay as they were;
+// the statuses come from fetchBoardStatus while games are on.
+const SIDELINED = new Set(["Doubtful", "Out", "IR", "PUP", "Sus", "NA"]);
+const sidelined = (p) => Boolean(p.sid) && SIDELINED.has(rosterStatus.get(String(p.sid))?.inj);
+const onField = (p) => isLive(p) && !sidelined(p);
 const clockFor = (p) => (FIXTURE ? LIVE_NFL.get(p.tm) : clockText(secsOf(p)));
 // Red zone: an offensive player's own team, with the ball, inside the
 // other side's 20. Live players only, not IDP (a defender facing a
@@ -862,7 +869,7 @@ const inRedZone = (p) => {
   return mine.rz && !(other.poss && !mine.poss);
 };
 // How many of a franchise's starters are in a red-zone situation right now.
-const rzCount = (t) => t.starters.filter(inRedZone).length;
+const rzCount = (t) => t.starters.filter((p) => inRedZone(p) && !sidelined(p)).length;
 
 // What a row shows when the player is not on the field.
 const gameLabel = (p) => {
@@ -2062,6 +2069,26 @@ function fetchRosterStatus(t) {
     }
     rerenderSoon();   // the badges, after the last render's flash and rolls
   }).catch(() => statusAskedAt.delete(t.id)).finally(() => { statusPending = null; });
+}
+
+// The board's statuses: every live starter's injury status, so a franchise
+// whose man was ruled out mid-game does not read him as "on now". One
+// batched query for the starters whose games are on (no news: the open
+// team's own fetch brings that), every few minutes while any is.
+let boardStatusAt = 0, boardStatusPending = null;
+function fetchBoardStatus() {
+  if (FIXTURE || phase !== "live" || boardStatusPending || Date.now() - boardStatusAt < STATUS_EVERY_MS) return;
+  const sids = [...new Set(rosters.flatMap((t) => t.starters).filter(isLive).map((p) => p.sid).filter(Boolean))].map((id) => String(id).replace(/[^A-Za-z0-9]/g, ""));
+  if (!sids.length) return;
+  boardStatusAt = Date.now();
+  const q = "{" + sids.map((id) => `p${id}:get_player(sport:"nfl",player_id:"${id}"){injury_status injury_body_part}`).join(" ") + "}";
+  boardStatusPending = sleeperGql(q).then((d) => {
+    for (const id of sids) {
+      const inj = d[`p${id}`] || {}, prev = rosterStatus.get(id);
+      rosterStatus.set(id, { newsAt: 0, ...prev, inj: inj.injury_status || null, part: inj.injury_body_part || null });
+    }
+    rerenderSoon();
+  }).catch(() => { boardStatusAt = Date.now() - STATUS_EVERY_MS + 30e3; }).finally(() => { boardStatusPending = null; });   // a failure tries again in 30s
 }
 
 function closePlayer(instant = false, pop = true) {   // pop: take the card's history entry back too (a back press already has)

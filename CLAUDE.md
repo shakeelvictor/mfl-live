@@ -558,7 +558,15 @@ element and scores are second.
   (2026-09-14): MFL's `playersYetToPlay` counts starters whose game has
   not kicked off, so it is 0 while a franchise's last starters are
   playing, and on the Week 1 Monday night every franchise with a DEN or
-  KCC starter read "all played".
+  KCC starter read "all played". **A starter ruled doubtful, out or
+  inactive is not on now** (2026-09-17, `sidelined` / `onField`): Sleeper's
+  injury status of Doubtful, Out, IR, PUP, Sus or NA takes him out of the
+  names, the "on now" and the RZ count, though his game is on; his row,
+  clock and points are untouched. The statuses come from
+  `fetchBoardStatus`, one batched `get_player` query for every live
+  starter every three minutes while games are on (into `rosterStatus`,
+  keeping the open team's news dates), so a mid-game ruling shows within
+  a few minutes of Sleeper posting it.
 - **Roster rows** are grouped by position in lineup order (QB, RB, WR,
   TE, K, IDP), and **within a position the order is fixed for the week**
   (name, then id; 2026-09-08). It used to be points, so two backs swapped
