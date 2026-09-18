@@ -823,7 +823,26 @@ element and scores are second.
   included so an IDP's tackle reads on his row; on his own row a leading
   "J.Warren " comes off so the play reads as his; two lines on a phone,
   one in the laptop pane) and drops it when the next play names someone
-  else. The board narrates. **Every
+  else. The board narrates. **A franchise's row and the leader's hero
+  carry the play too** (2026-09-17, `feedPlays` / `playLine`, `.tfeed`
+  under the "on now" names): the last play naming one of its live
+  starters, the starter's last name in the accent before it, so a phone
+  gets the real-time feel without opening a roster. The line is two lines
+  at most, so its text is trimmed (`shortPlay`; the roster row and the
+  game strip keep ESPN's words): tacklers in brackets go unless one is
+  the franchise's own, "pass short right to" is "pass to", and the ball
+  spot before the yards goes ("to MIN 22 for 9 yards" is "for 9
+  yards"), so a cut would lose the least. Plays from different
+  games that land in one poll queue per franchise (`feeds`), each held
+  `PLAY_DWELL_MS` (5s) before the next sweeps over it, three at most; a
+  play naming two of its starters is one item with both names. A play
+  stays up while it is its game's last play (`playStands`) and folds away
+  after. The first opens its line and sweeps in left to right behind a
+  soft accent gleam (`.tplay.new`), a replacement sweeps over it
+  (`.swap`); `--el` carries a sweep through a re-render instead of
+  replaying it, and a queue advancing between renders patches the line
+  in place (`patchFeed`). Plays are keyed by ESPN's id and text
+  (`playIdOf`), so a play revised on review comes round again. **Every
   player's clock, "live" and "final" follow the situation too**
   (`sitSecs`, first in `secsOf`; `overlaySituations` lays it over the
   schedule's game clocks so the day's and week's final follow ESPN's
@@ -932,7 +951,18 @@ element and scores are second.
   situation beside the poll) read the half-rolled text on the second
   pass as a new value against the roll's target and popped a chip for
   the difference, red on a gain, beside the true chip. Seen as "the
-  chip is red when a player scores". The "Simulate live scoring" toggle under the
+  chip is red when a player scores". **Open (2026-09-17): on a Brave
+  home-screen app on Android a static score sometimes rolls back to its
+  own value every 30s-1m**; Chrome's app and the Mac are fine. Not
+  reproduced. Suspect: a roll's start is `performance.now()` but its
+  frames read the rAF timestamp, and if those drift (a page frozen and
+  resumed, which Brave's saved-tab apps do often) the roll never reaches
+  `TWEEN_MS`, stays in `tweens`, and every render's "unchanged" branch
+  rejoins it from its old `from`. Fix if it comes back: use
+  `performance.now()` inside `frame`, rejoin only a roll still inside
+  `TWEEN_MS`, and a timeout that lands the final value if frames never
+  come. First rule out stale code (swipe the app away and reopen; a
+  Brave app can run a days-old copy). The "Simulate live scoring" toggle under the
   footnote exercises this by bumping one starter at a time -- it is a mockup
   affordance, not a feed, and it keeps team total == starters sum.
 - **Lead change** fires a takeover on the hero (mint strobe, lightning

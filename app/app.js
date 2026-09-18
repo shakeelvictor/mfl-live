@@ -483,6 +483,7 @@ function renderHero(changed, takeover) {
       `</div>` +
       `<span class="hero-pts${fl(changed, lead.id)}" data-tween="pts:${lead.id}" data-delta>${fmt(lead.live)}</span>` +
     `</div>` +
+    (lead.onNow ? playLine(lead) : "") +
     `<div class="hero-strip">` +
       (hot(lt) ? `<span class="tier ${lt}">${TIER_LABEL[lt]}</span>` : "") +
       `<span class="leads">${roundFinal() ? "Beat" : "Leads"} <b>${esc(chaser.team)}</b> by</span>` +
@@ -538,6 +539,7 @@ function renderRows(changed) {
           `<span class="name">${esc(t.team)}</span>` +
           `<span class="sub"><span class="rec">${t.record}</span><span class="rec">${t.starters.length} players</span>` +
             `<span class="status${t.onNow ? " on" : ""}">${dot(t)}${statusOf(t)}</span></span>` +
+          (t.onNow ? playLine(t) : "") +
         `</span>` +
         `<span class="pts${fl(changed, t.id)}" data-tween="pts:${t.id}" data-delta>${fmt(t.live)}</span>` +
         `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
@@ -599,6 +601,7 @@ function renderRows(changed) {
               (t.onNow ? `<span class="dot"></span>` : "") + statusOf(t) +
             `</span>` +
           `</span>` +
+          (t.onNow ? playLine(t) : "") +
         `</span>` +
         `<span class="pts${fl(changed, t.id)}" data-tween="pts:${t.id}" data-delta>${fmt(t.live)}</span>` +
         `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
@@ -762,6 +765,7 @@ function render(changed = new Set()) {
   // Nor does a board nobody has begun: its order is the season's, not a lead.
   const takeover = leaderId !== null && teams[0].id !== leaderId;
   leaderId = phase === "live" && started(teams[0]) ? teams[0].id : null;
+  if (phase === "live") feedPlays();
   renderCapsules();
   renderHero(changed, takeover);
   renderRows(changed);
@@ -1247,6 +1251,112 @@ const lastPlayOf = (p) => {
   const re = nameRe(p);
   return playText(t).replace(new RegExp(`^${re.source.replace(/^\(\^\|\[\^A-Za-z\]\)/, "")}\\s+`, "i"), "");
 };
+
+/* A franchise's play feed (2026-09-17): the last play naming one of its
+   live starters, under the "on now" names on its row and the leader's
+   hero, so the board narrates without opening a roster. Plays arrive with
+   the situation, one per game, so several starters in different games can
+   land in the same poll: they queue per franchise and each holds the line
+   at least PLAY_DWELL_MS before the next sweeps over it. One play naming
+   two of its starters (a pass from its QB to its WR) is one item with
+   both names. A play stays up while it is its game's last play, or until
+   the next one comes; then it folds away. */
+const PLAY_DWELL_MS = 5000, PLAY_SWEEP_MS = 900, PLAY_FOLD_MS = 300, PLAY_QUEUE_MAX = 3;
+const feeds = new Map();   // franchise id -> { cur, queue, seen, timer }
+const feedOf = (id) => {
+  let f = feeds.get(id);
+  if (!f) { f = { cur: null, queue: [], seen: new Set(), timer: 0 }; feeds.set(id, f); }
+  return f;
+};
+// ESPN's id and the text: a play revised on review is news again ("Reversed · ...").
+const playIdOf = (sit) => `${sit.playId || ""}|${sit.lastPlay}`;
+// Still the last play of its game, with its player still on the field.
+const playStands = (item) => {
+  const sit = sitOf(item.tm);
+  return Boolean(sit && sit.state === "in" && playIdOf(sit) === item.pid);
+};
+// Every play standing now that names a franchise's live starters, one item
+// per play, the starters it names in lineup order.
+function playsFor(t) {
+  const byPlay = new Map();
+  for (const p of t.starters.filter(isLive).sort(byLineup)) {
+    const text = lastPlayOf(p);
+    if (!text) continue;
+    const sit = sitOf(p.tm), pid = playIdOf(sit);
+    const item = byPlay.get(pid);
+    if (item) { item.who.push(lastName(p.n)); item.ps.push(p); item.text = playText(sit.lastPlay); }   // two names: the play as ESPN wrote it
+    else byPlay.set(pid, { pid, tm: p.tm, who: [lastName(p.n)], ps: [p], text });
+  }
+  return [...byPlay.values()].map(({ ps, ...item }) => ({ ...item, text: shortPlay(item.text, ps) }));
+}
+// The feed's line has two lines on a phone, and ESPN's text cut at the
+// end loses the yards, the part worth reading. So the feed says less
+// (the roster row and the game strip keep ESPN's words): tacklers in
+// brackets go unless one of them is the franchise's own (an IDP's tackle
+// is why the play is there), and a pass's depth and direction go ("pass
+// short right to" is "pass to"; "incomplete" stays), and so does the
+// ball spot before the yards ("to MIN 22 for 9 yards" is "for 9 yards").
+const shortPlay = (text, ps) => text
+  .replace(/\s*\(([^()]*)\)/g, (m, inner) =>
+    /\b[A-Z][a-z]*\.\s?[A-Z]/.test(inner) && !ps.some((p) => playNames(inner, p)) ? "" : m)
+  .replace(/\bpass (incomplete )?(?:short|deep) (?:left|right|middle)\b/gi, (m, inc) => `pass ${inc || ""}`.trim())
+  .replace(/ to (?:[A-Z]{2,3} )?\d{1,2}(?= for -?\d+ yards?| for no gain)/g, "")   // the spot: the game strip has it, the yards say more
+  .replace(/\s{2,}/g, " ").trim();
+// On every render: queue the plays not seen yet and let each feed move on.
+function feedPlays() {
+  const ids = new Set();
+  for (const t of teams) {
+    ids.add(t.id);
+    const f = feedOf(t.id);
+    for (const item of playsFor(t)) {
+      if (f.seen.has(item.pid)) continue;
+      f.seen.add(item.pid);
+      if (f.seen.size > 50) f.seen.delete(f.seen.values().next().value);
+      f.queue.push(item);
+      if (f.queue.length > PLAY_QUEUE_MAX) f.queue.shift();   // a backlog is old news: keep the latest
+    }
+    advanceFeed(t.id, false);
+  }
+  for (const id of feeds.keys()) if (!ids.has(id)) { clearTimeout(feeds.get(id).timer); feeds.delete(id); }
+}
+// Move a feed on if its current play has had its time: the next queued
+// play in, or a play that no longer stands out. `patch` writes the line
+// in place (from a timer, between renders); a render writes it itself.
+function advanceFeed(id, patch) {
+  const f = feeds.get(id);
+  if (!f) return;
+  clearTimeout(f.timer);
+  const now = Date.now();
+  if (f.cur && !f.cur.folding && now - f.cur.at < PLAY_DWELL_MS) {
+    f.timer = setTimeout(() => advanceFeed(id, true), PLAY_DWELL_MS - (now - f.cur.at));
+    return;
+  }
+  f.queue = f.queue.filter(playStands);
+  if (f.queue.length) {
+    const next = f.queue.shift();
+    f.cur = { ...next, at: now, swap: Boolean(f.cur && !f.cur.folding) };
+    f.timer = setTimeout(() => advanceFeed(id, true), PLAY_DWELL_MS);
+  } else if (f.cur && !f.cur.folding && !playStands(f.cur)) {
+    f.cur = { ...f.cur, folding: true, at: now };
+    f.timer = setTimeout(() => { if (f.cur?.folding) { f.cur = null; patchFeed(id); } }, PLAY_FOLD_MS);
+  } else return;   // it stands and nothing is waiting (or it is folding): the next render looks again
+  if (patch) patchFeed(id);
+}
+function patchFeed(id) {
+  for (const el of document.querySelectorAll(`.tfeed[data-feed="${id}"]`)) el.innerHTML = playLineInner(id);
+}
+// The line: who, then the play. A render mid-sweep carries the sweep on
+// from where it was (a negative delay) instead of replaying it.
+function playLineInner(id) {
+  const c = feeds.get(id)?.cur;
+  if (!c) return "";
+  const el = Date.now() - c.at;
+  const anim = reducedMotion.matches ? ""
+    : c.folding ? " fold"
+    : el < PLAY_SWEEP_MS ? (c.swap ? " swap" : " new") : "";
+  return `<span class="tplay${anim}" style="--el:${Math.round(el)}"><b>${esc(c.who.join(" & "))}</b> ${esc(c.text)}</span>`;
+}
+const playLine = (t) => `<span class="tfeed" data-feed="${t.id}">${playLineInner(t.id)}</span>`;
 
 // The stat tiles, the player card's middle (they used to expand under
 // the row); the game strip sits in the card's hero.

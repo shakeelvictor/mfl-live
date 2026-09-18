@@ -689,6 +689,54 @@ button.hero { cursor: pointer; }
 .status.on { color: var(--accent); }
 
 .pts { font: 800 20px/1 var(--font-data); text-align: right; letter-spacing: -.02em; transition: color .4s; }
+
+/* A franchise's play feed (2026-09-17): the last play naming one of its
+   live starters, under the "on now" names on its row and in the leader's
+   hero. The container cancels its parent's gap so an empty one takes no
+   room; the line brings the gap back itself, so a first play opens the
+   space (the row grows a line) and then sweeps in left to right behind a
+   soft accent gleam. A play replacing another sweeps over it without the
+   opening; a play that no longer stands folds away. --el is how long the
+   line has been up, so a render mid-sweep carries it on. */
+.who { --feed-gap: 4px; }
+.hero-body { --feed-gap: 14px; }
+.tfeed { display: block; margin-top: calc(-1 * var(--feed-gap)); min-width: 0; }
+.tplay {
+  position: relative;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  margin-top: var(--feed-gap); max-height: 3em;
+  font: 600 12px/1.35 var(--font-data); color: var(--text-secondary);
+  overflow: hidden; text-wrap: pretty;
+}
+.tplay b { font-weight: 800; color: var(--accent); }
+.tplay b::before { content: "\25B8\00a0"; }
+.hero .tplay { font-size: 12.5px; color: var(--hero-text); }
+.hero .tplay b { color: var(--hero-accent); }
+.tplay.new {
+  animation: tplay-open .32s cubic-bezier(.2, .8, .2, 1) both, tplay-sweep .62s cubic-bezier(.3, .7, .2, 1) both;
+  animation-delay: calc(-1ms * var(--el)), calc(180ms - 1ms * var(--el));
+}
+.tplay.swap { animation: tplay-sweep .62s cubic-bezier(.3, .7, .2, 1) both; animation-delay: calc(-1ms * var(--el)); }
+/* The gleam rides the sweep's front edge and fades as it lands. */
+.tplay.new::after, .tplay.swap::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, transparent 0 60%, color-mix(in srgb, var(--accent) 35%, transparent) 88%, transparent 100%);
+  animation: tplay-gleam .62s cubic-bezier(.3, .7, .2, 1) both;
+}
+.tplay.new::after { animation-delay: calc(180ms - 1ms * var(--el)); }
+.tplay.swap::after { animation-delay: calc(-1ms * var(--el)); }
+.tplay.fold { animation: tplay-fold .3s ease-in both; }
+@keyframes tplay-open { from { max-height: 0; margin-top: 0; } to { max-height: 3em; margin-top: var(--feed-gap); } }
+@keyframes tplay-sweep {
+  from { clip-path: inset(0 100% 0 0); transform: translateX(-6px); opacity: .4; }
+  to   { clip-path: inset(0 0 0 0);    transform: none;             opacity: 1; }
+}
+@keyframes tplay-gleam { from { transform: translateX(-100%); opacity: 1; } 70% { opacity: 1; } to { transform: translateX(0); opacity: 0; } }
+@keyframes tplay-fold { to { max-height: 0; margin-top: 0; opacity: 0; } }
+@media (min-width: 1024px) {
+  .row.active .tplay { color: var(--hero-text); }
+  .row.active .tplay b { color: var(--hero-accent); }
+}
 .chev { font: 400 20px/1 var(--font-data); color: var(--text-faint); }
 
 /* ---------- gap divider: the designed object ---------- */
