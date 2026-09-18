@@ -2178,10 +2178,8 @@ document.addEventListener("keydown", (e) => {
 
 /* ---------------- touchdown announcements ----------------
    One card at a time, TD_MS each, queued in arrival order so two scores
-   in the same poll both get their moment. MFL exposes only fantasy
-   points, so its signal is a single starter jumping by a touchdown's
-   worth between polls; Sleeper's line raises the card first when it can
-   (CLAUDE.md, "Every touchdown ... is worth 6"). */
+   in the same poll both get their moment. ESPN's play is what raises one
+   (playTouchdowns; CLAUDE.md, "Every touchdown ... is worth 6"). */
 
 const TD_MS = 4000;
 const TD_CHI_MS = 5500;   // the Bears card holds longer: the chant needs its moment
@@ -2623,10 +2621,8 @@ function applyStatsBody(st) {
   const next = st.data.stats || {};
   if (JSON.stringify(next) !== JSON.stringify(statsBySid)) stampUpdated();
   statsBySid = next;
-  const first = statsAt === 0;
   statsAt = Date.now();
   statsFailed = false;
-  confirmTouchdowns(first);
   applyStats();
   if (!polling && teams.length) rerenderSoon();
 }
@@ -2638,98 +2634,32 @@ const statsNote = () => {
   return Date.now() - statsAt > STATS_STALE_MS ? "stats delayed" : "";
 };
 
-/* Touchdowns. Three signals, one card (2026-09-15). ESPN's play text is
-   the first: a play ending in TOUCHDOWN in a live game raises the card
-   within a poll of the whistle (15 to 30 seconds), for the ball carrier
-   and, on a pass, the passer too, with the play's value under the league's
-   rules (the yards it names through app/scoring.js) as the points. Then
-   Sleeper's stat line (2026-09-10): one more touchdown on a starter's
-   line than the cards already shown raises it, with the line's delta as
-   the points (a stretch missed in the background raises one card for all
-   of it). Then MFL's 6-point jump on its ~200s cycle: a jump within
-   TD_WINDOW_MS of a card already shown is matched to it and raises
-   nothing; a jump that gets there first (the others late) waits, and the
-   next signal raises its card with MFL's delta; a jump with nothing to
-   match in the window lapses, unless the lines are unavailable or stale
-   (statsNote), when the jump alone raises the card after a short grace
-   (TD_GRACE_MS: on the first poll after a tab comes back the lines are
-   stale by age alone and the fresh ones are in flight beside that poll,
-   so an immediate fallback doubled a line's card, Kyren Williams
-   2026-09-10). The bookkeeping is per starter (`fid:pid`): how many
-   touchdowns a card has covered (tdShown), how many the plays have named
-   (tdPlays) and, for the line, how many it counts; a signal raises a
-   card only when it knows of more than have been shown. The first play
-   after a page load or a gap of two minutes only primes the memory: it
-   may be old, and the line will have it. A play marked NULLIFIED,
-   REVERSED, NO PLAY or a two-point try is not a touchdown. Nothing here
-   feeds a score. */
-const TD_WINDOW_MS = 3 * 60e3;
-const TD_GRACE_MS = 45e3;   // a jump pended while the lines were not fine waits this long for them
+/* Touchdowns: ESPN's play is the only signal (2026-09-17, Shakeel's call
+   after a second night of doubled cards). A play in a live game ending in
+   TOUCHDOWN raises the card within a poll of the whistle, for the ball
+   carrier and, on a pass with no turnover, the passer too, with the play's
+   value under the league's rules (the yards it names through
+   app/scoring.js) as the points. Sleeper's line and MFL's 6-point jump
+   raised cards too, from 2026-09-08 and 2026-09-10, matched against each
+   other and the play by per-player counts and time windows; each pairing
+   that fell outside its window (a line ahead of the play, a jump past its
+   three minutes, a snapshot flapping back) raised the same touchdown
+   twice, so they raise nothing now. A touchdown ESPN's scoreboard never
+   shows as a game's last play (two plays inside one poll) gets no card;
+   the board's number is unaffected either way.
+   A card is raised once per play: every play id a game has shown is
+   remembered, a play re-posted under a new id with the same text is the
+   same play, and a player's card holds off another for TD_COOLDOWN_MS (no
+   one scores twice inside two minutes of the clock on the wall). The
+   first play after a page load or a gap of two minutes only primes the
+   memory: it may be old. A play marked NULLIFIED, REVERSED, NO PLAY or a
+   two-point try is not a touchdown. Nothing here feeds a score. */
+const TD_WINDOW_MS = 3 * 60e3;   // a reversal posted as its own entry this soon after the play overturns it
+const TD_COOLDOWN_MS = 2 * 60e3;
 const TD_PLAY_FRESH_MS = 2 * 60e3;   // a play raises a card only when the previous situation is this recent
-const tdBase = new Map();        // sid -> touchdowns on the last stat line
-const tdEstBase = new Map();     // sid -> the engine's points for the last stat line
-const tdShown = new Map();       // "fid:pid" -> touchdowns a card has covered
-const tdPlays = new Map();       // "fid:pid" -> touchdowns the plays have counted (the line's count once its lead has stood a window)
-const tdConfirmed = new Map();   // "fid:pid" -> times a card was shown, its jump not yet seen
-const tdPending = new Map();     // "fid:pid" -> { ev, at }: a jump waiting for its touchdown
-const tdLineAhead = new Map();   // "fid:pid" -> { n, at }: the line counts n, more than the plays have, since `at`
-const statsConfirm = () => statsAt !== 0 && statsNote() === "";
+const tdLastAt = new Map();      // "fid:pid" -> when his last card was raised
+const tdPlayTexts = new Set();   // "away@home|text" of every touchdown play handled
 const tdKey = (t, p) => `${t.id}:${p.id}`;
-const shownOne = (key) => tdShown.set(key, (tdShown.get(key) || 0) + 1);
-const confirmOne = (key) => { const seen = tdConfirmed.get(key) || []; seen.push(Date.now()); tdConfirmed.set(key, seen); };
-
-function noteJump(team, p, delta) {
-  const ev = { player: p, franchise: team.team, pts: r2(delta), starter: true };
-  const key = tdKey(team, p);
-  const seen = tdConfirmed.get(key);
-  if (seen?.length) { seen.shift(); return; }   // a play or the line got there first and the card has shown
-  if (!p.sid) { shownOne(key); announceTouchdown(ev); return; }   // no line will ever come for him
-  const prev = tdPending.get(key);
-  tdPending.set(key, prev ? { ...prev, ev: { ...ev, pts: r2(prev.ev.pts + delta) } } : { ev, at: Date.now(), grace: !statsConfirm() });
-}
-// The starter carrying a Sleeper id, and his franchise, on the current
-// rosters; a bench player gets no card.
-const starterBySid = (sid) => { for (const t of rosters) for (const p of t.starters) if (p.sid === sid) return { t, p }; return null; };
-// A card for a starter from a play or the line: the jump's card if MFL's
-// jump is already waiting, else this signal's; and a note for the jump
-// still to come.
-function raiseCard(t, p, ev) {
-  const key = tdKey(t, p), waiting = tdPending.get(key);
-  if (waiting) { tdPending.delete(key); announceTouchdown(waiting.ev); return; }   // MFL got there first
-  announceTouchdown(ev);
-  confirmOne(key);
-}
-// On every stat arrival: a line counting more touchdowns than a card has
-// covered raises the card. The first arrival only sets the baselines; a
-// player with no line before counts from zero.
-function confirmTouchdowns(first) {
-  for (const [sid, st] of Object.entries(statsBySid)) {
-    const n = tdCount(st), was = tdBase.get(sid) ?? 0;
-    const est = r2(Scoring.scoreLine(st)), estWas = tdEstBase.get(sid) ?? 0;
-    tdBase.set(sid, n); tdEstBase.set(sid, est);
-    const hit = starterBySid(sid);
-    if (!hit || n <= was) continue;
-    const key = tdKey(hit.t, hit.p), shown = tdShown.get(key) || 0;
-    if (!first && n > shown) {
-      // One card per arrival, however many touchdowns the line gained
-      // since the last one: the line's delta covers them all, and so does
-      // a jump waiting for them. Each may still bring its own jump on
-      // MFL's cycle (or one jump may cover them all: the spares expire).
-      raiseCard(hit.t, hit.p, { player: hit.p, franchise: hit.t.team, pts: r2(Math.max(0, est - estWas)), est: true, starter: true });
-      for (let i = shown + 1; i < n; i++) confirmOne(key);
-    }
-    tdShown.set(key, Math.max(shown, n));
-    // The plays' count catches up with the line only once the line's lead
-    // has stood a whole window (the plays were missed: a hidden tab, a
-    // play ESPN never showed as its last). Caught up at once, the play for
-    // the very touchdown the line had just counted read as one more and
-    // raised a second card (Josh Allen's scramble, 2026-09-17: Sleeper's
-    // line got there before ESPN's play). The first arrival is a baseline.
-    if (first) tdPlays.set(key, Math.max(tdPlays.get(key) || 0, n));
-    else if ((tdPlays.get(key) || 0) < n) tdLineAhead.set(key, { n, at: tdLineAhead.get(key)?.n === n ? tdLineAhead.get(key).at : Date.now() });
-  }
-  settleTouchdowns();
-}
 // On every situation arrival: a new play ending in TOUCHDOWN names its
 // scorer(s) among the league's starters on either side. The ball carrier
 // is the starter the play names last; on a pass with no turnover the
@@ -2745,11 +2675,10 @@ const playPoints = (role, yds) => r2(Scoring.scoreLine(
   : role === "pr" ? { pr_td: 1, pr_yd: yds }
   : { idp_def_td: 1 }));
 function tdFromPlay(t, p, pts) {
-  const key = tdKey(t, p), plays = (tdPlays.get(key) || 0) + 1;
-  tdPlays.set(key, plays);
-  if (plays <= (tdShown.get(key) || 0)) return false;   // the line or the jump got there first
-  tdShown.set(key, plays);
-  raiseCard(t, p, { player: p, franchise: t.team, pts, est: true, starter: true });
+  const key = tdKey(t, p), last = tdLastAt.get(key);
+  if (last && Date.now() - last < TD_COOLDOWN_MS) return false;   // this touchdown's card is up already
+  tdLastAt.set(key, Date.now());
+  announceTouchdown({ player: p, franchise: t.team, pts, est: true, starter: true });
   return true;
 }
 // Overturned on review (2026-09-15): the card read the ruling on the
@@ -2762,11 +2691,7 @@ function tdFromPlay(t, p, pts) {
 // a try, counts too. The board's points were never the play's.
 function overturn(seen) {
   for (const { t, p, pts } of seen.raised) {
-    const key = tdKey(t, p);
-    tdShown.set(key, Math.max(0, (tdShown.get(key) || 0) - 1));
-    tdPlays.set(key, Math.max(0, (tdPlays.get(key) || 0) - 1));
-    const c = tdConfirmed.get(key);
-    if (c?.length) c.pop();   // the jump it was holding a place for is not coming
+    tdLastAt.delete(tdKey(t, p));   // his next touchdown counts
     announceTouchdown({ player: p, franchise: t.team, pts, overturned: true, starter: true });
   }
   seen.raised = [];
@@ -2803,6 +2728,10 @@ function playTouchdowns() {
     if (/NULLIFIED|REVERSED|NO PLAY/i.test(text) || /TWO-POINT/i.test(head)) continue;
     const passAt = head.search(/\bpass\b/i), turnover = /INTERCEPT|FUMBLE|RECOVER|LATERAL/i.test(head);
     const yds = Number(([...head.matchAll(/for (\d+) yards?/g)].pop() || [])[1]) || 0;
+    // The same play re-posted under a new id is the same touchdown.
+    const sig = `${gk}|${head.replace(/^\([^)]*\)\s*/, "").trim()}`;
+    if (tdPlayTexts.has(sig)) continue;
+    tdPlayTexts.add(sig);
     const named = [];
     for (const t of rosters) for (const p of t.starters) if (p.tm === g.away || p.tm === g.home) { const at = nameAt(head, p); if (at >= 0) named.push({ t, p, at }); }
     if (!named.length) continue;
@@ -2816,34 +2745,7 @@ function playTouchdowns() {
       card(named[0], turnover ? "def" : /\bkicks\b/i.test(head) ? "kr" : /\bpunts\b/i.test(head) ? "pr" : "rush");
     }
   }
-  settleTouchdowns();
 }
-// Match waiting jumps to cards already shown and let old signals lapse.
-// Runs on every signal and every poll, so a jump still lapses when the
-// lines stop coming; if they have gone stale by then, the fallback raises
-// it.
-function settleTouchdowns() {
-  const now = Date.now();
-  for (const [key, { n, at }] of tdLineAhead) {
-    if ((tdPlays.get(key) || 0) >= n) tdLineAhead.delete(key);   // the plays came
-    else if (now - at > TD_WINDOW_MS) { tdPlays.set(key, n); tdLineAhead.delete(key); }   // they never will
-  }
-  for (const [key, { ev, at, grace }] of tdPending) {
-    const seen = tdConfirmed.get(key);
-    if (seen?.length) { seen.shift(); tdPending.delete(key); }
-    // Pended while the lines were not fine and still not fine: the short
-    // grace, then the jump's own card. Fine lines get the full window.
-    else if (now - at > (grace && !statsConfirm() ? TD_GRACE_MS : TD_WINDOW_MS)) {
-      tdPending.delete(key);
-      if (!statsConfirm()) { shownOne(key); announceTouchdown(ev); }
-    }
-  }
-  for (const [key, seen] of tdConfirmed) {
-    const live = seen.filter((t) => now - t <= TD_WINDOW_MS);
-    if (live.length) tdConfirmed.set(key, live); else tdConfirmed.delete(key);
-  }
-}
-
 const mkPlayer = (id, pts = 0, secs = null) => {
   const i = playerInfo[id] || {};
   // MFL spells kickers "PK"; the page's positions (and the league's lineup
@@ -2877,13 +2779,10 @@ async function loadLeague() {
 // game situations, as one `tick` from the proxy (2026-09-15) naming the
 // parts this poll wants, so a 15-second poll while games are on is one
 // request and one function invocation, and every viewer in a window gets
-// the same snapshot from the edge. The lines and the situations are
-// applied before the rosters are rebuilt, so a line's touchdown raises
-// the card before the poll's jump can. Should the fold itself fail, the
-// poll goes the old way, each type on its own and the context beside it.
+// the same snapshot from the edge. Should the fold itself fail, the poll
+// goes the old way, each type on its own and the context beside it.
 // Returns the set of changed keys for the renderer (team ids and
-// `${teamId}:${playerId}`), and announces any starter whose score jumped
-// by a touchdown's worth.
+// `${teamId}:${playerId}`).
 async function refreshLive(first = false) {
   const w = QUERY.get("w") || "";
   // The schedule is fetched every few minutes, not every poll: kickoffs do
@@ -3003,15 +2902,11 @@ async function refreshLive(first = false) {
       next.set(key, p.pts);
       if (prev != null && p.pts !== prev) {
         changed.add(f.id).add(key);   // the row's key, see playerKey
-        // MFL gives points only, so a touchdown starts as a starter jumping
-        // by at least six between polls; Sleeper's line confirms it (above).
-        if (p.pts - prev >= 6) noteJump(team, p, p.pts - prev);
       }
     });
     return team;
   });
   lastScores = next;
-  settleTouchdowns();
   if (duel) for (const id of [...changed]) if (duel.sideOf.has(id)) changed.add(duel.sideOf.get(id).id);
   slate.sunFinal = games.size > 0 && [...games.values()].every((g) => g.secs <= 0);
   // With the feed the week is final once every game is (MFL's own "official"

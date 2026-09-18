@@ -87,8 +87,8 @@ never come from them. See "Player images and stats".)
   countdown hero to the week's first kickoff, a single Roster tab. In season
   it builds franchises from liveScoring (score, `playersYetToPlay`, starters
   by `status`, per-player `gameSecondsRemaining` for the clock) and
-  announces a touchdown when a starter jumps >= 6 between polls **and
-  Sleeper's stat line confirms it** (see "Every touchdown ... is worth 6").
+  announces a touchdown when ESPN's play says a starter scored (see
+  "Every touchdown ... is worth 6").
   **The record chip is the season's unofficial all-play** (2026-09-08):
   the week's record from the rank on top of every finished week's, so a
   10-0 Week 1 reads 20-0 or 19-1 as Week 2 moves. `loadSeason` fetches
@@ -260,101 +260,66 @@ Each of these was verified against real 2025 data, not inferred:
   vocabulary, not MFL's.** It has never met MFL's. Its header says so.
 - **Every touchdown in the league's rules is worth 6** (verified 2026-09-03
   from `TYPE=rules`: passing, rushing, receiving, kick and punt return,
-  defensive and fumble return, and the team-defense TD all pay `*6`), so the
-  page's "starter jumps >= 6 between polls" touchdown gate matches the QB
-  passing value too. **Since 2026-09-15 ESPN's play raises the card
-  first**: a play in a live game ending in TOUCHDOWN (`playTouchdowns`,
-  on every situation arrival) raises it within a poll of the whistle,
-  for the ball carrier (the league starter the play names last, on
-  either side) and, on a pass with no turnover, the passer too, with the
-  play's value under the league's rules as the points (the yards it
-  names through `playPoints`, so a 12-yard run reads +7.60, a 9-yard
-  pass +6.36 for the passer; a return or a defensive score reads the
-  flat 6). A play marked NULLIFIED, REVERSED, NO PLAY or a two-point try
-  raises nothing, and the first play after a load or a two-minute gap
-  only primes the memory (`playSeen`, keyed by ESPN's play id), since
-  it may be old. **A play raises its card once, however often it comes
-  back** (2026-09-17, Goff's touchdown card twice, the second on
-  returning to the app): the function's cache is per instance and the
-  edge's per URL, so a tick could carry an older situation than the
-  last, putting the game's previous play back, and the touchdown after
-  it read as new. So `applySituationBody` drops an answer the proxy
-  fetched earlier than the one on the page (its `data.at`,
-  `situationFetchedAt`), and `playSeen` remembers every play id a game
-  has shown (`ids`), not only the last. **The line does not advance the
-  plays' count at once** (2026-09-17, Josh Allen's scramble twice in a
-  row, the app open throughout): Sleeper's line counted the touchdown
-  before ESPN's play arrived, set `tdPlays` to its count, and the play
-  for that same touchdown then read as one more. Now the line's lead
-  waits in `tdLineAhead` and becomes the plays' count only once it has
-  stood `TD_WINDOW_MS` (the plays were missed); a play arriving inside
-  the window matches the line's card. The bookkeeping is per starter (`fid:pid`): `tdShown`
-  is how many touchdowns a card has covered, `tdPlays` how many the
-  plays (or the line) have counted, and a signal raises a card only
-  when it knows of more than have been shown; `tdConfirmed` holds each
-  card for the MFL jump still to come. **Overturned on review**
+  defensive and fumble return, and the team-defense TD all pay `*6`).
+  **Only ESPN's play raises the touchdown card** (2026-09-17, Shakeel's
+  call after two nights of doubled cards): a play in a live game ending
+  in TOUCHDOWN (`playTouchdowns`, on every situation arrival) raises it
+  within a poll of the whistle, for the ball carrier (the league starter
+  the play names last, on either side) and, on a pass with no turnover,
+  the passer too, with the play's value under the league's rules as the
+  points (the yards it names through `playPoints`, so a 12-yard run reads
+  +7.60, a 9-yard pass +6.36 for the passer; a return or a defensive
+  score reads the flat 6). A play marked NULLIFIED, REVERSED, NO PLAY or
+  a two-point try raises nothing, and the first play after a load or a
+  two-minute gap only primes the memory (`playSeen`), since it may be
+  old. **A play raises its card once**: `applySituationBody` drops an
+  answer the proxy fetched earlier than the one on the page (`data.at`,
+  `situationFetchedAt`; the function's cache is per instance and the
+  edge's per URL, so a tick could carry an older situation and put a
+  game's previous play back, and Goff's touchdown after it read as new);
+  `playSeen` remembers every play id a game has shown (`ids`), not only
+  the last; a touchdown play re-posted under a new id with the same text
+  is the same play (`tdPlayTexts`); and a player's card holds off another
+  for `TD_COOLDOWN_MS` (2 min: nobody scores twice that fast).
+  **What was cut, and why.** From 2026-09-08 Sleeper's stat line (the
+  touchdown count rising) and MFL's 6-point jump between polls raised
+  cards too, matched against each other and the play by per-player
+  counts and three-minute windows (`noteJump`, `confirmTouchdowns`,
+  `settleTouchdowns`, `tdShown`/`tdPlays`/`tdConfirmed`/`tdPending`).
+  Every pairing that fell outside its window raised the same touchdown
+  twice: a jump raised as the fallback and the line a second later
+  (Kyren Williams, 09-10), a line counting the touchdown before ESPN's
+  play arrived (Josh Allen's scramble, 09-17), a jump arriving after its
+  window. The jump alone cannot tell a touchdown from any other 6-point
+  jump anyway (a 45-yard run, a 60-yard catch or field goal, two plays in
+  one poll). The cost: a touchdown ESPN's scoreboard never shows as a
+  game's last play (two plays inside one 15s poll) gets no card, and
+  with ESPN down there are none. The board's points never came from any
+  of them. **Overturned on review**
   (2026-09-15, Shakeel's pick over waiting for the try): the card reads
   the ruling on the field, so when the booth reverses a touchdown the
   page raises the same card muted (`.td-over`: no rays or flash, the
   portrait in grey, "Overturned" over "No touchdown on review", the
   play's points struck through) for every card the play raised, and
-  takes the touchdown back out of the bookkeeping so the player's next
-  one counts (`overturn`). ESPN revises the play's own text in place
-  ("... TOUCHDOWN. The Replay Official reviewed the ... ruling, and the
-  play was REVERSED. J.Warren left end to MIA 1 for 11 yards"), which
-  `playSeen` notices by the text changing under the same id; a reversal
-  posted as its own entry within the window, naming one of the scorers
-  and not a try, counts too. A reversed play's row and strip show the
-  corrected result marked "Reversed ·" (`playText`). Sleeper's line
-  had the same exposure before (it credits in a minute and corrects
-  after the review); the board's points were never the play's.
-  Rehearsed on `app-2025-w15-live`
-  by editing `spike/data/fake-w15/situation.json` (both sides of a game
-  must carry the same play and id): run, pass (two cards), interception
-  return (the defender alone), nullified (nothing), the line and the
-  jump after a play's card (nothing), a reversal revised in place and
-  one posted as its own entry (the muted cards, counts back to zero). **A
-  play's text carries the try after it** ("... TOUCHDOWN. TWO-POINT
-  CONVERSION ATTEMPT. ...", seen on a 2024 game through the logger), so
-  a two-point try only rules the play out when it comes before the
-  touchdown. **Whether ESPN's box score beats Sleeper's line is
-  unmeasured**: `spike/log-feeds.mjs` logs each feed's first sighting of
-  every touchdown against the play's wall clock (spike/README.md, Spike
-  3); run it on a game night before considering ESPN for the estimate. The jump alone cannot tell a touchdown from any other
-  6-point jump: a 45-yard run (0.13333/yd), a 60-yard catch (6 + 0.5) or a
-  60-yard field goal also clear it, and two plays landing in the same 30s
-  poll add up. So the two signals are paired (`noteJump` /
-  `confirmTouchdowns` / `settleTouchdowns` in `app.js`), and **since
-  2026-09-10 Sleeper's line raises the card**: the player's touchdown
-  count on the stat line (pass, rush, rec, `idp_def_td`, `st_td`,
-  `kr_td`, `pr_td`) rising raises it at once, within a minute of the
-  play, with the play's value from `app/scoring.js` as the points, shown
-  as Sleeper's number ("S +10.40"); MFL's jump within the three-minute
-  window is matched to it and raises nothing (now the third signal, after
-  the play and the line). From 2026-09-08 to 09-10 it
-  was the other way round, the jump held until the line confirmed it,
-  which meant every card waited for MFL's ~200s cycle. When the jump lands
-  first (lines late but not stale) the touchdown raises the card with
-  MFL's delta. A jump with no touchdown in the window lapses. The stat lines come with every poll
-  while games are on (15s since 2026-09-15, the proxy holds them 15s;
-  30s before) so the card lands within one, and inside a tick the lines
-  are applied before the rosters are rebuilt, so the line's card is up
-  before the poll's jump is seen. **Fallback:** while the lines are unavailable, stale or
-  not yet arrived, or for a player with no Sleeper join, the jump alone
-  raises the card, as before; a pending jump that lapses while the lines
-  have gone stale is raised too. **The jump is pended even while the
-  lines are stale** (2026-09-10): on the first poll after a tab comes
-  back from the background the lines are stale by age alone and the
-  fresh ones are in flight beside that very poll, so a jump raised at
-  once as the fallback and the line landing a second later raised a
-  second card with Sleeper's points for the same touchdown (Kyren
-  Williams). A jump pended while the lines were not fine waits
-  `TD_GRACE_MS` (45s) for them and then falls back to its own card; fine
-  lines get the full window. The line's side raises one card per
-  arrival however many touchdowns it gained since the last one (two in
-  a window, or a stretch in the background), never one per touchdown. Sleeper is a second provider, but a
-  touchdown is not a judgment call the way a tackle is. The points are
-  never recomputed from stats.
+  lifts the player's cooldown so his next one counts (`overturn`). ESPN
+  revises the play's own text in place ("... TOUCHDOWN. The Replay
+  Official reviewed the ... ruling, and the play was REVERSED. J.Warren
+  left end to MIA 1 for 11 yards"), which `playSeen` notices by the text
+  changing under the same id; a reversal posted as its own entry within
+  `TD_WINDOW_MS`, naming one of the scorers and not a try, counts too. A
+  reversed play's row and strip show the corrected result marked
+  "Reversed ·" (`playText`). Rehearsed on `app-2025-w15-live` by feeding
+  `applySituationBody` staged plays (both sides of a game carry the same
+  play and id): the line alone (nothing), the play (one card), a flap
+  back and a re-post under a new id (nothing), a later touchdown (a
+  card), a reversal in place (the muted card). **A play's text carries
+  the try after it** ("... TOUCHDOWN. TWO-POINT CONVERSION ATTEMPT. ...",
+  seen on a 2024 game through the logger), so a two-point try only rules
+  the play out when it comes before the touchdown.
+  `spike/log-feeds.mjs` still logs each feed's first sighting of every
+  touchdown against the play's wall clock (spike/README.md, Spike 3).
+  The TD chip on a roster row still counts from the stat line; that is
+  context, not a card.
 - **MFL counts special-teams tackles toward IDP totals**; Sleeper breaks them
   out as `st_tkl_solo`. Adding that field lifts escalator agreement from 93.0%
   to 96.1% across four weeks. The residue is provider disagreement on tackle
@@ -1021,10 +986,8 @@ element and scores are second.
   TD" on the demo bar triggers one; on `main` `?td=<team>` raises a card for that team's first
   starter once the board is up (any starter when the team has none),
   and `?theme=light` stamps the light theme on load, both for checking. In the mockup a TD is a
-  simulated event (6 + yardage); with the feed, MFL gives only fantasy
-  points, so the trigger is one starter jumping a touchdown's worth
-  between polls, confirmed by Sleeper's stat line (see "What is already
-  settled").
+  simulated event (6 + yardage); with the feed, the trigger is ESPN's
+  play naming a starter's touchdown (see "What is already settled").
 - **Spotlight card** under the hero, a between-days card: once a day's
   games are all final it shows that day's highest-scoring *starter*
   (headshot, logo, stat line, franchise, points) and goes away when the
