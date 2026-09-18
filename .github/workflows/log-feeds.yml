@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       minutes:
-        description: How long to run (the logger also stops 25 minutes after the last live game ends)
+        description: Minutes to log from the first live game (it waits for kickoff, and stops 25 minutes after the last live game ends)
         default: "210"
       every:
         description: Seconds between polls
@@ -20,15 +20,19 @@ on:
         description: NFL week (blank = Sleeper's current week)
         default: ""
   schedule:
-    # Thursday 7:55 PM Eastern while the clocks are on daylight time (kickoff
-    # is 8:15). After the November change this is 6:55 PM; the logger waits
-    # through the empty hour. A scheduled run can start a few minutes late.
-    - cron: "55 23 * * 4"
+    # Thursday, two hours before the 8:15 PM Eastern kickoff: GitHub started
+    # the Sep 17 run at 9:57 PM for a 7:55 schedule, two hours late, and it
+    # missed half the game. The logger waits for kickoff without spending
+    # its minutes, and a job may run six hours, so starting early costs
+    # nothing. Cron is UTC: 22:17 is 6:17 PM on daylight time (Sep, Oct);
+    # 23:17 is 6:17 PM on standard time (Nov on; 2026's change is Nov 1).
+    - cron: "17 22 * 9,10 4"
+    - cron: "17 23 * 11,12,1 4"
 
 jobs:
   log:
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    timeout-minutes: 355   # GitHub's ceiling is 360
     env:
       MFL_UA: imp19716
     steps:

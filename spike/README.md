@@ -230,12 +230,34 @@ MFL_UA='imp19716' node spike/log-feeds.mjs --minutes 210 --every 10
 ```
 
 It appends every sighting to `spike/data/feeds-<stamp>.jsonl` as it
-happens, stops on its own 25 minutes after the last live game ends, and
+happens, waits for the first live game before `--minutes` starts
+counting, stops on its own 25 minutes after the last live game ends, and
 prints the table on exit (or `--analyze <file>` later). **It runs on a
 GitHub runner so nothing at home has to stay awake**: the `log-feeds`
 workflow (`.github/workflows/log-feeds.yml`) starts from the Actions tab
-with a duration, or on its own at 7:55 PM Eastern every Thursday, and
-hands the file and the printed table back as an artifact on the run.
+with a duration, or on its own at 6:17 PM Eastern every Thursday, two
+hours before kickoff, and hands the file and the printed table back as
+an artifact on the run. A job may run six hours at most, so for a Sunday
+start it by hand shortly before 1:00 PM ET: that covers the early games
+and most of the late window, not the night game.
+
+**Fixed after the first run (Thu Sep 17, DET @ BUF).** GitHub started the
+scheduled run two hours late, hence the earlier schedule and the wait for
+kickoff. Sleeper's and the box score's first touchdown for a player were
+never logged (a player at zero was skipped until he appeared, and then
+primed instead of counted); both now count from zero once primed. The
+summary paired a credit with the athlete's earliest uncovered play, so the
+touchdowns before the late start took the later ones' credits; it now
+pairs by count and leaves out plays before the `start` marker. And the
+name matcher read "A.St. Brown" as S(pencer) Brown; a name no longer
+starts after a period (the app's `nameRe` had the same flaw), and the
+summary names each play again from the box score's credited athletes, so
+an old file reads right. That night's five measurable touchdowns, in
+seconds after the play's wall clock (median): scoreboard last play 52,
+box score 62, Sleeper 77 (four; Cook's was lost to the zero bug), MFL
+158. On the four where both credited the player, the box and Sleeper
+tied twice and the box led by 40s and 50s: leaning ESPN, but four plays
+are not enough to call against the 30s bar. Sunday's slate is.
 `--dry <espn event id>` reads a finished game's summary to check the
 parsing and the joins without waiting for a game. ESPN athletes join to
 Sleeper through MFL's `espn_id` for the league's rostered players and by

@@ -808,7 +808,8 @@ element and scores are second.
   row carries the last play when it names the player** (`.pplay`,
   `lastPlayOf`, in the accent under the stat line: his initial and last
   name as ESPN writes them, `playNames`, the tackler in the brackets
-  included so an IDP's tackle reads on his row; on his own row a leading
+  included so an IDP's tackle reads on his row; a name never starts right
+  after a period, since "A.St. Brown" also reads as S. Brown, 2026-09-17; on his own row a leading
   "J.Warren " comes off so the play reads as his; the whole play, however
   many lines, since 2026-09-17: it was cut at two lines on a phone and one
   in the laptop pane) and drops it when the next play names someone

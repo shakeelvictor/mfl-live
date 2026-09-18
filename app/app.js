@@ -1240,7 +1240,8 @@ const playText = (t) => {
 const escRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const nameRe = (p, flags = "i") => {
   const last = lastName(p.n), init = String(p.n).trim()[0];
-  return last && init ? new RegExp(`(^|[^A-Za-z])${escRe(init)}[a-z]*\\.\\s?(?:[A-Z][a-z]*\\.?\\s)?${escRe(last)}(?![A-Za-z])`, flags) : null;
+  // Not after a period: "A.St. Brown" must not read as S. Brown (2026-09-17).
+  return last && init ? new RegExp(`(^|[^A-Za-z.])${escRe(init)}[a-z]*\\.\\s?(?:[A-Z][a-z]*\\.?\\s)?${escRe(last)}(?![A-Za-z])`, flags) : null;
 };
 const playNames = (text, p) => { const re = nameRe(p); return Boolean(re && re.test(text)); };
 // Where a play last names the player (the ball carrier is named last), or -1.
@@ -1257,7 +1258,7 @@ const lastPlayOf = (p) => {
   const t = sit?.state === "in" ? sit.lastPlay : null;
   if (!t || !playNames(t, p)) return "";
   const re = nameRe(p);
-  return playText(t).replace(new RegExp(`^${re.source.replace(/^\(\^\|\[\^A-Za-z\]\)/, "")}\\s+`, "i"), "");
+  return playText(t).replace(new RegExp(`^${re.source.replace(/^\(\^\|\[\^A-Za-z\.\]\)/, "")}\\s+`, "i"), "");
 };
 
 /* A franchise's play feed (2026-09-17): the last play naming one of its

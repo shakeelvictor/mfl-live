@@ -77,7 +77,10 @@ const escRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 function nameAt(text, fullName) {
   const last = lastName(fullName), init = String(fullName).trim()[0];
   if (!last || !init) return -1;
-  const re = new RegExp(`(^|[^A-Za-z])${escRe(init)}[a-z]*\\.\\s?(?:[A-Z][a-z]*\\.?\\s)?${escRe(last)}(?![A-Za-z])`, 'gi');
+  // A name starts at the start, or after anything but a letter or a period:
+  // in "A.St. Brown" the "St. Brown" after the period is not S(pencer) Brown
+  // (2026-09-17, St. Brown's touchdowns credited to the Bills' tackle).
+  const re = new RegExp(`(^|[^A-Za-z.])${escRe(init)}[a-z]*\\.\\s?(?:[A-Z][a-z]*\\.?\\s)?${escRe(last)}(?![A-Za-z])`, 'gi');
   let at = -1, m;
   while ((m = re.exec(text))) at = m.index + m[1].length;
   return at;
@@ -130,6 +133,7 @@ const sidOfAthlete = (id, name, team) => byEspn.get(String(id)) || byNameTeam.ge
 const seenPlays = new Set();          // ESPN play id
 const seenLastPlay = new Map();       // event id -> last play id
 const boxTd = new Map();              // "eventId:athleteId" -> touchdowns credited so far
+const boxPrimed = new Set();          // event ids whose box score has been read once
 const sleeperTd = new Map();          // sid -> touchdowns on the line so far
 const mflPts = new Map();             // MFL id -> points so far
 let sleeperPrimed = false, mflPrimed = false;
@@ -187,8 +191,12 @@ function readSummary(j, eventId, gameName, dry = false) {
     say(`TD  ${gameName}  ${text.slice(0, 90)}  -> ${scorer?.name || '?'}${passer ? ` (from ${passer.name})` : ''}`);
   }
   // Box score credits: one more touchdown for an athlete than last time.
+  // After a game's first read, an athlete new to its box score counts from
+  // zero (his first touch can be the touchdown).
+  const primed = boxPrimed.has(eventId);
+  boxPrimed.add(eventId);
   for (const a of athletes) {
-    const key = `${eventId}:${a.id}`, was = boxTd.get(key);
+    const key = `${eventId}:${a.id}`, was = boxTd.get(key) ?? (primed ? 0 : null);
     boxTd.set(key, a.td);
     if (was == null) { if (dry && a.td > 0) log({ feed: 'box', event: eventId, athlete: a.id, name: a.name, team: a.team, td: a.td, from: 0, sid: sidOfAthlete(a.id, a.name, a.team), dry }); continue; }   // first sight primes
     if (a.td > was) log({ feed: 'box', event: eventId, athlete: a.id, name: a.name, team: a.team, td: a.td, from: was, sid: sidOfAthlete(a.id, a.name, a.team) });
@@ -203,10 +211,12 @@ async function pollSummary(ev) {
 async function pollSleeper() {
   const all = await getJson(`https://api.sleeper.app/v1/stats/nfl/regular/${SEASON}/${WEEK}`, {}, 15000);
   for (const [sid, st] of Object.entries(all)) {
-    const n = tdOf(st), was = sleeperTd.get(sid);
-    if (n === 0 && was == null) continue;
+    // Once primed, a player not seen before counts from zero: his first
+    // touchdown is a credit (it was skipped until 2026-09-17, so no first
+    // touchdown was ever logged).
+    const n = tdOf(st), was = sleeperTd.get(sid) ?? (sleeperPrimed ? 0 : null);
     sleeperTd.set(sid, n);
-    if (!sleeperPrimed || was == null) continue;
+    if (was == null) continue;
     if (n > was) { const p = sleeperPlayers?.get(sid); log({ feed: 'sleeper', sid, name: p?.name || sid, team: p?.team || null, td: n, from: was, rostered: rosteredSids.has(sid) }); }
   }
   sleeperPrimed = true;
@@ -226,32 +236,71 @@ async function pollMfl() {
 
 /* ---------------- the summary ----------------
    Every touchdown play, with each feed's first sighting in seconds after
-   the play's wall clock; then the median and the mean per feed. A credit is
-   matched to the earliest play by that athlete that feed has not covered. */
+   the play's wall clock; then the median and the mean per feed.
+   Credits are paired by count, not by time: a feed's Nth credit for an
+   athlete is his Nth touchdown play after the logger started (a credit of
+   two covers two), and a play takes the earliest credit of its scorer or
+   its passer. Plays before the start are not measured: their credits were
+   already in the baseline the feeds were primed with. Until 2026-09-17 a
+   credit went to the earliest uncovered play by the athlete, so a run that
+   started late handed later touchdowns' credits to earlier ones (Allen's
+   00:25 run read 7,572s, the time of his 02:30 scramble). */
 
 function analyze(file) {
   const rows = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
   const errors = rows.filter((r) => r.error);
   if (errors.length) console.log(`${errors.length} errors logged (${[...new Set(errors.map((r) => r.feed))].join(', ')}); the last: ${errors[errors.length - 1].error}`);
-  const plays = rows.filter((r) => r.feed === 'pbp').map((r) => ({ ...r, seen: { pbp: r.t }, credit: {} }));
+  const startAt = new Date(rows.find((r) => r.feed === 'start')?.t || rows[0]?.t || 0);   // files from before the marker: the first line
+  const when = (p) => new Date(p.wallclock || p.t);
+  const all = rows.filter((r) => r.feed === 'pbp').map((r) => ({ ...r, seen: { pbp: r.t }, credit: {} }));
+  const plays = all.filter((p) => when(p) >= startAt).sort((a, b) => when(a) - when(b));
+  const before = all.length - plays.length;
+  // Name each play again from the athletes the box score credited in its
+  // game, with today's matcher: a file keeps the names the run gave it, and
+  // a run's matcher can be wrong (A.St. Brown read as Spencer Brown until
+  // 2026-09-17) or come up empty (J.Cook, the same night).
+  const credited = new Map();   // event -> [{ id, name, team, sid }]
+  for (const r of rows.filter((r) => r.feed === 'box' && r.athlete)) {
+    const xs = credited.get(r.event) || [];
+    if (!xs.some((x) => x.id === r.athlete)) xs.push({ id: r.athlete, name: r.name, team: r.team, sid: r.sid || null });
+    credited.set(r.event, xs);
+  }
+  const rosteredIn = new Set([...rosteredSids,   // the run's own record of who is rostered, for an --analyze with no joins loaded
+    ...rows.filter((r) => (r.feed === 'sleeper' && r.rostered) || (r.feed === 'mfl' && r.sid)).map((r) => r.sid),
+    ...all.flatMap((p) => [p.scorer, p.passer]).filter((a) => a?.rostered && a.sid).map((a) => a.sid)]);
+  for (const p of plays) {
+    const head = String(p.text).slice(0, String(p.text).search(/TOUCHDOWN/i));
+    const passAt = head.search(/\bpass\b/i), turnover = /INTERCEPT|FUMBLE|RECOVER|LATERAL/i.test(head);
+    const named = (credited.get(p.event) || []).map((a) => ({ a, at: nameAt(head, a.name) })).filter((x) => x.at >= 0).sort((x, y) => y.at - x.at);
+    const as = (a) => (a ? { id: a.id, name: a.name, team: a.team, sid: a.sid, rostered: rosteredIn.has(a.sid) } : null);
+    const scorer = passAt >= 0 && !turnover ? named.find((x) => x.at > passAt)?.a : named[0]?.a;
+    const passer = passAt >= 0 && !turnover ? named.find((x) => x.at < passAt)?.a : null;
+    if (scorer) p.scorer = as(scorer);
+    if (passer) p.passer = as(passer);
+  }
   const byPlay = new Map(plays.map((p) => [p.play, p]));
   for (const r of rows.filter((r) => r.feed === 'lastPlay' && r.scoring)) { const p = byPlay.get(r.play); if (p && !p.seen.lastPlay) p.seen.lastPlay = r.t; }
-  const claim = (feed, match, t) => {
-    const cands = plays.filter((p) => !p.credit[feed]?.done && match(p)).sort((a, b) => new Date(a.wallclock || a.t) - new Date(b.wallclock || b.t));
-    const p = cands.find((x) => new Date(t) >= new Date(x.wallclock || x.t) - 60e3);
-    if (p) p.credit[feed] = { t, done: true };
-  };
-  for (const r of rows) {
-    if (r.feed === 'box') claim('box', (p) => p.event === r.event && (p.scorer?.id === r.athlete || p.passer?.id === r.athlete), r.t);
-    if (r.feed === 'sleeper') claim('sleeper', (p) => (p.scorer?.sid && p.scorer.sid === r.sid) || (p.passer?.sid && p.passer.sid === r.sid), r.t);
-    if (r.feed === 'mfl' && r.sid) claim('mfl', (p) => (p.scorer?.sid === r.sid) || (p.passer?.sid === r.sid), r.t);
+  const keysOf = { box: (p) => [p.scorer?.id, p.passer?.id].filter(Boolean).map((id) => `${p.event}:${id}`),
+    sleeper: (p) => [p.scorer?.sid, p.passer?.sid].filter(Boolean), mfl: (p) => [p.scorer?.sid, p.passer?.sid].filter(Boolean) };
+  const keyOf = { box: (r) => `${r.event}:${r.athlete}`, sleeper: (r) => r.sid, mfl: (r) => r.sid };
+  for (const feed of ['box', 'sleeper', 'mfl']) {
+    const queues = new Map();   // athlete key -> his plays, oldest first
+    for (const p of plays) for (const k of keysOf[feed](p)) { if (!queues.has(k)) queues.set(k, []); queues.get(k).push(p); }
+    for (const r of rows.filter((r) => r.feed === feed && !r.error && !r.dry && new Date(r.t) >= startAt)) {
+      const q = queues.get(keyOf[feed](r));
+      if (!q) continue;
+      for (let i = 0; i < (feed === 'mfl' ? 1 : Math.max(1, (r.td ?? 0) - (r.from ?? 0))); i++) {
+        const p = q.shift();
+        if (p && (!p.credit[feed] || new Date(r.t) < new Date(p.credit[feed].t))) p.credit[feed] = { t: r.t };
+      }
+    }
   }
   const cols = ['pbp', 'lastPlay', 'box', 'sleeper', 'mfl'];
   const cell = (p, c) => { const t = c === 'pbp' || c === 'lastPlay' ? p.seen[c] : p.credit[c]?.t; const s = secs(t, p.wallclock); return s == null ? '   —' : String(s).padStart(4) + 's'; };
-  console.log(`\n${plays.length} touchdown plays in ${path.basename(file)}; seconds after the play's wall clock (— = never seen; mfl covers rostered players only)\n`);
+  console.log(`\n${plays.length} touchdown plays in ${path.basename(file)}${before ? ` (and ${before} before the logger started, not measured)` : ''}; seconds after the play's wall clock (— = never seen; mfl covers rostered players only)\n`);
   console.log(['when (ET)  ', 'game     ', ...cols.map((c) => c.padStart(8)), '  scorer / play'].join(' '));
   const ET = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-  for (const p of plays.sort((a, b) => new Date(a.wallclock || a.t) - new Date(b.wallclock || b.t))) {
+  for (const p of plays) {
     console.log([ET.format(new Date(p.wallclock || p.t)).padEnd(11), String(p.game || '').padEnd(9), ...cols.map((c) => cell(p, c).padStart(8)),
       `  ${p.scorer?.name || '?'}${p.scorer?.rostered ? '*' : ''}: ${String(p.text).slice(0, 60)}`].join(' '));
   }
@@ -275,7 +324,7 @@ async function main() {
     catch (e) { say('Sleeper state unavailable:', e?.message || e); SEASON = SEASON || String(new Date().getFullYear()); WEEK = WEEK || '1'; }
   }
   say(`season ${SEASON} week ${WEEK}, every ${EVERY_S}s${MINUTES ? ` for ${MINUTES} minutes` : ' until Ctrl-C'} -> ${OUT}`);
-  fs.appendFileSync(OUT, '');   // the file exists from the start, so a quiet run still has one to analyse
+  log({ feed: 'start', season: SEASON, week: WEEK, every: EVERY_S });   // plays before this are not measured (analyze)
   await loadJoins();
 
   if (DRY) {
@@ -290,7 +339,11 @@ async function main() {
     return;
   }
 
-  const stopAt = MINUTES ? Date.now() + MINUTES * 60e3 : Infinity;
+  // --minutes counts from the first live game, not from the start, so a run
+  // started early (a scheduled one, or by hand before the window) waits for
+  // kickoff without spending its budget (2026-09-17: GitHub started the
+  // Thursday run two hours late; the schedule now fires well before).
+  let stopAt = Infinity;
   const IDLE_MS = 25 * 60e3;   // once a game has been seen, stop this long after the last one ends: the late credits are in by then
   let loop = 0, stopping = false, sawGame = false, lastLiveAt = 0;
   process.on('SIGINT', () => { stopping = true; say('stopping'); });
@@ -298,7 +351,7 @@ async function main() {
     const t0 = Date.now();
     let live = [];
     try { live = await pollScoreboard(); } catch (e) { log({ feed: 'scoreboard', error: String(e?.message || e) }); }
-    if (live.length) { sawGame = true; lastLiveAt = Date.now(); }
+    if (live.length) { if (!sawGame && MINUTES) stopAt = Date.now() + MINUTES * 60e3; sawGame = true; lastLiveAt = Date.now(); }
     else if (sawGame && Date.now() - lastLiveAt > IDLE_MS) { say('no live game for 25 minutes, done'); break; }
     for (const ev of live) { try { await pollSummary(ev); } catch (e) { log({ feed: 'summary', event: ev.id, error: String(e?.message || e) }); } }
     try { await pollSleeper(); } catch (e) { log({ feed: 'sleeper', error: String(e?.message || e) }); }
