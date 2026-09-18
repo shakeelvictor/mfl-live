@@ -700,11 +700,13 @@ button.hero { cursor: pointer; }
    line has been up, so a render mid-sweep carries it on. */
 .who { --feed-gap: 4px; }
 .hero-body { --feed-gap: 14px; }
-.tfeed { display: block; margin-top: calc(-1 * var(--feed-gap)); min-width: 0; }
+.tfeed { display: block; margin-top: calc(-1 * var(--feed-gap)); min-width: 0; --tplay-max: 20em; }   /* the opening's end, past ESPN's longest (240 characters, ten lines on a phone) */
+/* On a phone the whole play shows (2026-09-17): a cut lost the yards. The
+   laptop pane's rows keep two lines. --tplay-max is the opening's end. */
 .tplay {
   position: relative;
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-  margin-top: var(--feed-gap); max-height: 3em;
+  display: block;
+  margin-top: var(--feed-gap);
   font: 600 12px/1.35 var(--font-data); color: var(--text-secondary);
   overflow: hidden; text-wrap: pretty;
 }
@@ -726,7 +728,7 @@ button.hero { cursor: pointer; }
 .tplay.new::after { animation-delay: calc(180ms - 1ms * var(--el)); }
 .tplay.swap::after { animation-delay: calc(-1ms * var(--el)); }
 .tplay.fold { animation: tplay-fold .3s ease-in both; }
-@keyframes tplay-open { from { max-height: 0; margin-top: 0; } to { max-height: 3em; margin-top: var(--feed-gap); } }
+@keyframes tplay-open { from { max-height: 0; margin-top: 0; } to { max-height: var(--tplay-max); margin-top: var(--feed-gap); } }
 @keyframes tplay-sweep {
   from { clip-path: inset(0 100% 0 0); transform: translateX(-6px); opacity: .4; }
   to   { clip-path: inset(0 0 0 0);    transform: none;             opacity: 1; }
@@ -734,6 +736,8 @@ button.hero { cursor: pointer; }
 @keyframes tplay-gleam { from { transform: translateX(-100%); opacity: 1; } 70% { opacity: 1; } to { transform: translateX(0); opacity: 0; } }
 @keyframes tplay-fold { to { max-height: 0; margin-top: 0; opacity: 0; } }
 @media (min-width: 1024px) {
+  .tfeed { --tplay-max: 3em; }
+  .tplay { max-height: 3em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
   .row.active .tplay { color: var(--hero-text); }
   .row.active .tplay b { color: var(--hero-accent); }
 }
