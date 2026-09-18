@@ -801,8 +801,9 @@ element and scores are second.
   `lastPlayOf`, in the accent under the stat line: his initial and last
   name as ESPN writes them, `playNames`, the tackler in the brackets
   included so an IDP's tackle reads on his row; on his own row a leading
-  "J.Warren " comes off so the play reads as his; two lines on a phone,
-  one in the laptop pane) and drops it when the next play names someone
+  "J.Warren " comes off so the play reads as his; the whole play, however
+  many lines, since 2026-09-17: it was cut at two lines on a phone and one
+  in the laptop pane) and drops it when the next play names someone
   else. The board narrates. **A franchise's row and the leader's hero
   carry the play too** (2026-09-17, `feedPlays` / `playLine`, `.tfeed`
   under the "on now" names): the last play naming one of its live

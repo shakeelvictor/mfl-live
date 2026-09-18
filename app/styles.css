@@ -1059,11 +1059,12 @@ button.hero { cursor: pointer; }
 .prow.bench .pstat { color: var(--text-muted); }
 /* A live row whose game's last play names the player carries the play
    under the stat line, in the accent, for as long as it stands
-   (2026-09-15). */
+   (2026-09-15). The whole play, however many lines it takes (2026-09-17;
+   it was cut at two on a phone and one in the laptop pane). */
 .pname .pplay {
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;   /* two lines on a phone, where the column is narrow */
+  display: block;
   font: 700 11px/1.3 var(--font-data); color: var(--accent);
-  overflow: hidden; text-wrap: pretty;
+  text-wrap: pretty;
 }
 .pname .pplay::before { content: "\25B8\00a0"; }
 
@@ -1848,7 +1849,7 @@ body.pcard-open { overflow: hidden; }
   .team-page .pname b { grid-area: name; font-size: 14px; }
   .team-page .pmeta { grid-area: meta; font-size: 10.5px; }
   .team-page .pstat { grid-area: stat; font-size: 11px; }
-  .team-page .pplay { grid-column: 1 / -1; font-size: 11px; -webkit-line-clamp: 1; }   /* its own row under both, only when there is one; the pane is wide enough for one line */
+  .team-page .pplay { grid-column: 1 / -1; font-size: 11px; }   /* its own row under both, only when there is one */
   .team-page .ppts { font-size: 16px; }
   /* The selected row already carries name, record, status and points. */
   .team-page .hero { display: none; }
