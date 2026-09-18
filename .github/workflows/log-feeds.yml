@@ -19,6 +19,11 @@ on:
       week:
         description: NFL week (blank = Sleeper's current week)
         default: ""
+      window:
+        description: "Which of today's kickoffs to watch: all, or a Sunday window (early before 4 PM ET, late 4-7 PM, night from 7 PM)"
+        type: choice
+        options: [all, early, late, night]
+        default: all
   schedule:
     # Thursday, two hours before the 8:15 PM Eastern kickoff: GitHub started
     # the Sep 17 run at 9:57 PM for a 7:55 schedule, two hours late, and it
@@ -28,6 +33,18 @@ on:
     # 23:17 is 6:17 PM on standard time (Nov on; 2026's change is Nov 1).
     - cron: "17 22 * 9,10 4"
     - cron: "17 23 * 11,12,1 4"
+    # Sunday, in three runs, since a job runs six hours and the slate eleven.
+    # Each watches only its own kickoffs (--kickoff-after/--kickoff-before),
+    # starts about two hours ahead of them for GitHub's delay, and stops 25
+    # minutes after its last game: early (1 PM kickoffs) at 11:17 AM ET,
+    # late (4:05/4:25) at 2:17 PM, night (8:20) at 6:47 PM. Daylight time:
+    - cron: "17 15 * 9,10 0"
+    - cron: "17 18 * 9,10 0"
+    - cron: "47 22 * 9,10 0"
+    # Standard time, an hour later in UTC:
+    - cron: "17 16 * 11,12,1 0"
+    - cron: "17 19 * 11,12,1 0"
+    - cron: "47 23 * 11,12,1 0"
 
 jobs:
   log:
@@ -42,16 +59,30 @@ jobs:
           node-version: "22"
       - name: Log the feeds through the game
         run: |
-          MINUTES="${{ github.event.inputs.minutes || '210' }}"
+          MINUTES="${{ github.event.inputs.minutes || '330' }}"
           EVERY="${{ github.event.inputs.every || '10' }}"
           WEEK="${{ github.event.inputs.week }}"
+          WINDOW="${{ github.event.inputs.window || 'all' }}"
+          # A scheduled run's window comes from the cron that fired it.
+          case "${{ github.event.schedule }}" in
+            "17 15 * 9,10 0"|"17 16 * 11,12,1 0") WINDOW=early ;;
+            "17 18 * 9,10 0"|"17 19 * 11,12,1 0") WINDOW=late ;;
+            "47 22 * 9,10 0"|"47 23 * 11,12,1 0") WINDOW=night ;;
+          esac
+          case "$WINDOW" in
+            early) KICK="--kickoff-before 16:00" ;;
+            late)  KICK="--kickoff-after 16:00 --kickoff-before 19:00" ;;
+            night) KICK="--kickoff-after 19:00" ;;
+            *)     KICK="" ;;
+          esac
+          echo "window: $WINDOW"
           mkdir -p spike/data
-          node spike/log-feeds.mjs --minutes "$MINUTES" --every "$EVERY" ${WEEK:+--week "$WEEK"} 2>&1 | tee spike/data/feeds-summary.txt
+          node spike/log-feeds.mjs --minutes "$MINUTES" --every "$EVERY" ${WEEK:+--week "$WEEK"} $KICK 2>&1 | tee spike/data/feeds-summary.txt
       - name: Keep the file and the table
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: feeds-${{ github.run_id }}
+          name: feeds-${{ github.run_id }}-${{ github.event.schedule && 'scheduled' || 'manual' }}
           path: |
             spike/data/feeds-*.jsonl
             spike/data/feeds-summary.txt

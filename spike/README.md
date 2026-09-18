@@ -235,11 +235,17 @@ counting, stops on its own 25 minutes after the last live game ends, and
 prints the table on exit (or `--analyze <file>` later). **It runs on a
 GitHub runner so nothing at home has to stay awake**: the `log-feeds`
 workflow (`.github/workflows/log-feeds.yml`) starts from the Actions tab
-with a duration, or on its own at 6:17 PM Eastern every Thursday, two
-hours before kickoff, and hands the file and the printed table back as
-an artifact on the run. A job may run six hours at most, so for a Sunday
-start it by hand shortly before 1:00 PM ET: that covers the early games
-and most of the late window, not the night game.
+with a duration and a window, or on its own: Thursday at 6:17 PM ET, and
+Sunday in three runs, since a job may run six hours and the slate runs
+eleven: **early** (1 PM kickoffs) from 11:17 AM, **late** (4:05/4:25)
+from 2:17 PM, **night** (8:20) from 6:47 PM, each about two hours ahead of
+its kickoffs for GitHub's delay. A run watches only the games kicking off
+in its window (`--kickoff-after` / `--kickoff-before`, Eastern, on the day
+it started), so the night run does not see the late games end and stop
+before the night game; `--minutes` counts from its first live game. Each
+hands its file and table back as an artifact. The crons are UTC, one set
+per clock season (Sep-Oct daylight, Nov-Jan standard). Not covered: London
+and other morning kickoffs, Saturday games, and Monday night.
 
 **Fixed after the first run (Thu Sep 17, DET @ BUF).** GitHub started the
 scheduled run two hours late, hence the earlier schedule and the wait for

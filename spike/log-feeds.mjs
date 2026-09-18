@@ -28,6 +28,7 @@
 //   .github/workflows/log-feeds.yml runs it on a GitHub runner instead)
 //   node spike/log-feeds.mjs --analyze spike/data/feeds-<stamp>.jsonl
 //   node spike/log-feeds.mjs --dry 401671715   # a finished game's summary, to check the parsing and the joins
+//   ... --kickoff-after 16:00 --kickoff-before 19:00   # only today's games kicking off in that window (Eastern)
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -39,6 +40,11 @@ const EVERY_S = Number(opt('every', 10));
 const MINUTES = Number(opt('minutes', 0));      // 0: until Ctrl-C
 const ANALYZE = opt('analyze', null);
 const DRY = opt('dry', null);
+// A window of today's kickoffs (Eastern, "HH:MM"): the run watches only the
+// games that kick off inside it, so a Sunday can be split across jobs (a
+// GitHub job runs six hours at most, the slate eleven) without the night
+// run seeing the late games end and stopping before the night game starts.
+const KICK_AFTER = opt('kickoff-after', null), KICK_BEFORE = opt('kickoff-before', null);
 const UA = process.env.MFL_UA || 'imp19716';
 const LEAGUE = process.env.MFL_LEAGUE || '19716';
 let SEASON = process.env.MFL_SEASON || null, WEEK = opt('week', null);
@@ -140,12 +146,25 @@ let sleeperPrimed = false, mflPrimed = false;
 const TD_KEYS = ['pass_td', 'rush_td', 'rec_td', 'idp_def_td', 'st_td', 'kr_td', 'pr_td', 'fum_rec_td', 'idp_td'];
 const tdOf = (st) => TD_KEYS.reduce((a, k) => a + (Number(st?.[k]) || 0), 0);
 
+const ET_DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
+const ET_HM = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: false });
+// Inside the kickoff window: the day the run started (Eastern, so a night
+// game running past midnight stays in) and within [after, before).
+const RUN_DAY = ET_DAY.format(new Date());
+const inWindow = (iso) => {
+  if (!KICK_AFTER && !KICK_BEFORE) return true;
+  const d = new Date(iso);
+  if (!iso || Number.isNaN(+d) || ET_DAY.format(d) !== RUN_DAY) return false;
+  const hm = ET_HM.format(d);
+  return (!KICK_AFTER || hm >= KICK_AFTER) && (!KICK_BEFORE || hm < KICK_BEFORE);
+};
+
 async function pollScoreboard() {
   const j = await getJson(`${ESPN}/scoreboard`);
   const live = [];
   for (const e of toArray(j.events)) {
     const c = toArray(e.competitions)[0];
-    if (!c) continue;
+    if (!c || !inWindow(c.date || e.date)) continue;
     if (c.status?.type?.state === 'in') live.push({ id: e.id, name: e.shortName });
     const lp = c.situation?.lastPlay;
     if (lp?.id && seenLastPlay.get(e.id) !== String(lp.id)) {
@@ -323,8 +342,8 @@ async function main() {
     try { const st = await getJson('https://api.sleeper.app/v1/state/nfl'); SEASON = SEASON || String(st.season); WEEK = WEEK || String(st.week); }
     catch (e) { say('Sleeper state unavailable:', e?.message || e); SEASON = SEASON || String(new Date().getFullYear()); WEEK = WEEK || '1'; }
   }
-  say(`season ${SEASON} week ${WEEK}, every ${EVERY_S}s${MINUTES ? ` for ${MINUTES} minutes` : ' until Ctrl-C'} -> ${OUT}`);
-  log({ feed: 'start', season: SEASON, week: WEEK, every: EVERY_S });   // plays before this are not measured (analyze)
+  say(`season ${SEASON} week ${WEEK}, every ${EVERY_S}s${MINUTES ? ` for ${MINUTES} minutes from the first live game` : ' until Ctrl-C'}${KICK_AFTER || KICK_BEFORE ? `, kickoffs ${KICK_AFTER || ''}-${KICK_BEFORE || ''} ET today` : ''} -> ${OUT}`);
+  log({ feed: 'start', season: SEASON, week: WEEK, every: EVERY_S, kickoffAfter: KICK_AFTER, kickoffBefore: KICK_BEFORE });   // plays before this are not measured (analyze)
   await loadJoins();
 
   if (DRY) {
