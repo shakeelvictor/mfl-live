@@ -2669,9 +2669,10 @@ const TD_PLAY_FRESH_MS = 2 * 60e3;   // a play raises a card only when the previ
 const tdBase = new Map();        // sid -> touchdowns on the last stat line
 const tdEstBase = new Map();     // sid -> the engine's points for the last stat line
 const tdShown = new Map();       // "fid:pid" -> touchdowns a card has covered
-const tdPlays = new Map();       // "fid:pid" -> touchdowns the plays (or the line) have counted
+const tdPlays = new Map();       // "fid:pid" -> touchdowns the plays have counted (the line's count once its lead has stood a window)
 const tdConfirmed = new Map();   // "fid:pid" -> times a card was shown, its jump not yet seen
 const tdPending = new Map();     // "fid:pid" -> { ev, at }: a jump waiting for its touchdown
+const tdLineAhead = new Map();   // "fid:pid" -> { n, at }: the line counts n, more than the plays have, since `at`
 const statsConfirm = () => statsAt !== 0 && statsNote() === "";
 const tdKey = (t, p) => `${t.id}:${p.id}`;
 const shownOne = (key) => tdShown.set(key, (tdShown.get(key) || 0) + 1);
@@ -2718,7 +2719,14 @@ function confirmTouchdowns(first) {
       for (let i = shown + 1; i < n; i++) confirmOne(key);
     }
     tdShown.set(key, Math.max(shown, n));
-    tdPlays.set(key, Math.max(tdPlays.get(key) || 0, n));
+    // The plays' count catches up with the line only once the line's lead
+    // has stood a whole window (the plays were missed: a hidden tab, a
+    // play ESPN never showed as its last). Caught up at once, the play for
+    // the very touchdown the line had just counted read as one more and
+    // raised a second card (Josh Allen's scramble, 2026-09-17: Sleeper's
+    // line got there before ESPN's play). The first arrival is a baseline.
+    if (first) tdPlays.set(key, Math.max(tdPlays.get(key) || 0, n));
+    else if ((tdPlays.get(key) || 0) < n) tdLineAhead.set(key, { n, at: tdLineAhead.get(key)?.n === n ? tdLineAhead.get(key).at : Date.now() });
   }
   settleTouchdowns();
 }
@@ -2816,6 +2824,10 @@ function playTouchdowns() {
 // it.
 function settleTouchdowns() {
   const now = Date.now();
+  for (const [key, { n, at }] of tdLineAhead) {
+    if ((tdPlays.get(key) || 0) >= n) tdLineAhead.delete(key);   // the plays came
+    else if (now - at > TD_WINDOW_MS) { tdPlays.set(key, n); tdLineAhead.delete(key); }   // they never will
+  }
   for (const [key, { ev, at, grace }] of tdPending) {
     const seen = tdConfirmed.get(key);
     if (seen?.length) { seen.shift(); tdPending.delete(key); }

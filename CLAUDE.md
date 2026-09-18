@@ -281,7 +281,14 @@ Each of these was verified against real 2025 data, not inferred:
   it read as new. So `applySituationBody` drops an answer the proxy
   fetched earlier than the one on the page (its `data.at`,
   `situationFetchedAt`), and `playSeen` remembers every play id a game
-  has shown (`ids`), not only the last. The bookkeeping is per starter (`fid:pid`): `tdShown`
+  has shown (`ids`), not only the last. **The line does not advance the
+  plays' count at once** (2026-09-17, Josh Allen's scramble twice in a
+  row, the app open throughout): Sleeper's line counted the touchdown
+  before ESPN's play arrived, set `tdPlays` to its count, and the play
+  for that same touchdown then read as one more. Now the line's lead
+  waits in `tdLineAhead` and becomes the plays' count only once it has
+  stood `TD_WINDOW_MS` (the plays were missed); a play arriving inside
+  the window matches the line's card. The bookkeeping is per starter (`fid:pid`): `tdShown`
   is how many touchdowns a card has covered, `tdPlays` how many the
   plays (or the line) have counted, and a signal raises a card only
   when it knows of more than have been shown; `tdConfirmed` holds each
@@ -835,12 +842,13 @@ element and scores are second.
   carry the play too** (2026-09-17, `feedPlays` / `playLine`, `.tfeed`
   under the "on now" names): the last play naming one of its live
   starters, the starter's last name in the accent before it, so a phone
-  gets the real-time feel without opening a roster. The line is two lines
-  at most, so its text is trimmed (`shortPlay`; the roster row and the
+  gets the real-time feel without opening a roster. On a phone the whole
+  play shows (2026-09-17; it was cut at two lines and lost the yards);
+  the laptop pane keeps two lines. Its text is trimmed either way (`shortPlay`; the roster row and the
   game strip keep ESPN's words): tacklers in brackets go unless one is
   the franchise's own, "pass short right to" is "pass to", and the ball
   spot before the yards goes ("to MIN 22 for 9 yards" is "for 9
-  yards"), so a cut would lose the least. Plays from different
+  yards"), so it reads short. Plays from different
   games that land in one poll queue per franchise (`feeds`), each held
   `PLAY_DWELL_MS` (5s) before the next sweeps over it, three at most; a
   play naming two of its starters is one item with both names. A play
