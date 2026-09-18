@@ -273,7 +273,15 @@ Each of these was verified against real 2025 data, not inferred:
   flat 6). A play marked NULLIFIED, REVERSED, NO PLAY or a two-point try
   raises nothing, and the first play after a load or a two-minute gap
   only primes the memory (`playSeen`, keyed by ESPN's play id), since
-  it may be old. The bookkeeping is per starter (`fid:pid`): `tdShown`
+  it may be old. **A play raises its card once, however often it comes
+  back** (2026-09-17, Goff's touchdown card twice, the second on
+  returning to the app): the function's cache is per instance and the
+  edge's per URL, so a tick could carry an older situation than the
+  last, putting the game's previous play back, and the touchdown after
+  it read as new. So `applySituationBody` drops an answer the proxy
+  fetched earlier than the one on the page (its `data.at`,
+  `situationFetchedAt`), and `playSeen` remembers every play id a game
+  has shown (`ids`), not only the last. The bookkeeping is per starter (`fid:pid`): `tdShown`
   is how many touchdowns a card has covered, `tdPlays` how many the
   plays (or the line) have counted, and a signal raises a card only
   when it knows of more than have been shown; `tdConfirmed` holds each

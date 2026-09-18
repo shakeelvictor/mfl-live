@@ -23,6 +23,7 @@ let kickoff = null;            // Date of the week's first game (live source)
 let games = new Map();         // NFL team -> { kickoff: Date, secs } from nflSchedule (live source)
 let situations = new Map();    // NFL team -> its game's live situation from ESPN through the proxy (possession, red zone, ball spot); context only
 let situationAt = 0;
+let situationFetchedAt = 0;   // when the proxy fetched the situation on the page from ESPN (its `at`)
 let dayTeams = { early: new Set(), days: [] };   // the week's game days from the schedule: [{ key, name, teams }] in kickoff order, in NFL (Eastern) dates; `early` is the first day's teams
 
 // Playoffs (Weeks 15-17): the round's field, folded from the season's
@@ -2584,6 +2585,12 @@ function fetchSituation() {
 }
 function applySituationBody(r) {
   if (!r.ok) { if (!r.pending) console.warn("game situations unavailable, keeping the last ones:", r.error); return; }
+  // An older copy than the one on the page (another function instance's
+  // cache, or an edge's, answering this tick) is dropped: laid over a newer
+  // one it put the game's previous play back, and the play after it read as
+  // new again (Goff's touchdown card twice, 2026-09-17).
+  if (r.data.at && r.data.at < situationFetchedAt) return;
+  situationFetchedAt = r.data.at || situationFetchedAt;
   situations = new Map(Object.entries(r.data.games || {}));
   situationPrevAt = situationAt;
   situationAt = Date.now();
@@ -2719,7 +2726,8 @@ function confirmTouchdowns(first) {
 // scorer(s) among the league's starters on either side. The ball carrier
 // is the starter the play names last; on a pass with no turnover the
 // passer scores too. The play's value comes from the yards it names.
-const playSeen = new Map();   // "away@home" -> the last play handled: { id, text, at, raised: [{ t, p, pts }] }
+const playSeen = new Map();   // "away@home" -> the last play handled: { id, text, at, raised: [{ t, p, pts }], ids }
+const PLAY_IDS_KEPT = 200;   // a game has ~180 plays
 let situationPrevAt = 0;
 const playPoints = (role, yds) => r2(Scoring.scoreLine(
   role === "pass" ? { pass_td: 1, pass_yd: yds, pass_cmp: 1, pass_att: 1 }
@@ -2766,7 +2774,15 @@ function playTouchdowns() {
       if (prev.text !== text) { prev.text = text; if (/REVERSED/i.test(text) && prev.raised.length) overturn(prev); }
       continue;
     }
-    const seen = { id, text, at: Date.now(), raised: [] };
+    // Every play the game has shown is remembered, not just the last: a
+    // play that comes round again (ESPN or a cache flapping back to an
+    // older snapshot, then forward) is not news, and a touchdown raises its
+    // card once however many times it reappears.
+    if (prev?.ids.has(id)) continue;
+    const ids = prev?.ids || new Set();
+    ids.add(id);
+    if (ids.size > PLAY_IDS_KEPT) ids.delete(ids.values().next().value);
+    const seen = { id, text, at: Date.now(), raised: [], ids };
     playSeen.set(gk, seen);
     if (/REVERSED/i.test(text) && prev?.raised.length && Date.now() - prev.at < TD_WINDOW_MS
       && !/TWO-POINT|extra point/i.test(text) && prev.raised.some((r) => playNames(text, r.p))) overturn(prev);
