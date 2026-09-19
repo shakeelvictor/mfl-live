@@ -1031,11 +1031,28 @@ function spotlightEntries() {
     if (days.some((d) => d.started && !d.final)) return [];
     for (const d of days) if (d.final) out.push(entry(all.filter((p) => d.teams.has(p.tm)), "Top scorer", d.name, false));
   }
-  if (weekIsFinal()) out.push(entry(all,
-    post ? `\u2605 MVP of ${post.round.ref}` : duel ? "\u2605 MVP of the Pro Bowl" : "\u2605 MVP of the week",
-    `${post ? post.round.name : duel ? EXHIBITION.name : `Week ${WEEK}`} final`, true));
+  if (weekIsFinal()) {
+    const mvp = entry(all,
+      post ? `\u2605 MVP of ${post.round.ref}` : duel ? "\u2605 MVP of the Pro Bowl" : "\u2605 MVP of the week",
+      `${post ? post.round.name : duel ? EXHIBITION.name : `Week ${WEEK}`} final`, true);
+    if (mvp && quinnWeek()) { mvp.top = QUINN; mvp.key = `${mvp.when}:${QUINN.key}`; }
+    out.push(mvp);
+  }
   return out.filter(Boolean);
 }
+/* Quinn, 3rd and 1's son, is the MVP of Week 2 (2026), whoever the NFL
+   sends (Shakeel's surprise for the league, 2026-09-18): once the week's
+   games are all final, after Monday night, his card takes the MVP slot in
+   the same design and entrance; the day cards stay real. His points are
+   his line under the league's rules. `?mvp=quinn` puts him on any finished
+   week's MVP card for checking. */
+const QUINN_ST = { rec: 6, rec_td: 2, idp_int: 1, idp_def_td: 1 };
+const QUINN = {
+  key: "quinn", n: "Quinn", pos: "WR", tm: "", team: "Special guest", franchise: "3rd and 1",
+  img: "quinn.jpg", logo: "logo.png", line: "6 REC \u00b7 2 TD \u00b7 1 PICK SIX",
+  st: QUINN_ST, pts: r2(Scoring.scoreLine(QUINN_ST)),
+};
+const quinnWeek = () => QUERY.get("mvp") === "quinn" || (!FIXTURE && SEASON === 2026 && WEEK === 2 && !post && !duel);
 let spotIndex = null;   // the entry the arrows have flipped to; null is the newest
 
 // flip: a render for the arrows, which shows another entry with the body's
@@ -1063,7 +1080,8 @@ function renderSpotlight(flip = false) {
           `<span class="long">${e.mvp ? "\u2605 " : ""}${esc(e.when)}</span><span class="short">${e.mvp ? "\u2605 " : ""}${esc(e.mvp ? "Final" : e.when.slice(0, 3))}</span></button>`).join("") +
       `</span>`
     : `<span class="spot-when">${esc(when)}</span>`;
-  const logo = logoSrc(top.tm) ? `<span class="logo"><img src="${logoSrc(top.tm)}" alt=""></span>` : `<span class="logo">${esc(top.tm)}</span>`;
+  const logoImg = top.logo || logoSrc(top.tm);
+  const logo = logoImg ? `<span class="logo"><img src="${logoImg}" alt=""></span>` : `<span class="logo">${esc(top.tm)}</span>`;
   spotEl.innerHTML =
     (phaseChanged && newest.mvp && !reducedMotion.matches ? `<span class="spot-flash" aria-hidden="true"></span>` : "") +
     `<div class="spot-top"><span class="micro spot-label">${label}</span>${nav}</div>` +
@@ -1071,8 +1089,8 @@ function renderSpotlight(flip = false) {
       `<span class="spot-face">${avatar(top)}${logo}</span>` +
       `<span class="spot-who">` +
         `<span class="spot-name">${esc(top.n)}</span>` +
-        `<span class="spot-meta"><span class="pos ${posClass(top.pos)}">${esc(top.pos)}</span><span>${esc(top.tm)}</span></span>` +
-        `<span class="spot-stat">${esc(statLine(top.pos, top.st))}</span>` +
+        `<span class="spot-meta"><span class="pos ${posClass(top.pos)}">${esc(top.pos)}</span><span>${esc(top.team || top.tm)}</span></span>` +
+        `<span class="spot-stat">${esc(top.line || statLine(top.pos, top.st))}</span>` +
         `<span class="spot-for">for <b>${esc(top.franchise)}</b></span>` +
       `</span>` +
       `<span class="spot-pts" data-tween="p:${top.key}">${fmt(top.pts)}</span>` +
@@ -1157,7 +1175,7 @@ const initials = (name) => name.split(/[\s-]+/).filter(Boolean)
 
 // A CDN headshot that fails (403 for an unknown id) swaps to the initials.
 const avatar = (p) => {
-  const src = headshotSrc(p);
+  const src = p.img || headshotSrc(p);
   if (src) return `<img class="avatar" src="${src}" alt="" decoding="async" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className: 'avatar-fb', textContent: this.dataset.fb }))" data-fb="${esc(initials(p.n))}">`;
   return `<span class="avatar-fb" aria-hidden="true">${esc(initials(p.n))}</span>`;
 };
