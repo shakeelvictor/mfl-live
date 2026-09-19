@@ -1034,16 +1034,17 @@ element and scores are second.
   a Bear over 40 points (`BEARS_MVP`) is the MVP of the week outright,
   whoever scored more; the day cards get the tie rule only. Rehearsed on
   `app-2025` `?w=12` by handing a Bear the top's points and then 40.5
+  (until 2026-09-16 the archive's Sunday read unfinished there during a
+  live game, ESPN's current situation laid over the 2025 clocks; a
+  situation now counts only for the schedule's own game, see
+  `sameGame`).
   **Quinn is the MVP of Week 2** (2026-09-18, Shakeel's surprise): 3rd
   and 1's son takes the Week 2 (2026) MVP slot once the week is final,
   whoever the NFL sent (`QUINN`, `quinnWeek` in `app.js`; his photo is
   `app/quinn.jpg`, the league mark his badge, 6 REC, 2 TD, 1 pick six,
   24.00 under the rules); the day cards stay real. `?mvp=quinn` shows him
   on any finished week. Rehearsed on `app-2025` `?w=12`.
-  (until 2026-09-16 the archive's Sunday read unfinished there during a
-  live game, ESPN's current situation laid over the 2025 clocks; a
-  situation now counts only for the schedule's own game, see
-  `sameGame`). The week is final once
+  The week is final once
   every game is (`slate.weekFinal = slate.sunFinal`; MFL's "official"
   mark is not read, the same rule the playoffs use), which turns the
   card gold and the leader hero into the Week winner; both clear when
