@@ -271,8 +271,24 @@ Each of these was verified against real 2025 data, not inferred:
   +7.60, a 9-yard pass +6.36 for the passer; a return or a defensive
   score reads the flat 6). A play marked NULLIFIED, REVERSED, NO PLAY or
   a two-point try raises nothing, and the first play after a load or a
-  two-minute gap only primes the memory (`playSeen`), since it may be
-  old. **A play raises its card once**: `applySituationBody` drops an
+  two-minute gap is not judged on arrival (`playSeen`), since it may be
+  old. **That hold is no longer a drop** (2026-09-20): until then the
+  unjudged play went into `ids` and was never looked at again, so a
+  touchdown still on the field fifteen seconds later never raised its
+  card — which is the case a phone meets every time, since the tab stops
+  polling while the screen is off and the one play it swallows on being
+  shown again is the touchdown the viewer has just watched (Bhayshul
+  Tuten and Trey McBride, both missed on Week 3 Sunday; a page load
+  swallowed one the same way, the first arrival having no previous one to
+  measure against). The play is held instead (`judged`), and the next
+  arrival that still finds it on the field weighs it (`judgePlay`, split
+  out of the loop) — within `TD_HOLD_MS` (90s) of the first sighting and
+  never while the game is at a break (`atABreak`, ESPN's `detail`:
+  halftime, end of quarter, delay), so nothing genuinely old comes
+  through. Measured the same day: of 40 touchdowns across the slate the
+  median play stood 81s as ESPN's newest, and only one stood under 30s,
+  so a held play is nearly always still on the field one poll later.
+  **A play raises its card once**: `applySituationBody` drops an
   answer the proxy fetched earlier than the one on the page (`data.at`,
   `situationFetchedAt`; the function's cache is per instance and the
   edge's per URL, so a tick could carry an older situation and put a

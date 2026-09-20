@@ -2742,6 +2742,21 @@ function overturn(seen) {
   }
   seen.raised = [];
 }
+/* A play is judged once the page has been polling steadily: the newest
+   play on a load, or after a gap, may be minutes old. That gate used to
+   DROP the play, and the drop was permanent — it went into `ids` and was
+   never looked at again, so a touchdown still on the field fifteen
+   seconds later never raised its card. It is the case a phone meets every
+   time: the tab stops polling while the screen is off, it polls once on
+   being shown, and the play it swallows is the touchdown the viewer has
+   just watched (Tuten and McBride, 2026-09-20; a page load swallows one
+   the same way, since the first arrival has no previous one to measure
+   against). So an unjudged play is held over instead, and the next
+   arrival that still finds it on the field judges it — within
+   TD_HOLD_MS of the first sighting, and never at a break, so nothing
+   genuinely old comes through. */
+const TD_HOLD_MS = 90e3;
+const atABreak = (g) => /halftime|end of|delay|suspended/i.test(String(g.detail || ""));
 function playTouchdowns() {
   const fresh = situationPrevAt > 0 && Date.now() - situationPrevAt < TD_PLAY_FRESH_MS;
   for (const g of new Set(situations.values())) {
@@ -2751,6 +2766,9 @@ function playTouchdowns() {
     const prev = playSeen.get(gk);
     if (prev && prev.id === id) {
       if (prev.text !== text) { prev.text = text; if (/REVERSED/i.test(text) && prev.raised.length) overturn(prev); }
+      // Held over from a load or a gap: the play is still the one on the
+      // field, so it was current after all.
+      if (!prev.judged && fresh && Date.now() - prev.at < TD_HOLD_MS && !atABreak(g)) judgePlay(g, gk, prev);
       continue;
     }
     // Every play the game has shown is remembered, not just the last: a
@@ -2761,35 +2779,44 @@ function playTouchdowns() {
     const ids = prev?.ids || new Set();
     ids.add(id);
     if (ids.size > PLAY_IDS_KEPT) ids.delete(ids.values().next().value);
-    const seen = { id, text, at: Date.now(), raised: [], ids };
+    const seen = { id, text, at: Date.now(), raised: [], ids, judged: false };
     playSeen.set(gk, seen);
     if (/REVERSED/i.test(text) && prev?.raised.length && Date.now() - prev.at < TD_WINDOW_MS
       && !/TWO-POINT|extra point/i.test(text) && prev.raised.some((r) => playNames(text, r.p))) overturn(prev);
-    if (!fresh || g.state !== "in" || !/TOUCHDOWN/.test(text)) continue;
-    // The play's text carries the try after the score ("... TOUCHDOWN.
-    // TWO-POINT CONVERSION ATTEMPT. ..."; seen on a 2024 game), so a try
-    // only rules the play out when it comes BEFORE the touchdown, i.e. it
-    // is the play. Nullified, reversed and no-play can sit anywhere.
-    const head = text.slice(0, text.search(/TOUCHDOWN/));
-    if (/NULLIFIED|REVERSED|NO PLAY/i.test(text) || /TWO-POINT/i.test(head)) continue;
-    const passAt = head.search(/\bpass\b/i), turnover = /INTERCEPT|FUMBLE|RECOVER|LATERAL/i.test(head);
-    const yds = Number(([...head.matchAll(/for (\d+) yards?/g)].pop() || [])[1]) || 0;
-    // The same play re-posted under a new id is the same touchdown.
-    const sig = `${gk}|${head.replace(/^\([^)]*\)\s*/, "").trim()}`;
-    if (tdPlayTexts.has(sig)) continue;
-    tdPlayTexts.add(sig);
-    const named = [];
-    for (const t of rosters) for (const p of t.starters) if (p.tm === g.away || p.tm === g.home) { const at = nameAt(head, p); if (at >= 0) named.push({ t, p, at }); }
-    if (!named.length) continue;
-    named.sort((a, b) => b.at - a.at);
-    const card = (x, role) => { const pts = playPoints(role, yds); if (tdFromPlay(x.t, x.p, pts)) seen.raised.push({ t: x.t, p: x.p, pts }); };
-    if (passAt >= 0 && !turnover) {
-      const receiver = named.find((x) => x.at > passAt), passer = named.find((x) => x.at < passAt);
-      if (receiver) card(receiver, "rec");
-      if (passer) card(passer, "pass");
-    } else {
-      card(named[0], turnover ? "def" : /\bkicks\b/i.test(head) ? "kr" : /\bpunts\b/i.test(head) ? "pr" : "rush");
-    }
+    if (fresh) judgePlay(g, gk, seen);
+  }
+}
+
+// One play, weighed once: does it end in a touchdown by one of the
+// league's starters, and whose card is it? Sets `judged` so a play held
+// over for freshness is never weighed twice.
+function judgePlay(g, gk, seen) {
+  seen.judged = true;
+  const text = seen.text;
+  if (g.state !== "in" || !/TOUCHDOWN/.test(text)) return;
+  // The play's text carries the try after the score ("... TOUCHDOWN.
+  // TWO-POINT CONVERSION ATTEMPT. ..."; seen on a 2024 game), so a try
+  // only rules the play out when it comes BEFORE the touchdown, i.e. it
+  // is the play. Nullified, reversed and no-play can sit anywhere.
+  const head = text.slice(0, text.search(/TOUCHDOWN/));
+  if (/NULLIFIED|REVERSED|NO PLAY/i.test(text) || /TWO-POINT/i.test(head)) return;
+  const passAt = head.search(/\bpass\b/i), turnover = /INTERCEPT|FUMBLE|RECOVER|LATERAL/i.test(head);
+  const yds = Number(([...head.matchAll(/for (\d+) yards?/g)].pop() || [])[1]) || 0;
+  // The same play re-posted under a new id is the same touchdown.
+  const sig = `${gk}|${head.replace(/^\([^)]*\)\s*/, "").trim()}`;
+  if (tdPlayTexts.has(sig)) return;
+  tdPlayTexts.add(sig);
+  const named = [];
+  for (const t of rosters) for (const p of t.starters) if (p.tm === g.away || p.tm === g.home) { const at = nameAt(head, p); if (at >= 0) named.push({ t, p, at }); }
+  if (!named.length) return;
+  named.sort((a, b) => b.at - a.at);
+  const card = (x, role) => { const pts = playPoints(role, yds); if (tdFromPlay(x.t, x.p, pts)) seen.raised.push({ t: x.t, p: x.p, pts }); };
+  if (passAt >= 0 && !turnover) {
+    const receiver = named.find((x) => x.at > passAt), passer = named.find((x) => x.at < passAt);
+    if (receiver) card(receiver, "rec");
+    if (passer) card(passer, "pass");
+  } else {
+    card(named[0], turnover ? "def" : /\bkicks\b/i.test(head) ? "kr" : /\bpunts\b/i.test(head) ? "pr" : "rush");
   }
 }
 const mkPlayer = (id, pts = 0, secs = null) => {
