@@ -1174,14 +1174,56 @@ const posGroup = (pos) => (POS_CLASS[pos] ? pos : "IDP");
 // pane's contents change: a team selected or a tab switched. A poll's
 // re-render keeps them still, so the board never twitches every 30s.
 let rosterEnter = false;
+
+/* The box score (2026-09-25, the redesign's "Broadcast" team page): the
+   roster as one table per stat group, Passing, Rushing, Receiving,
+   Kicking, Defense, each row the player's photo, name and game, his line
+   in columns under the table's labels, and the points. Receivers and
+   tight ends share Receiving; every defender is Defense. The columns are
+   Sleeper's line (context, as ever); the points are the page's number.
+   The roster is a size container: narrow (a phone, the laptop pane at
+   1024px) a row is two lines, the name over the columns; wide it is one
+   line with the game (both scores, the ball) between the name and the
+   columns, and the photo a size up. Photos on at every width. */
+const bxNum = (l, ...ks) => ({ l, v: (st) => String(ks.reduce((a, k) => a + (st[k] || 0), 0)), z: (st) => !ks.some((k) => st[k]) });
+const bxFrac = (l, a, b) => ({ l, v: (st) => `${st[a] || 0}/${st[b] || st[a] || 0}`, z: (st) => !st[a] && !st[b] });
+const BOX = {
+  QB: ["Passing", [bxFrac("C/ATT", "pass_cmp", "pass_att"), bxNum("YDS", "pass_yd"), bxNum("TD", "pass_td"), bxNum("INT", "pass_int"), bxNum("RUSH", "rush_yd")]],
+  RB: ["Rushing", [bxNum("CAR", "rush_att"), bxNum("YDS", "rush_yd"), bxNum("REC", "rec"), bxNum("RYD", "rec_yd"), bxNum("TD", "rush_td", "rec_td")]],
+  WR: ["Receiving", [bxNum("TGT", "rec_tgt"), bxNum("REC", "rec"), bxNum("YDS", "rec_yd"), bxNum("TD", "rec_td", "rush_td")]],
+  K: ["Kicking", [bxFrac("FG", "fgm", "fga"), bxFrac("XP", "xpm", "xpa"), bxNum("LNG", "fgm_lng")]],
+  IDP: ["Defense", [bxNum("TKL", "idp_tkl"), bxNum("SOLO", "idp_tkl_solo", "st_tkl_solo"), bxNum("SACK", "idp_sack"), bxNum("TO", "idp_int", "idp_ff", "idp_fum_rec"), bxNum("PD", "idp_pass_def")]],
+};
+const boxGroup = (pos) => { const g = posGroup(pos); return g === "TE" ? "WR" : g; };
 const rosterHtml = (list, bench, isTop) => {
-  let last = null;
-  return [...list].sort(byLineup).map((p, i) => {
-    const g = posGroup(p.pos);
-    const sep = g === last ? "" : `<div class="pgroup" data-g="${g}" role="presentation"><span>${g}</span></div>`;
-    last = g;
-    return sep + playerRow(p, bench, !bench && isTop(p), rosterEnter ? i : -1);
+  const byGroup = new Map();
+  for (const p of [...list].sort(byLineup)) {
+    const g = boxGroup(p.pos);
+    if (!byGroup.has(g)) byGroup.set(g, []);
+    byGroup.get(g).push(p);
+  }
+  let i = 0;
+  return [...byGroup].map(([g, ps]) => {
+    const [title, cols] = BOX[g];
+    const head = `<div class="bx-head" role="presentation">` +
+      `<span class="bx-t">${title}</span><span class="bx-sp"></span><span class="bx-gl">Game</span>` +
+      cols.map((c) => `<span class="bx-l">${esc(c.l)}</span>`).join("") +
+      `<span class="bx-pl">Pts</span></div>`;
+    return `<section class="bx" data-g="${g}" style="--bx-n:${cols.length}" aria-label="${title}">${head}` +
+      ps.map((p) => playerRow(p, bench, !bench && isTop(p), rosterEnter ? i++ : -1, cols, g)).join("") +
+    `</section>`;
   }).join("");
+};
+// The row's game in the wide cut: away over home, scores once kicked off,
+// the player's team bright, a football by whoever has the ball, RZ.
+const gameCell = (p) => {
+  const gs = gameState(p);
+  if (!gs) return "";
+  const { g, started, live, sit } = gs;
+  const view = (s) => (sit ? { ...s, score: sit.scores?.[s.id] ?? s.score, poss: sit.poss === s.id, rz: sit.poss === s.id && sit.rz } : s);
+  const side = (s, at) => `<span class="bg-t${s.id === p.tm ? " mine" : ""}${live && s.poss ? " poss" : ""}">` +
+    `${at ? `<i>@</i>` : ""}${esc(s.id)}${started ? ` <b>${s.score}</b>` : ""}${live && s.rz ? ` <span class="pg-rz">RZ</span>` : ""}</span>`;
+  return side(view(g.away), false) + side(view(g.home), true);
 };
 
 const initials = (name) => name.split(/[\s-]+/).filter(Boolean)
@@ -1496,7 +1538,44 @@ const nameHtml = (n) => {
   return i > 0 ? `<span class="fn">${esc(n.slice(0, i))}</span> ${esc(n.slice(i + 1))}` : esc(n);
 };
 const teamVars = (tm) => { const c = TEAM_COLORS[tm]; return c ? `--tc1:${c[0]};--tc2:${c[1]};` : ""; };
-const playerRow = (p, bench, top = false, enter = -1) => {
+// The box score's name: the first name shows as an initial in the narrow
+// cut and in full in the wide one (.fi / .ff), quieter than the last.
+const boxNameHtml = (n) => {
+  const i = n.indexOf(" ");
+  if (i <= 0) return esc(n);
+  const first = n.slice(0, i);
+  return `<span class="fn"><span class="fi">${esc(first[0])}.</span><span class="ff">${esc(first)}</span></span> ${esc(n.slice(i + 1))}`;
+};
+// A box-score row: the same button, keys and signals as the photo row
+// (live wash, red zone, top scorer's gold, TD chip, badges, the last
+// play), laid out as a table row under its group's labels.
+const boxRow = (p, bench, top, enter, cols, g) => {
+  const dim = bench && phase !== "preseason";
+  const style = teamVars(p.tm) + (enter >= 0 ? `--i:${enter}` : "");
+  const st = p.st && Object.keys(p.st).length ? p.st : null;
+  const mixed = g === "WR" || g === "IDP";   // the table holds more than one position: say which
+  const play = lastPlayOf(p);
+  return `<div class="prow bxr${dim ? " bench" : ""}${isLive(p) ? " live" : ""}${inRedZone(p) ? " rz" : ""}${top ? " top" : ""}${enter >= 0 ? " enter" : ""}"${style ? ` style="${style}"` : ""}` +
+    ` role="button" tabindex="0" aria-haspopup="dialog" data-pk="${esc(p.key)}"${inRedZone(p) ? ` title="In the red zone"` : ""}>` +
+    `<span class="pface"><span class="pphoto">${avatar(p)}</span>${logoBadge(p.tm)}${tdBadge(p.st)}</span>` +
+    `<span class="pname"><b><span class="pn">${boxNameHtml(p.n)}</span>${rowBadges(p)}</b>` +
+      `<span class="pmeta">${[
+        mixed ? `<span class="bx-pos ${posClass(p.pos)}">${esc(p.pos)}</span>` : "",
+        esc(p.tm),
+        isLive(p) ? `<span class="clock"><span class="dot"></span>${clockFor(p)}</span>` : gameLabel(p) ? `<span>${esc(gameLabel(p))}</span>` : "",
+        p.from ? `<span class="pfrom">${esc(p.from)}</span>` : "",
+      ].filter(Boolean).join(`<span aria-hidden="true">·</span>`)}</span>` +
+    `</span>` +
+    `<span class="bx-game">${gameCell(p)}</span>` +
+    cols.map((c) => `<span class="bx-v${!st || c.z(st) ? " zero" : ""}">${st ? esc(c.v(st)) : "&mdash;"}</span>`).join("") +
+    `<span class="pright">` +
+      `<span class="ppts${p.pts === 0 ? " zero" : ""}${p.flash ? " flash" : ""}"${p.key ? ` data-tween="p:${p.key}" data-delta` : ""}>${phase === "preseason" ? "&mdash;" : fmt(p.pts)}</span>` +
+    `</span>` +
+    (play ? `<span class="pplay">${esc(play)}</span>` : "") +
+  `</div>`;
+};
+const playerRow = (p, bench, top = false, enter = -1, cols = null, g = null) => {
+  if (cols) return boxRow(p, bench, top, enter, cols, g);
   const dim = bench && phase !== "preseason";   // pre-season the roster is nobody's bench
   const style = teamVars(p.tm) + (enter >= 0 ? `--i:${enter}` : "");
   return `<div class="prow${dim ? " bench" : ""}${dim && p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${inRedZone(p) ? " rz" : ""}${top ? " top" : ""}${enter >= 0 ? " enter" : ""}"${style ? ` style="${style}"` : ""}` +
@@ -1563,7 +1642,7 @@ function renderTeam(changed = new Set()) {
     : post ? `#${t.seed} seed \u00b7 ${t.season} regular season`
     : t.isSide ? `${t.members.length} managers \u00b7 one super lineup`
     : t.side ? `${t.starters.length} in the ${t.side.name} lineup`
-    : `${t.record} all-play`;
+    : `${t.record} all-play${gapNote(t)}`;
   const ptsEl = document.getElementById("team-pts");
   ptsEl.textContent = pre || t.bye ? "\u2014" : fmt(t.live);
   ptsEl.dataset.tween = `pts:${t.id}`;
@@ -1594,8 +1673,51 @@ function renderTeam(changed = new Set()) {
     : `<p class="empty">No ${view} on this roster.</p>`;
   if (rosterEnter) rosterEl.scrollTop = 0;   // new contents start at the top
   rosterEnter = false;
+  renderNflNow();
   markMore();
   refreshPlayerCard();
+}
+
+// The team head's standing against its neighbour, as the Broadcast
+// scorebug has it: the leader's cushion over 2nd, everyone else's
+// distance to the rank above. Regular season, once the franchise has begun.
+const ORD = (n) => { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+const gapNote = (t) => {
+  if (phase !== "live" || post || duel || t.bye || !started(t)) return "";
+  const i = teams.indexOf(t);
+  if (i < 0 || teams.length < 2) return "";
+  return i === 0
+    ? ` · +${fmt(t.live - teams[1].live)} on 2nd`
+    : ` · ${fmt(teams[i - 1].live - t.live)} back of ${ORD(i)}`;
+};
+
+/* NFL now (2026-09-25, laptop pane): every game on the field this minute
+   as a score box over the box score, away over home, the ball, RZ and
+   the clock (ESPN's while its situation is fresh, as the game strip).
+   Nothing while no game is on; hidden on a phone, where the team page is
+   the box score alone. */
+const nflNowEl = document.getElementById("nfl-now");
+function renderNflNow() {
+  const seen = new Set(), live = [];
+  for (const g of games.values()) {
+    const m = g.match;
+    if (!m || seen.has(m)) continue;
+    seen.add(m);
+    const sit = sitOf(m.home.id);
+    const secs = sitSecs(m.home.id) ?? g.secs;
+    if (Date.now() < m.kickoff || !(secs > 0)) continue;
+    live.push({ m, sit, secs });
+  }
+  nflNowEl.hidden = !live.length || phase !== "live";
+  if (nflNowEl.hidden) { nflNowEl.innerHTML = ""; return; }
+  live.sort((a, b) => a.m.kickoff - b.m.kickoff || a.m.home.id.localeCompare(b.m.home.id));
+  nflNowEl.innerHTML = `<span class="nn-label">NFL now · ${live.length} live</span><div class="nn-row">` + live.map(({ m, sit, secs }) => {
+    const view = (s) => (sit ? { ...s, score: sit.scores?.[s.id] ?? s.score, poss: sit.poss === s.id, rz: sit.poss === s.id && sit.rz } : s);
+    const a = view(m.away), h = view(m.home);
+    const clock = sit?.state === "in" && sit.period && sit.clock ? `${sit.period > 4 ? "OT" : `Q${sit.period}`} ${sit.clock}` : clockText(secs);
+    const side = (s) => `<span class="nn-t${s.poss ? " poss" : ""}"><span class="nn-id">${esc(s.id)}</span><b>${s.score}</b></span>`;
+    return `<div class="nn-box${a.rz || h.rz ? " rz" : ""}">${side(a)}${side(h)}<span class="nn-clock">${esc(clock)}${a.rz || h.rz ? ` <span class="pg-rz">RZ</span>` : ""}</span></div>`;
+  }).join("") + `</div>`;
 }
 
 // Laptop and up: the team panel is always in view, so "opening" a team is

@@ -1223,6 +1223,98 @@ button.hero { cursor: pointer; }
   .ppts { min-width: 0; font-size: 24px; }
 }
 
+/* The box score (2026-09-25, the redesign's "Broadcast" team page): one
+   table per stat group, each opened by its title in the group's colour
+   over the column labels, each row a player (the photo row's button,
+   signals and keys) with his line in columns and the points at the right.
+   The roster is a size container. Narrow (a phone; the laptop pane at
+   1024px) a row is two lines: photo and points spanning both, the name
+   over the stat columns, which line up under the labels. Wide it is one
+   line with the game between the name and the columns and a larger
+   photo. Photos at every width. */
+.roster { container: roster / inline-size; }
+.roster:has(.bx) { gap: 16px; }
+.bx { display: flex; flex-direction: column; perspective: 700px; --pf-w: 40px; --pf-h: 46px; --bx-c: minmax(0, 1fr); --bx-pts: 58px; }
+.bx-head, .roster .prow.bxr {
+  display: grid;
+  grid-template-columns: var(--pf-w) repeat(var(--bx-n), var(--bx-c)) var(--bx-pts);
+  grid-template-rows: auto; grid-template-areas: none;
+  column-gap: 10px; align-items: center;
+}
+.bx-head { row-gap: 6px; padding: 0 4px 6px; border-bottom: 1px solid var(--border-strong); }
+.bx-t { grid-area: 1 / 1 / 2 / -1; font: 700 14px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; }
+.bx[data-g="QB"] .bx-t { color: var(--pos-qb); }
+.bx[data-g="RB"] .bx-t { color: var(--pos-rb); }
+.bx[data-g="WR"] .bx-t { color: var(--pos-wr); }
+.bx[data-g="K"] .bx-t { color: var(--pos-k); }
+.bx[data-g="IDP"] .bx-t { color: var(--pos-lb); }
+.bx-sp { grid-area: 2 / 1 / 3 / 2; }
+.bx-gl { display: none; }
+.bx-l, .bx-pl, .bx-gl { font: 700 10px/1 var(--font-data); letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); text-align: right; }
+.bx-l { grid-row: 2; }
+.bx-pl { grid-area: 2 / -2 / 3 / -1; }
+
+.roster .prow.bxr {
+  --pf-w: 40px; --pf-h: 46px;
+  grid-template-rows: auto auto;
+  row-gap: 6px; min-height: 0;
+  padding: 10px 4px;
+  border-radius: 0; background-color: transparent;
+  border-bottom: 1px solid var(--border);
+}
+.roster .prow.bxr:last-child { border-bottom: 0; }
+.roster .prow.bxr:hover { background-color: color-mix(in srgb, transparent, var(--text-primary) 4%); }
+.roster .bxr > .pface { grid-area: 1 / 1 / 3 / 2; align-self: start; }
+.roster .bxr > .pname { grid-area: 1 / 2 / 2 / -2; }
+.roster .bxr > .bx-game { display: none; }
+.roster .bxr > .bx-v { grid-row: 2; }
+.roster .bxr > .pright { grid-area: 1 / -2 / 3 / -1; }
+.roster .bxr > .pplay { grid-area: 3 / 2 / 4 / -1; }
+.roster .bxr .pphoto { border-radius: 10px; }
+.roster .bxr .pphoto .avatar-fb { font-size: 15px; }
+.roster .bxr .plogo { left: -4px; bottom: -4px; width: 17px; height: 17px; padding: 1.5px; }
+.roster .bxr .ptd { left: -6px; top: -6px; padding: 2px 4px; font-size: 8px; }
+.roster .bxr .pname { gap: 3px; }
+.roster .bxr .pname b { font-size: 17px; gap: 4px 6px; }
+.roster .bxr .pmeta { font-size: 10.5px; }
+.pn .ff { display: none; }
+.bx-pos { padding: 1px 5px; border-radius: 5px; font: 700 11px/1.2 var(--font-display); letter-spacing: .06em; }
+.bx-v { font: 700 16px/1 var(--font-display); text-align: right; color: var(--text-primary); white-space: nowrap; }
+.bx-v.zero { color: var(--text-muted); }
+.roster .bxr .ppts { min-width: 0; font-size: 22px; }
+.roster .bxr > .pplay { font: 600 12px/1.35 var(--font-data); color: var(--accent-text); text-wrap: pretty; }
+.roster .bxr > .pplay::before { content: "\25B8\00a0"; }
+.bx-game { flex-direction: column; gap: 3px; font: 600 11px/1.1 var(--font-data); letter-spacing: .06em; text-transform: uppercase; color: var(--text-secondary); white-space: nowrap; }
+.bg-t i { font-style: normal; color: var(--text-muted); margin-right: 4px; }
+.bg-t b { font: 700 14px/1 var(--font-display); color: var(--text-secondary); }
+.bg-t.mine, .bg-t.mine b { color: var(--text-primary); }
+.bg-t.poss b::after { content: "\1F3C8"; margin-left: 4px; font-size: 9px; }
+@container roster (min-width: 540px) {
+  .bx { --pf-w: 46px; --pf-h: 52px; --bx-c: 46px; --bx-pts: 64px; }
+  .bx-head, .roster .prow.bxr { grid-template-columns: var(--pf-w) minmax(0, 1.4fr) minmax(76px, 1fr) repeat(var(--bx-n), var(--bx-c)) var(--bx-pts); }
+  .bx-head { padding-top: 2px; }
+  .bx-t { grid-area: 1 / 1 / 2 / 3; }
+  .bx-sp { display: none; }
+  .bx-gl { display: block; grid-area: 1 / 3 / 2 / 4; text-align: left; }
+  .bx-l { grid-row: 1; }
+  .bx-pl { grid-area: 1 / -2 / 2 / -1; }
+  .roster .prow.bxr { --pf-w: 46px; --pf-h: 52px; grid-template-rows: auto; padding: 10px 6px; }
+  .roster .bxr > .pface { grid-area: 1 / 1 / 2 / 2; align-self: center; }
+  .roster .bxr > .pname { grid-area: 1 / 2 / 2 / 3; }
+  .roster .bxr > .bx-game { display: flex; grid-area: 1 / 3 / 2 / 4; }
+  .roster .bxr > .bx-v { grid-row: 1; font-size: 18px; }
+  .roster .bxr > .pright { grid-area: 1 / -2 / 2 / -1; }
+  .roster .bxr > .pplay { grid-area: 2 / 2 / 3 / -1; }
+  .roster .bxr .pname b { font-size: 19px; }
+  .roster .bxr .ppts { font-size: 24px; }
+  .pn .fi { display: none; }
+  .pn .ff { display: inline; }
+}
+
+/* NFL now: the laptop pane's score boxes, one per game on the field. */
+.nfl-now { display: none; }
+.nfl-now[hidden] { display: none !important; }
+
 /* The game so far, on the player card: the game strip over the stat
    tiles. The strip is away @ home with scores, the player's team bright,
    a football (the possession marker) by whoever has the ball, RZ in the
@@ -1950,9 +2042,9 @@ body.pcard-open { overflow: hidden; }
 
 @media (min-width: 1024px) {
   .shell.layout {
-    max-width: 1280px;
+    max-width: 1440px;   /* 1280 until the box score (2026-09-25): the pane needs the width for its columns */
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(380px, 520px);
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 1.15fr);
     gap: 0 var(--gutter);
     align-items: start;
     --pane-pad: 16px;   /* the pane shell's side padding; the tab bridges run this far into the pane */
@@ -1997,6 +2089,15 @@ body.pcard-open { overflow: hidden; }
   }
   .team-page[data-more="1"] > .shell::after { opacity: 1; }
   .team-page .team-head { display: none; }   /* only held the back button */
+  .nfl-now:not([hidden]) { display: flex; flex-direction: column; gap: 6px; flex: none; }
+  .nn-label { font: 700 11px/1 var(--font-data); letter-spacing: .14em; text-transform: uppercase; color: var(--hero-muted); }
+  .nn-row { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  .nn-row::-webkit-scrollbar { display: none; }
+  .nn-box { flex: none; min-width: 108px; display: flex; flex-direction: column; gap: 3px; padding: 7px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); color: var(--text-primary); }
+  .nn-box.rz { border-color: color-mix(in srgb, var(--gap-critical) 65%, transparent); }
+  .nn-t { display: flex; justify-content: space-between; gap: 10px; font: 700 15px/1.1 var(--font-display); letter-spacing: .02em; }
+  .nn-t.poss .nn-id::after { content: "\1F3C8"; margin-left: 4px; font-size: 9px; vertical-align: 1px; }
+  .nn-clock { display: flex; justify-content: space-between; align-items: center; gap: 6px; font: 700 10px/1.2 var(--font-data); letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); }
   /* Compact roster so twelve starters fit the panel without scrolling:
      team, status and stat line share one row under the name. */
   .team-page > .shell { gap: 12px; }

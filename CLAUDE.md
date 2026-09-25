@@ -380,6 +380,27 @@ blue to violet instead of fading to the surface. The notes below describe
 the page before the redesign unless they say otherwise; each step updates
 the ones it changes.
 
+**The team page is a box score** (2026-09-25, Shakeel's pick from four
+directions on a Design canvas: "Night Game" board + "Broadcast" team
+page, photos on by default). `rosterHtml` renders one table per stat
+group (`BOX`: Passing, Rushing, Receiving for WR and TE, Kicking,
+Defense for every IDP), a title in the group's colour over the column
+labels; each row (`boxRow`, still a `.prow` button with its key, live
+wash, red zone, gold top scorer, TD chip, badges and last play) has the
+photo, the name, the game, Sleeper's line in columns and the page's
+points. The roster is a size container (`container: roster`): under
+540px a row is two lines (photo and points spanning both, the name over
+the columns, the first name an initial), from 540px one line with a
+Game column (`gameCell`: away over home, scores, the ball, RZ) and the
+full first name. The photo-card row (`playerRow` without columns) is
+kept for anything that asks for it. The laptop layout widened for it
+(max 1440px, the pane `minmax(380px, 1.15fr)`, was 1280 and 520px), so
+the pane takes the one-line cut from about 1280px. The pane also opens
+with **NFL now** (`renderNflNow`, `#nfl-now`, laptop only): a score box
+per game on the field, the ball, RZ and ESPN's clock, nothing while no
+game is on. The team head's record adds the gap to the neighbour
+(`gapNote`: "+51.87 on 2nd", "7.88 back of 1st"), regular season only.
+
 - **Blue under the mint** (2026-09-11, from `poc`): the dark canvas is
   blue-black (`#060a11`, also the manifest's splash and the `theme-color`
   meta's fallback), the surfaces blue-grey, the wash a sea blue, and the
