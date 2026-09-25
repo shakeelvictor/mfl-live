@@ -898,37 +898,66 @@ button.hero { cursor: pointer; }
 .row.pre .rank { font-family: var(--font-display); font-style: italic; font-weight: 900; }
 
 .roster {
+  display: flex; flex-direction: column; gap: 8px;   /* the rows are cards of their own now (2026-09-24) */
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-  padding: 8px;
+  padding: 12px;
 }
+.roster > * { flex: none; }   /* the laptop pane's roster is a fixed-height scroll box: its rows scroll, never shrink */
 .roster .empty { margin: 0; padding: 24px 8px; font-size: 13px; line-height: 1.5; color: var(--text-muted); text-align: center; text-wrap: pretty; }
 
+/* The player row, redesigned (2026-09-24, as mfl-manager's "the player
+   row, redesigned"): a scorer card laid on its side. The headshot as a
+   tall photo on its club's two colours, the position over the name, the
+   name in display capitals (first name quieter), TEAM · clock and the
+   stat line under it, the points large at the right. One grid, resized
+   for a phone and the laptop pane further down. */
 .prow {
+  --pf-w: 60px; --pf-h: 68px;
   position: relative;
   display: grid;
-  grid-template-columns: 40px 40px 1fr auto;
-  gap: 0 10px; align-items: center;
-  padding: 9px 8px;
-  border-radius: var(--radius-row);
-  transition: background .2s, opacity .3s;
+  grid-template-columns: var(--pf-w) minmax(0, 1fr) auto; grid-template-rows: auto auto;
+  grid-template-areas: "face pos right" "face who right";
+  gap: 5px 16px; align-content: center; align-items: start;
+  min-height: calc(var(--pf-h) + 20px);
+  padding: 10px 18px 10px 10px;
+  border-radius: 18px;
+  background-color: var(--surface-raised);
+  transition: background-color .2s, opacity .3s;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.prow:hover { background: var(--surface-raised); }
+.prow > .pface { grid-area: face; align-self: center; }
+.prow > .pos { grid-area: pos; justify-self: start; align-self: end; }
+.prow > .pname { grid-area: who; }
+.prow > .pright { grid-area: right; align-self: center; }
+.prow:hover { background-color: color-mix(in srgb, var(--surface-raised), var(--text-primary) 5%); }
 .prow:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
-/* Still on the field: mint ring on the headshot and a soft mint wash that
+/* Still on the field: a mint ring on the photo and a soft mint wash that
    fades out across the row, the same signal as "on now" on the board. */
-.prow.live { background: linear-gradient(90deg, var(--accent-soft) 0%, transparent 70%); }
-.prow.live:hover { background: linear-gradient(90deg, var(--accent-soft) 0%, transparent 70%), var(--surface-raised); }
-.prow.live .avatar, .prow.live .avatar-fb { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.prow.live { background-image: linear-gradient(90deg, var(--accent-soft) 0%, transparent 70%); }
+.prow.live .pphoto { box-shadow: 0 0 0 2px var(--accent); }
 
-/* Headshot with the NFL team logo badged on it, as on the spotlight and
-   touchdown cards. */
+/* The photo: the club's colours behind the headshot, the club's mark in
+   its bottom-left corner, the TD chip on its top corner. .pphoto clips the
+   headshot so the chip and the mark can sit on the edges. */
 .pface { position: relative; width: 40px; height: 40px; }
+.prow .pface { width: var(--pf-w); height: var(--pf-h); }
+.prow .pphoto {
+  position: absolute; inset: 0; border-radius: 14px; overflow: hidden; isolation: isolate;
+  background:
+    radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--tc2, var(--accent)) 55%, transparent), transparent 70%),
+    linear-gradient(165deg, var(--tc1, var(--surface-sunken)), color-mix(in srgb, var(--tc1, var(--surface-sunken)) 55%, #000));
+}
+.prow .pphoto::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); background: linear-gradient(to top, rgba(0, 0, 0, .45), transparent 45%); }
+.prow .pphoto .avatar { width: 100%; height: 100%; border: 0; border-radius: 0; background: none; object-fit: cover; object-position: 50% 8%; scale: 1.18; translate: 0 6%; transition: scale .5s cubic-bezier(.2, .7, .2, 1); }
+.prow:hover .pphoto .avatar { scale: 1.28; }
+.prow .pphoto .avatar-fb { width: 100%; height: 100%; border: 0; border-radius: 0; background: none; color: rgba(255, 255, 255, .8); font: 700 22px/1 var(--font-display); }
+.prow .plogo { z-index: 1; left: 5px; right: auto; bottom: 5px; width: 20px; height: 20px; padding: 2px; border: 0; background: rgba(255, 255, 255, .92); }
+.prow .ptd { z-index: 2; left: -6px; top: -6px; }
 .plogo {
   position: absolute; right: -5px; bottom: -3px;
   width: 18px; height: 18px; border-radius: 50%; padding: 2px;
@@ -985,8 +1014,7 @@ button.hero { cursor: pointer; }
   84% { transform: rotateX(-.2deg); }
   100% { transform: none; }
 }
-.prow.top:hover { background-color: var(--surface-raised); }
-.prow.top .avatar, .prow.top .avatar-fb { border: 2px solid var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
+.prow.top .pphoto { box-shadow: 0 0 0 2px var(--gold), 0 0 0 5px var(--gold-soft); }
 /* Bench rows read at full strength (the 75% / 42% fade came off 2026-09-08);
    the Bench tab and the muted stat line already say which side they are on. */
 
@@ -994,13 +1022,13 @@ button.hero { cursor: pointer; }
    hairline running out to the right. Kept shallow so twelve starters
    still fit the laptop pane. */
 .pgroup {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 8px 3px;
-  font: 800 9.5px/1 var(--font-data);
-  letter-spacing: .14em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 4px 0;
+  font: 700 14px/1 var(--font-display);
+  letter-spacing: .08em; text-transform: uppercase;
   color: var(--text-muted);
 }
-.pgroup:first-child { padding-top: 2px; }
+.pgroup:first-child { padding-top: 0; }
 .pgroup::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 .pgroup[data-g="QB"]  { color: var(--pos-qb); }
 .pgroup[data-g="RB"]  { color: var(--pos-rb); }
@@ -1036,6 +1064,7 @@ button.hero { cursor: pointer; }
   font: 800 10.5px/1 var(--font-data);
   letter-spacing: .08em;
 }
+.prow .pos { height: 20px; padding: 0 7px; border-radius: 6px; font: 700 13px/1 var(--font-display); letter-spacing: .06em; }
 .pos-QB  { color: var(--pos-qb); background: var(--pos-qb-soft); }
 .pos-RB  { color: var(--pos-rb); background: var(--pos-rb-soft); }
 .pos-WR  { color: var(--pos-wr); background: var(--pos-wr-soft); }
@@ -1045,24 +1074,28 @@ button.hero { cursor: pointer; }
    any combination, so DE/DT/LB/CB/S are one slot type. */
 .pos-IDP { color: var(--pos-lb); background: var(--pos-lb-soft); }
 
-.pname { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pname { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .pname b {
-  display: flex; align-items: center; gap: 6px; min-width: 0;
-  font: 700 15px/1.15 var(--font-display);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 5px 8px; min-width: 0;
+  font: 700 24px/1 var(--font-display); letter-spacing: .01em; text-transform: uppercase;
+  color: var(--text-primary);
 }
-.pname .pn { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* A long name takes a second line, never an ellipsis; the first name is quieter. */
+.pname .pn { min-width: 0; text-wrap: balance; }
+.pname .pn .fn { color: var(--text-secondary); }
 /* By the name: Sleeper's injury status (Q and D orange, OUT, IR and the
    rest red) and a newspaper while there is news from the last day. */
 .pinj, .pnew {
   flex: none; display: inline-grid; place-items: center;
-  height: 16px; border-radius: var(--radius-pill);
-  font: 800 9px/1 var(--font-data); letter-spacing: .06em;
+  height: 20px; border-radius: 6px;
+  font: 700 12px/1 var(--font-display); letter-spacing: .06em;
 }
-.pinj { padding: 0 5px; background: var(--gap-critical-soft); color: var(--gap-critical); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gap-critical) 40%, transparent); }
+.pinj { padding: 0 7px; background: var(--gap-critical-soft); color: var(--gap-critical); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gap-critical) 40%, transparent); }
 .pinj.soft { background: var(--gap-live-soft); color: var(--gap-live); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gap-live) 40%, transparent); }
-.pnew { width: 16px; background: var(--accent-soft); color: var(--accent); }
-.pname .pmeta { display: flex; align-items: center; gap: 6px; font: 700 11px/1 var(--font-data); letter-spacing: .08em; color: var(--text-muted); text-transform: uppercase; }
-.pname .pmeta .clock { display: inline-flex; align-items: center; gap: 5px; color: var(--accent); }
+.pnew { width: 20px; background: var(--accent-soft); color: var(--accent); }
+.pname .pmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 8px; font: 600 12px/1.3 var(--font-data); letter-spacing: .06em; color: var(--text-secondary); text-transform: uppercase; }
+.pname .pmeta { column-gap: 6px; }
+.pname .pmeta .clock { display: inline-flex; align-items: center; gap: 5px; color: var(--accent-text); font-weight: 700; }
 /* Red zone (the offense inside the 20, or a defender's opponent there):
    a faint red ring on the row, a red glow pulsing around it, and a red
    headshot ring. The glow is a pseudo-element, so its animation never
@@ -1077,7 +1110,7 @@ button.hero { cursor: pointer; }
   pointer-events: none;
   animation: fflr-rz-glow 1.8s ease-in-out infinite;
 }
-.prow.rz .avatar, .prow.rz .avatar-fb { border-color: var(--gap-critical); box-shadow: 0 0 0 2px var(--gap-critical-soft); }
+.prow.rz .pphoto { box-shadow: 0 0 0 2px var(--gap-critical), 0 0 0 5px var(--gap-critical-soft); }
 @keyframes fflr-rz-glow {
   50% { box-shadow: 0 0 18px 3px color-mix(in srgb, var(--gap-critical) 38%, transparent); }
 }
@@ -1094,9 +1127,9 @@ button.hero { cursor: pointer; }
 }
 /* Stat line: context beside MFL's number, never a score of its own. */
 .pname .pstat {
-  font: 600 11.5px/1.2 var(--font-data);
+  font: 500 12px/1.3 var(--font-data); letter-spacing: .03em; text-transform: uppercase;
   color: var(--text-secondary);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-wrap: pretty;   /* wraps, never an ellipsis (2026-09-24): a phone cut the line mid-stat */
 }
 .pname .pstat:empty { display: none; }
 .prow.bench .pstat { color: var(--text-muted); }
@@ -1106,14 +1139,22 @@ button.hero { cursor: pointer; }
    it was cut at two on a phone and one in the laptop pane). */
 .pname .pplay {
   display: block;
-  font: 700 11px/1.3 var(--font-data); color: var(--accent);
+  font: 600 12px/1.35 var(--font-data); color: var(--accent-text);
   text-wrap: pretty;
 }
 .pname .pplay::before { content: "\25B8\00a0"; }
 
 .pright { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
-.ppts { font: 800 17px/1 var(--font-data); letter-spacing: -.01em; text-align: right; transition: color .4s; }
+.ppts { min-width: 56px; font: 700 30px/1 var(--font-display); letter-spacing: .01em; text-align: right; transition: color .4s; }
 .ppts.zero { color: var(--text-muted); }
+/* A phone: the same card, smaller (the manager's phone cut). */
+@media (max-width: 599px) {
+  .roster { gap: 6px; padding: 8px; }
+  .prow { --pf-w: 52px; --pf-h: 60px; gap: 4px 12px; padding: 8px 12px 8px 8px; }
+  .pname b { font-size: 20px; }
+  .pname :is(.pmeta, .pstat, .pplay) { font-size: 11.5px; }
+  .ppts { min-width: 0; font-size: 24px; }
+}
 
 /* The game so far, on the player card: the game strip over the stat
    tiles. The strip is away @ home with scores, the player's team bright,
@@ -1526,7 +1567,7 @@ body.pcard-open { overflow: hidden; }
 }
 .pc-name {
   margin: 0;
-  font: italic 900 44px/.95 var(--font-display); letter-spacing: -.01em; text-transform: uppercase;
+  font: 700 44px/.95 var(--font-display); letter-spacing: -.01em; text-transform: uppercase;   /* upright, as the manager's (2026-09-24) */
   color: #f2f4f8; overflow-wrap: anywhere;
 }
 .pc-sub {
@@ -1812,6 +1853,24 @@ body.pcard-open { overflow: hidden; }
   .pnews:first-child { padding-top: 10px; }
 }
 
+/* The redesign's two card tweaks, taken back from mfl-manager (2026-09-24,
+   its "the second look") so the two ports are identical again: the name at
+   66px from a laptop's width (a phone and a phone on its side keep theirs),
+   and the game strip a size up in the display face, the weather under it
+   in the data face. */
+@media (min-width: 600px) and (min-height: 561px) { #pcard .pc-name { font-size: 66px; line-height: .92; overflow-wrap: normal; } }
+@media (min-width: 600px) {
+  #pcard .pc-hero .pgame { gap: 8px 18px; padding: 10px 16px; border-radius: 14px; font: 700 20px/1 var(--font-display); letter-spacing: .04em; }
+  #pcard .pc-hero .pg-team { gap: 8px; }
+  #pcard .pc-hero .pg-team img { width: 28px; height: 28px; }
+  #pcard .pc-hero .pg-id { letter-spacing: .04em; }
+  #pcard .pc-hero .pg-score { font-size: 24px; font-weight: 700; }
+  #pcard .pc-hero .pg-at { font: 600 14px/1 var(--font-data); text-transform: lowercase; }
+  #pcard .pc-hero .pg-state { font: 700 18px/1 var(--font-display); letter-spacing: .06em; }
+  #pcard .pc-hero :is(.pg-spot, .pg-play) { font-size: 14px; line-height: 1.3; }
+  #pcard .pc-vital.game > i { font-size: 12px; }
+}
+
 /* ---------- laptop and up: board left, selected team right ----------
    The phone layout is untouched below 1024px. Above it the shell becomes
    two columns: the board on the left and a sticky team panel on the right
@@ -1877,23 +1936,12 @@ body.pcard-open { overflow: hidden; }
   .team-page .tabs { padding: 3px; }
   .team-page .tab { height: 36px; }
   .team-page .roster { padding: 10px; }
-  .team-page .prow { grid-template-columns: 36px 36px 1fr auto; gap: 0 10px; padding: 10px 8px; }
-  .team-page .pgroup { padding: 5px 8px 1px; font-size: 9px; }
-  .team-page .pgroup:first-child { padding-top: 0; }
-  .team-page .prow .avatar, .team-page .prow .avatar-fb { width: 36px; height: 36px; }
-  .team-page .pface { width: 36px; height: 36px; }
-  .team-page .plogo { width: 16px; height: 16px; right: -4px; bottom: -2px; }
-  .team-page .pos { height: 22px; font-size: 10px; }
-  .team-page .pname {
-    display: grid; grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas: "name name" "meta stat";
-    column-gap: 8px; row-gap: 4px; align-items: baseline;
-  }
-  .team-page .pname b { grid-area: name; font-size: 14px; }
-  .team-page .pmeta { grid-area: meta; font-size: 10.5px; }
-  .team-page .pstat { grid-area: stat; font-size: 11px; }
-  .team-page .pplay { grid-column: 1 / -1; font-size: 11px; }   /* its own row under both, only when there is one */
-  .team-page .ppts { font-size: 16px; }
+  /* The pane's rows: the photo row's smaller cut, as the manager's side column. */
+  .team-page .roster { gap: 6px; }
+  .team-page .prow { --pf-w: 52px; --pf-h: 60px; gap: 4px 12px; padding: 8px 14px 8px 8px; }
+  .team-page .pname b { font-size: 20px; }
+  .team-page .pmeta, .team-page .pstat, .team-page .pplay { font-size: 11.5px; }
+  .team-page .ppts { min-width: 0; font-size: 24px; }
   /* The selected row already carries name, record, status and points. */
   .team-page .hero { display: none; }
   /* The panel's text is hero-white for its own chrome; the roster card is

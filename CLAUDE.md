@@ -617,8 +617,23 @@ the ones it changes.
   (name, then id; 2026-09-08). It used to be points, so two backs swapped
   rows whenever one overtook the other, and tied rows (0.00 before
   kickoff) fell back to MFL's array order, which is not stable between
-  polls. Each group is opened by a shallow separator: a micro label in
-  the position's colour and a hairline to the right. When the pane's
+  polls. Each group is opened by a shallow separator: a label in the
+  position's colour (Barlow Condensed 14px since 2026-09-24) and a
+  hairline to the right. **Each row is the manager's photo row**
+  (2026-09-24, the redesign; mfl-manager's "the player row, redesigned"):
+  a card of its own on `--surface-raised`, radius 18, the headshot as a
+  60x68 photo on the club's two colours (`--tc1`/`--tc2` set on the row
+  from `TEAM_COLORS` by `teamVars`; a radial of the second over a dark
+  linear of the first) clipped in `.pphoto` so the TD chip and the club
+  mark (a white disc, bottom-left) sit on its edges, the position chip
+  over the name in 24px display capitals with the first name quieter
+  (`nameHtml`, `.fn`), TEAM · clock and the stat line under it in Barlow
+  capitals (wrapping, never an ellipsis), the points at 30px. A phone and
+  the laptop pane take the manager's smaller cut (52x60, 20px, 24px), so
+  the pane no longer fits twelve starters and scrolls with its fade. The
+  roster is a flex column and its children are `flex: none`: in the
+  pane's fixed-height scroll box the rows otherwise shrank and the stat
+  line hung out of the card. When the pane's
   contents change (a team selected, Starters/Bench switched) the rows
   **swing in** like a sign hung from its top edge caught by a breeze:
   back and forth about that hinge (away from the viewer, then toward),
@@ -673,7 +688,10 @@ the ones it changes.
   tall, centred in the viewport (it sweeps up from below the bottom
   edge, `translateY(calc(50vh + 50%))`; flush to the bottom for a day):
   the band with a 150px portrait
-  over the club mark ghosted large, the name at 44px, a white **team
+  over the club mark ghosted large, the name at 44px (66px, upright
+  Barlow Condensed, since 2026-09-24: the manager's "second look" taken
+  back so the two ports match again, with its game strip a size up in
+  the display face), a white **team
   pill** (mark and code, `.pc-team`) and the position chip in the sub
   line, the vitals in large figures (the game strip as wide as its
   content, not the row), and **the close button in the
@@ -899,13 +917,15 @@ the ones it changes.
   while any starter is in one (`inRedZone`). Urgency red, never mint.
   The game strip's RZ chip is the team-level flag.
   Rows carry three small signals: the NFL logo badged on the
-  headshot (as on the spotlight and touchdown cards), a mint **TD** chip on
+  headshot (as on the spotlight and touchdown cards; on the photo row a
+  white disc in its bottom-left corner), a mint **TD** chip on
   the headshot's top corner for anyone who has scored (counted from the
   stat line, so a simulated touchdown adds it live), a **gold sweep** on
   the team's top-scoring starter (the spotlight's wave in gold, plus a gold
   ring; wins over the live treatment), and
   a live treatment for players still on the field (mint headshot ring,
-  soft mint wash fading across the row).
+  soft mint wash fading across the row). On the photo row the rings
+  (mint live, gold top, red red-zone) go round the photo.
 - The team page is a full-screen route over the board (`position: fixed`),
   so the board keeps its scroll position. **The back button closes it on
   a phone** (2026-09-11): under 1024px the page pushes a history entry

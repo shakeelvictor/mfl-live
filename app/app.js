@@ -1473,13 +1473,23 @@ const rowBadges = (p) => {
 // top: the team's highest-scoring starter gets a gold ring (MVP echo).
 // The row is a button: tap (or Enter/Space) opens the player's card (the
 // game so far, injury status, the latest news).
+// The redesign's photo row (2026-09-24, as mfl-manager's): the headshot on
+// its club's two colours (--tc1/--tc2, the touchdown card's TEAM_COLORS),
+// clipped in .pphoto so the TD chip and the club mark can sit on its edges,
+// and the first name quieter than the last (.fn).
+const nameHtml = (n) => {
+  const i = n.indexOf(" ");
+  return i > 0 ? `<span class="fn">${esc(n.slice(0, i))}</span> ${esc(n.slice(i + 1))}` : esc(n);
+};
+const teamVars = (tm) => { const c = TEAM_COLORS[tm]; return c ? `--tc1:${c[0]};--tc2:${c[1]};` : ""; };
 const playerRow = (p, bench, top = false, enter = -1) => {
   const dim = bench && phase !== "preseason";   // pre-season the roster is nobody's bench
-  return `<div class="prow${dim ? " bench" : ""}${dim && p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${inRedZone(p) ? " rz" : ""}${top ? " top" : ""}${enter >= 0 ? " enter" : ""}"${enter >= 0 ? ` style="--i:${enter}"` : ""}` +
+  const style = teamVars(p.tm) + (enter >= 0 ? `--i:${enter}` : "");
+  return `<div class="prow${dim ? " bench" : ""}${dim && p.pts === 0 ? " zero" : ""}${isLive(p) ? " live" : ""}${inRedZone(p) ? " rz" : ""}${top ? " top" : ""}${enter >= 0 ? " enter" : ""}"${style ? ` style="${style}"` : ""}` +
     ` role="button" tabindex="0" aria-haspopup="dialog" data-pk="${esc(p.key)}"${inRedZone(p) ? ` title="In the red zone"` : ""}>` +
-    `<span class="pface">${avatar(p)}${logoBadge(p.tm)}${tdBadge(p.st)}</span>` +
+    `<span class="pface"><span class="pphoto">${avatar(p)}</span>${logoBadge(p.tm)}${tdBadge(p.st)}</span>` +
     `<span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span>` +
-    `<span class="pname"><b><span class="pn">${esc(p.n)}</span>${rowBadges(p)}</b>` +
+    `<span class="pname"><b><span class="pn">${nameHtml(p.n)}</span>${rowBadges(p)}</b>` +
       `<span class="pmeta">${[
         esc(p.tm),
         isLive(p) ? `<span class="clock"><span class="dot"></span>${clockFor(p)}</span>` : gameLabel(p) ? `<span>${esc(gameLabel(p))}</span>` : "",
