@@ -446,6 +446,9 @@ leader's card when a game kicks off. A phone never moves it.
 card beside it names the team); `syncHeroAway`, one rAF per scroll burst,
 sets `.hero-away` on the pane once the card's bottom is above the band's,
 and the name slides in, and out again when the card is back.
+**On a phone (and tablet) the Top scorer card sits right under the WEEK
+title**, above the capsules (same day; CSS `order` in `.col-board`, no
+markup change).
 
 - **Blue under the mint** (2026-09-11, from `poc`): the dark canvas is
   blue-black (`#060a11`, also the manifest's splash and the `theme-color`

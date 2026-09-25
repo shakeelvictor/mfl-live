@@ -3113,3 +3113,11 @@ h1.bowl { font-size: clamp(38px, 11vw, 64px); }
   .spot-slot:has(> .spot:not([hidden])) { display: block; position: absolute; left: 0; right: 0; bottom: calc(100% + 20px); }
 }
 @media (prefers-reduced-motion: reduce) { .team-page.hero-tab .tb-name { transition: none; } }
+/* Phone and tablet (2026-09-25): the Top scorer card right under the WEEK
+   title, above the capsules. The laptop moves it to NFL now's slot off the
+   field (placeSpot) and keeps it under the leader's card otherwise. */
+@media (max-width: 1023px) {
+  .col-board > .week { order: 0; }
+  .col-board > .spot { order: 1; }
+  .col-board > :not(.week):not(.spot) { order: 2; }
+}
