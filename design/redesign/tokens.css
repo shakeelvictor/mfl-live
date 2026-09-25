@@ -1,0 +1,193 @@
+/* ===================================================================
+   MFL Live, the redesign's tokens ("Night Game" dark / "Paper Stadium" light).
+   design/redesign/README.md explains them. They are mfl-manager's (branch
+   `redesign`, app/styles.css :root, 2026-09-24) mapped onto MFL Live's names:
+   paste these two blocks over the top of app/styles.css's own :root and
+   :root[data-theme="light"], keeping the rest of those blocks (MFL Live's own
+   tokens, listed at the end) where they are.
+
+   The palette barely moves: of the 65 names both apps share, 15 change in
+   dark and 5 in light, mostly hairlines, shadows and two radii. What changes
+   is the type, the shape and the components.
+   =================================================================== */
+:root {
+  /* ground and surfaces (unchanged but for the hairlines and the card shadow) */
+  --canvas: #060a11;
+  --surface: #0e161f;
+  --surface-raised: #16212d;
+  --surface-sunken: #0a1017;
+  --surface-glass: rgba(255, 255, 255, 0.05);
+  --sheet: #0a1017;                                   /* new: the player/team sheet */
+  --border: rgba(255, 255, 255, 0.07);                /* was .06 */
+  --border-strong: rgba(255, 255, 255, 0.15);         /* was .14 */
+  --shadow-card: 0 16px 40px rgba(0, 0, 0, 0.35);     /* was an inset highlight + drop */
+  --shadow-sheet: 0 -30px 80px rgba(0, 0, 0, 0.45);   /* was -24px .65 */
+  --shadow-pane: 0 20px 50px rgba(0, 0, 0, 0.5);      /* was an inset highlight + drop */
+  --scrim: rgba(3, 6, 12, 0.72);
+  --news-ink: #ffffff;
+
+  /* ink */
+  --text-primary: #f6faf8;
+  --text-secondary: #a7b3bb;
+  --text-muted: #6b7882;
+  --text-faint: #3f4b47;
+  --dim: #2c3844;                                     /* new: the ranks below the top places */
+
+  /* accent (mint: live / on now / selected; never urgency) */
+  --accent: #4fe3c1;
+  --accent-ink: #052a24;
+  --accent-text: #4fe3c1;                             /* new: mint as text (light needs a darker one) */
+  --accent-soft: rgba(79, 227, 193, 0.14);
+  --accent-line: rgba(79, 227, 193, 0.5);             /* new */
+
+  /* violet: the one hue with no job; the aurora and the gradient's far end */
+  --violet: #8c6eff;
+  --violet-text: #a996ff;
+  --violet-soft: rgba(140, 110, 255, 0.18);
+  --violet-line: rgba(140, 110, 255, 0.6);
+
+  /* the league gradient: "the one that matters" (the leader, the Week winner's ground aside, the card bands) */
+  --grad: linear-gradient(160deg, oklch(0.42 0.1 178) 0%, oklch(0.34 0.11 252) 55%, oklch(0.32 0.12 290) 100%);
+  --hero-bg: var(--grad);                             /* was MFL Live's own teal-to-blue; now the gradient itself */
+  --hero-bg-gold: linear-gradient(160deg, oklch(0.42 0.1 178) 0%, #0f1917 70%);   /* gold never sits on the blue */
+  --hero-text: #ffffff;                               /* was #f6faf8 */
+  --hero-muted: rgba(255, 255, 255, 0.75);            /* was rgba(246,250,248,.66) */
+  --hero-strip: rgba(255, 255, 255, 0.10);
+  --hero-pill: rgba(255, 255, 255, 0.14);
+  --hero-border: transparent;
+  --hero-shadow: none;                                /* was a drop shadow; the lift is a pseudo-element's */
+  --hero-accent: #4fe3c1;
+  --hero-accent-soft: rgba(79, 227, 193, 0.22);
+
+  /* gold: the MVP, the Week winner, the Bowl */
+  --gold: #f2c94c;
+  --gold-ink: #1a1300;                                /* new */
+  --gold-soft: rgba(242, 201, 76, 0.16);
+  --gold-line: rgba(242, 201, 76, 0.45);
+  --hero-gold: #f2c94c;
+  --hero-gold-soft: rgba(242, 201, 76, 0.22);
+  --hero-gold-line: rgba(242, 201, 76, 0.5);
+
+  /* new: the masthead's floating chrome, which follows the theme */
+  --chrome: #111b26;
+  --chrome-ink: #f6faf8;
+  --chrome-muted: #a7b3bb;
+  --chrome-line: rgba(255, 255, 255, 0.12);
+  --chrome-edge: rgba(255, 255, 255, 0.08);
+  --chrome-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --foot-mark: #121c27;                               /* new: the footer's huge wordmark */
+
+  /* the laptop tab and the lifts (unchanged) */
+  --tab-a: #015145; --tab-b: #0c2a55; --tab-line: rgba(255, 255, 255, 0.12); --hero-tab-start: oklch(0.42 0.1 178);
+  --shadow-row: 0 4px 10px rgba(0, 0, 0, 0.42);
+  --shadow-lift: 0 24px 44px -10px rgba(0, 0, 0, 0.7), 0 6px 14px rgba(0, 0, 0, 0.4);
+
+  /* urgency, the gaps (unchanged but the coin flip's soft and ink) */
+  --gap-critical: #ff5d5d;
+  --gap-critical-soft: rgba(255, 93, 93, 0.16);      /* was .14 */
+  --gap-critical-ink: #ffffff;                        /* was #2a0606: white on the red pill */
+  --gap-live: #ff9a57;
+  --gap-live-soft: rgba(255, 154, 87, 0.13);
+  --gap-live-ink: #2a1204;
+  --gap-settled: rgba(255, 255, 255, 0.10);
+
+  /* positions (unchanged) */
+  --pos-qb: #f472b6; --pos-qb-soft: rgba(244, 114, 182, 0.16);
+  --pos-rb: #34d399; --pos-rb-soft: rgba(52, 211, 153, 0.16);
+  --pos-wr: #60a5fa; --pos-wr-soft: rgba(96, 165, 250, 0.16);
+  --pos-te: #fbbf24; --pos-te-soft: rgba(251, 191, 36, 0.16);
+  --pos-k:  #a78bfa; --pos-k-soft:  rgba(167, 139, 250, 0.16);
+  --pos-lb: #a3e635; --pos-lb-soft: rgba(163, 230, 53, 0.16);
+
+  /* shape */
+  --radius-card: 24px;
+  --radius-row: 14px;                                 /* was 18px */
+  --radius-pill: 10px;                                /* was 999px: pills are rounded rectangles now */
+  --radius-cta: 10px;                                 /* new: buttons (999px in light) */
+  --gutter: clamp(16px, 4.5vw, 64px);                 /* new */
+
+  /* type: Barlow Condensed for display (loaded as upright 700 and italic 800 ONLY,
+     so every 400 asked of it draws the 700), Barlow for data and reading */
+  --font-display: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
+  --font-data: "Barlow", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+:root[data-theme="light"] {
+  --canvas: #eef2f5;
+  --surface: #ffffff;
+  --surface-raised: #f2f5f8;
+  --surface-sunken: #e6ebf0;
+  --surface-glass: rgba(255, 255, 255, 0.7);
+  --sheet: #ffffff;
+  --border: rgba(10, 18, 28, 0.07);                   /* was .04 */
+  --border-strong: rgba(10, 18, 28, 0.15);            /* was .10 */
+  --shadow-card: 0 16px 40px rgba(12, 20, 30, 0.09);
+  --shadow-sheet: 0 -24px 80px rgba(12, 20, 30, 0.25);
+  --shadow-pane: 0 20px 50px rgba(12, 20, 30, 0.16);
+  --scrim: rgba(20, 30, 28, 0.38);
+  --news-ink: #000000;
+  --text-primary: #101514;
+  --text-secondary: #475350;
+  --text-muted: #6f7a76;                              /* was #86908c: it did not read */
+  --text-faint: #c3cac7;
+  --dim: #c3cac7;
+  --accent: #0e9c83;
+  --accent-ink: #ffffff;
+  --accent-text: #0b7f6b;
+  --accent-soft: rgba(14, 156, 131, 0.12);
+  --accent-line: rgba(14, 156, 131, 0.5);
+  --violet: #6e50dc;
+  --violet-text: #5b3fc4;
+  --violet-soft: rgba(110, 80, 220, 0.1);
+  --violet-line: rgba(110, 80, 220, 0.5);
+  --grad: linear-gradient(160deg, #0c5a4b 0%, #0e7a66 38%, #1d4d9c 100%);
+  --hero-bg-gold: linear-gradient(160deg, #0c5a4b 0%, #0e7a66 100%);
+  --hero-border: var(--border);
+  --chrome: #ffffff;
+  --chrome-ink: #101514;
+  --chrome-muted: #86908c;
+  --chrome-line: rgba(10, 18, 28, 0.12);
+  --chrome-edge: transparent;
+  --chrome-shadow: 0 10px 30px rgba(12, 20, 30, 0.1);
+  --foot-mark: #dde3e8;
+  --gap-critical: #e0342f;
+  --gap-critical-soft: rgba(224, 52, 47, 0.09);
+  --gap-critical-ink: #ffffff;
+  --gap-live: #e2621a;
+  --gap-live-soft: rgba(226, 98, 26, 0.10);
+  --gap-live-ink: #ffffff;
+  --gap-settled: rgba(10, 20, 18, 0.10);
+  --pos-qb: #c8347f; --pos-qb-soft: rgba(200, 52, 127, 0.12);
+  --pos-rb: #0f8f63; --pos-rb-soft: rgba(15, 143, 99, 0.12);
+  --pos-wr: #2a6fd6; --pos-wr-soft: rgba(42, 111, 214, 0.12);
+  --pos-te: #b7791f; --pos-te-soft: rgba(183, 121, 31, 0.14);
+  --pos-k:  #7c4fd8; --pos-k-soft:  rgba(124, 79, 216, 0.12);
+  --pos-lb: #5a8a0c; --pos-lb-soft: rgba(90, 138, 12, 0.12);
+  --gold: #9a6b00;
+  --gold-ink: #ffffff;
+  --gold-soft: rgba(154, 107, 0, 0.12);
+  --gold-line: rgba(154, 107, 0, 0.35);
+  --tab-a: #13907b; --tab-b: #1d4d9c; --tab-line: rgba(255, 255, 255, 0.18); --hero-tab-start: #0c5a4b;
+  --shadow-row: 0 3px 8px rgba(12, 20, 30, 0.12);
+  --shadow-lift: 0 24px 44px -10px rgba(12, 20, 30, 0.28), 0 6px 14px rgba(12, 20, 30, 0.12);
+  --radius-cta: 999px;
+}
+
+/* MFL Live's own tokens, which the manager has no counterpart for. KEEP them
+   where they are in app/styles.css, with their current values: they are
+   already in the redesign's family (the aurora is the manager's two glows
+   as clouds, teal and violet at the same hues).
+     --wash                       the hero/pane wash (and each holiday's)
+     --sky-teal(-2) --sky-violet(-2) --sky-wave   the aurora (#sky-bg), and each holiday's pair
+     --bowl-cloud(-2) --bowl-wave the Bowl's gold flourish (#bowl-bg)
+     --iri-base --iri-1..4 --iri-glow   the Bowl's iridescent sweep
+     --snow                       Christmas
+   The holiday blocks at the end of styles.css (four: Thanksgiving and
+   Christmas, each theme) set the shared names too, --hero-bg among them, so
+   the hero keeps its holiday colours. They do NOT set the new names, so each
+   needs its own --grad, --accent-text and --accent-line (from its accent),
+   or whatever is built on them stays mint and teal-to-violet on a holiday.
+   The chrome can stay neutral. */
+
+/* Fonts, in index.html (replacing the Archivo + Nunito link):
+   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;1,800&family=Barlow:wght@400;500;600;700&display=swap"> */
