@@ -250,22 +250,19 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------- header ---------- */
 
-/* The masthead, as mfl-manager's (2026-09-24): floating chrome that
-   follows the theme (dark on dark, white on light), sticky 12px from the
-   top; from 1024px it spans the window, 12px off each edge, over both
-   columns. The brand on the left, the manager's link and the theme on the
-   right (a phone keeps the brand and the theme). */
-.masthead { position: sticky; top: 12px; z-index: 20; display: flex; align-items: stretch; gap: 10px; pointer-events: none; }
-.chrome { pointer-events: auto; background: var(--chrome); color: var(--chrome-ink); border: 1px solid var(--chrome-edge); border-radius: 14px; box-shadow: var(--chrome-shadow); }
-.chrome-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; padding: 6px 12px 6px 12px; }
-.chrome-me { flex: none; display: flex; align-items: center; gap: 6px; padding: 0 8px; }
+/* The masthead, as on main (2026-09-24: the manager's floating chrome
+   was tried and set aside, but its link to the manager stays): the mark
+   and the wordmark on the left, the manager's link and the theme on the
+   right, in the board column, scrolling with the page. */
+.masthead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .brandwrap { display: flex; align-items: center; gap: 10px; }
-/* The mark and the wordmark stay MFL Live's own inside the manager's
-   chrome (Shakeel's call, 2026-09-24): the league's mark at 40px, cut to
-   transparency (see design/cutout.py) so the hands and ball sit on the
-   bar, and MFL LIVE in the heavy italic. */
+
+/* The league's mark, cut to transparency (see design/cutout.py) so the
+   hands and ball sit on the header; the icons keep the white disc. */
 .brand-mark { width: 40px; height: 40px; display: grid; place-items: center; }
 .brand-mark img { width: 40px; height: 40px; display: block; }
+
+/* 20px: Barlow Condensed's italic is narrower than Archivo's 18px was. */
 .brand {
   font: italic 800 20px/1 var(--font-display);
   letter-spacing: .02em;
@@ -277,25 +274,48 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
    week is final. */
 .brand-live { display: inline-flex; align-items: center; gap: 7px; color: var(--gap-critical); }
 .brand-live .dot { width: 7px; height: 7px; }
-/* The right block: the manager's link and the theme, as the manager's. */
-.glass { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 9px; background: transparent; border: 1px solid var(--chrome-line); color: var(--chrome-ink); font: 700 14px/1 var(--font-display); letter-spacing: .04em; text-transform: uppercase; cursor: pointer; text-decoration: none; white-space: nowrap; }
-.glass:hover { border-color: var(--chrome-ink); }
-a.glass.link { border-color: transparent; }
-a.glass.link:hover { border-color: var(--chrome-line); }
-a.glass.link .ext { font-size: 10px; opacity: .6; }
-.seg { display: flex; height: 36px; padding: 3px; gap: 2px; border-radius: 9px; background: rgba(128, 140, 150, .14); }
-.seg-btn { border: 0; cursor: pointer; height: 100%; width: 32px; padding: 0; border-radius: 7px; background: transparent; color: var(--chrome-muted); transition: background .25s, color .25s; font-size: 0; }
-.seg-btn::before { font-size: 15px; line-height: 1; }
-.seg-btn[data-theme="dark"]::before { content: "\263E"; }
-.seg-btn[data-theme="light"]::before { content: "\2600"; }
-.seg-btn:hover { color: var(--chrome-ink); }
-.seg-btn[aria-pressed="true"] { background: var(--chrome-ink); color: var(--chrome); }
-/* A phone: the brand and the theme, a size down. */
-@media (max-width: 767px) {
-  .chrome-main { padding: 4px 8px 4px 10px; }
+
+.mast-right { display: flex; align-items: center; gap: 8px; }
+/* The manager's link: a pill in the theme control's own shape and voice. */
+.mast-link {
+  display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px;
+  border-radius: 999px;   /* round, as on main (the redesign's pills are 10px) */
+  background: var(--surface-glass); border: 1px solid var(--border-strong);
+  color: var(--text-secondary); text-decoration: none; white-space: nowrap;
+  font: 800 11px/1 var(--font-data); letter-spacing: .08em; text-transform: uppercase;
+  transition: color .25s, border-color .25s;
+}
+.mast-link:hover { color: var(--text-primary); border-color: var(--accent); }
+.mast-link .ext { font-size: 12px; opacity: .7; }
+.seg {
+  display: flex; height: 40px; padding: 4px; gap: 2px;
+  border-radius: 999px;   /* round, as on main (the redesign's pills are 10px) */
+  background: var(--surface-glass);
+  border: 1px solid var(--border-strong);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.seg-btn {
+  border: 0; cursor: pointer; height: 100%; padding: 0 13px;
+  border-radius: 999px;   /* round, as on main (the redesign's pills are 10px) */
+  font: 800 11px/1 var(--font-data);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  background: transparent; color: var(--text-secondary);
+  transition: background .25s, color .25s;
+}
+.seg-btn:hover { color: var(--text-primary); }
+.seg-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+
+/* Narrow phones: the wordmark, the link and the theme control do not fit
+   at full size, so the header compacts below 430px. */
+@media (max-width: 430px) {
+  .brand { font-size: 17px; }
   .brandwrap { gap: 8px; }
-  .chrome-me { padding: 0 6px; gap: 4px; }
-  .chrome-me .glass.link { padding: 0 8px; font-size: 13px; }   /* kept on a phone too (Shakeel, 2026-09-24) */
+  .mast-right { gap: 6px; }
+  .mast-link { height: 36px; padding: 0 10px; font-size: 10px; letter-spacing: .06em; }
+  .seg { height: 36px; padding: 3px; }
+  .seg-btn { padding: 0 9px; font-size: 10px; letter-spacing: .06em; }
 }
 
 /* ---------- week title ---------- */
@@ -1936,7 +1956,6 @@ body.pcard-open { overflow: hidden; }
     gap: 0 var(--gutter);
     align-items: start;
     --pane-pad: 16px;   /* the pane shell's side padding; the tab bridges run this far into the pane */
-    --pane-top: 84px;   /* the pane's content sticks under the sticky masthead (12 + its 60 + 12) */
     padding: 16px 40px 48px;   /* room for the picked row's lift: it grows leftward about its right edge, up to 6% of the board */
     --gutter: 28px;
   }
@@ -1962,15 +1981,13 @@ body.pcard-open { overflow: hidden; }
   }
   .team-page .wash { display: none; }
   .shell.layout > .foot { grid-column: 1 / -1; margin-top: 28px; }
-  /* The masthead spans the window over both columns, 12px off each edge. */
-  .shell.layout > .masthead { grid-column: 1 / -1; margin: 0 calc(50% - 50vw + 12px) 20px; }
-  .team-page > .shell { position: sticky; top: var(--pane-top); max-width: none; padding: 16px var(--pane-pad) 24px; animation: none; }
+  .team-page > .shell { position: sticky; top: 16px; max-width: none; padding: 16px var(--pane-pad) 24px; animation: none; }
   /* The pane never outgrows the window: the shell is capped at the
      viewport, the tabs stay put, and the roster card scrolls inside itself
      when the rows do not fit (a tall window never scrolls). A fade over the
      card's bottom edge says there is more, until the end is reached
      (data-more, kept by the script). */
-  .team-page > .shell { box-sizing: border-box; max-height: calc(100vh - var(--pane-top) - 16px); }
+  .team-page > .shell { box-sizing: border-box; max-height: calc(100vh - 32px); }
   .team-page .roster { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
   .team-page > .shell::after {
     content: ""; position: absolute; left: 17px; right: 17px; bottom: 25px; height: 36px;

@@ -3153,7 +3153,6 @@ function cascadeIn() {
   if (reducedMotion.matches) { pickOnLoad(); boardReady(); return; }
   const app = document.getElementById("app");
   const targets = [
-    document.querySelector(".masthead"),   // above the board column since the redesign (2026-09-24)
     ...[...document.querySelectorAll(".col-board > *")].flatMap((el) =>
       el.classList.contains("standings") ? [el.querySelector(".standings-head"), ...rowsEl.children] : [el]),
     page,

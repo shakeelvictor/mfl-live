@@ -548,24 +548,19 @@ the ones it changes.
 - The header is the mark and the wordmark: **MFL LIVE**, with LIVE in the live red
   and a pulsing dot after it, always (it is the name, not a status: it
   used to drop the dot before the season and once a week was official,
-  changed 2026-09-05). There is no separate status line. **Since the
-  redesign (2026-09-24) it is mfl-manager's masthead**: floating chrome
-  (`--chrome`, dark on dark and white on light, radius 14), sticky 12px
-  from the top, outside the board column (`.shell.layout > .masthead`),
-  so from 1024px it spans the window 12px off each edge over both
-  columns and the pane's sticky content sits under it (`--pane-top`,
-  84px). Left: **MFL Live's own mark and wordmark, as before** (Shakeel's
-  call the same day, over the manager's 32px mark and upright 26px
-  wordmark): the league's mark at 40px and MFL LIVE in the heavy italic,
-  LIVE in the live red with its pulsing dot (20px: the italic 800 cut of
-  Barlow Condensed is narrower than Archivo's 18px was). Right: "Manager ↗"
-  (`a.glass.link`, to <https://mfl-manager-2.up.railway.app>, the
+  changed 2026-09-05). There is no separate status line. **On `redesign`
+  it stays main's header** (2026-09-24): the manager's floating chrome
+  (sticky, across both columns) was built and set aside the same day on
+  Shakeel's call, so the header is back in the board column, scrolling
+  with the page, the league's mark at 40px and MFL LIVE in the heavy
+  italic (20px: Barlow Condensed's italic is narrower than Archivo's 18px
+  was), and the DARK/LIGHT pill round as before (999px, not the
+  redesign's 10px pills). What the manager's chrome left behind is
+  **"Manager ↗"** (`.mast-link`, a pill in the theme control's shape and
+  voice beside it) to <https://mfl-manager-2.up.railway.app>, the
   manager's preview; the manager's own "Live scoring" pill points back
-  here; swap it when the manager has a production address) and the
-  theme toggle as the manager's (a moon and a sun, the chosen one on the
-  chrome's ink). A phone keeps all three, the link a size down (it fits
-  at 360px). The masthead leads the
-  first-load cascade.
+  here; swap the address when the manager has a production one. Both
+  compact under 430px and fit on one line at 360px.
 - **Hero names fit their column** (`fitName()` in `app.js`, 2026-09-07): a
   single word wider than the name column ("WhiskeyDitka" at 30px on a
   375px phone) used to run under the score. The script steps the name
@@ -1031,7 +1026,7 @@ the ones it changes.
   already carries name, record, status and points, and packs the roster
   (team, status and stat line on one row under the name) so twelve
   starters fit without scrolling on a tall window. On a short one the
-  shell is capped at the viewport (`max-height: calc(100vh - var(--pane-top) - 16px)` since the sticky masthead, 2026-09-24),
+  shell is capped at the viewport (`max-height: calc(100vh - 32px)`),
   the tabs stay put, and the roster card scrolls inside itself, with a
   fade over its bottom edge while there is more (`data-more` on the
   page, kept by `markMore()` on render, scroll and resize). Before this
