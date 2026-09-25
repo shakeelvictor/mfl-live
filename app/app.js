@@ -1733,7 +1733,24 @@ const gapNote = (t) => {
    Nothing while no game is on; hidden on a phone, where the team page is
    the box score alone. */
 const nflNowEl = document.getElementById("nfl-now");
+/* Off the field (2026-09-25): with no game live, the laptop's NFL-now
+   slot above the pane holds the Top scorer card (the day's, or the MVP)
+   instead, moved there from under the leader's card; it goes back when a
+   game kicks off, and a phone never moves it. The element itself moves, so
+   its flips, swipe and reveal come with it. */
+const spotSlot = document.getElementById("spot-slot");
+const spotHome = { parent: spotEl.parentElement, next: spotEl.nextElementSibling };
+function placeSpot() {
+  const up = desktop.matches && phase === "live" && !gamesOn();
+  const target = up ? spotSlot : spotHome.parent;
+  if (spotEl.parentElement === target) return up;
+  if (up) spotSlot.appendChild(spotEl);
+  else spotHome.parent.insertBefore(spotEl, spotHome.next);
+  markActive();   // the board column changed height above the rows: the pane's top follows the leader's card
+  return up;
+}
 function renderNflNow() {
+  if (placeSpot() && !spotEl.hidden) { nflNowEl.hidden = true; nflNowEl.innerHTML = ""; return; }
   const seen = new Set(), all = [];
   for (const g of games.values()) {
     const m = g.match;

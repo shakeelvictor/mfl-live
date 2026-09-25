@@ -436,6 +436,11 @@ pane** (Shakeel's call): it wears the league gradient like the leader's
 card, no bridge, every corner round; only the leader's card still joins
 the band. The laptop notes on tabs and `--join` further down describe
 the older pane.
+**Off the field the Top scorer card moves up** (same day): on a laptop,
+with no game live (`gamesOn()` false), the spotlight element itself moves
+into NFL now's slot above the pane (`placeSpot`, `#spot-slot`), so the
+day's top scorer or the MVP sits beside WEEK; it moves back under the
+leader's card when a game kicks off. A phone never moves it.
 
 - **Blue under the mint** (2026-09-11, from `poc`): the dark canvas is
   blue-black (`#060a11`, also the manifest's splash and the `theme-color`

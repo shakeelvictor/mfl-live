@@ -3103,3 +3103,9 @@ h1.bowl { font-size: clamp(38px, 11vw, 64px); }
   .row.active .status.on, .row.active .delta { color: var(--hero-accent); }
   .row.active .tfeed { color: var(--hero-text); }
 }
+
+/* The Top scorer card in NFL now's place above the pane (placeSpot). */
+.spot-slot { display: none; }
+@media (min-width: 1024px) {
+  .spot-slot:has(> .spot:not([hidden])) { display: block; position: absolute; left: 0; right: 0; bottom: calc(100% + 20px); }
+}
