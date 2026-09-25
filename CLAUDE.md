@@ -449,6 +449,11 @@ and the name slides in, and out again when the card is back.
 **On a phone (and tablet) the Top scorer card sits right under the WEEK
 title**, above the capsules (same day; CSS `order` in `.col-board`, no
 markup change).
+**Narrow phones** (same day, a ~345px screen): up to 400px the scorebug
+stacks (the name across the gradient at full width, the points and gap
+on a strip under it), and a box-score card under 330px wide turns each
+row into two lines (photo, name and game on top, the stat columns under
+them); a meta item never breaks inside itself.
 
 - **Blue under the mint** (2026-09-11, from `poc`): the dark canvas is
   blue-black (`#060a11`, also the manifest's splash and the `theme-color`
