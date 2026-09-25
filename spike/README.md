@@ -52,6 +52,10 @@ Registered as of Aug 2026: **`imp19716`** (client "MFL Client 1", validated thru
 truth is the MFL API Client page, not this file:
 <https://www41.myfantasyleague.com/2026/csetup?C=APICLI>
 
+A second client, **`imp219716`**, was registered on Sep 24, 2026 for the
+redesign preview (`mfllive-redesign`), so the preview's calls never count
+against production's allowance. Check its validity date on the same page.
+
 MFL's registration field rejects `/`, so the conventional `product/version` form
 is unavailable — hence the bare token.
 

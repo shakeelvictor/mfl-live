@@ -39,6 +39,17 @@ never come from them. See "Player images and stats".)
   leaves the previous one live; `netlify rollback` restores the last good
   one. The function's response cache is per warm instance, so a cold
   start or a second instance costs one extra MFL call per type.
+- **The redesign preview is at <https://mfllive-redesign.netlify.app>**
+  (site `mfllive-redesign`, id `142b0778-...`, created 2026-09-24): the
+  same repo through the Netlify GitHub app, publishing `app/` and
+  `netlify/functions` from `redesign` only (`allowed_branches`), deploy
+  previews off (`skip_prs`), so every push to `redesign` publishes
+  there and nothing on it reaches production. **Its own registered MFL
+  client**, `MFL_UA=imp219716` in its environment (set through the API:
+  the folder's CLI link is `mfllive`, so `netlify env:set` here would
+  write production's), so its calls never throttle production's
+  `imp19716`. It runs the same function, so it counts against the same
+  team's invocation allowance.
 - **The mockup is at <https://mfllive-poc.netlify.app>** (site
   `mfllive-poc`, created 2026-09-03) so the `poc` branch can be demoed on
   a phone. Static (no function; the fixture and images are in `data.js`),
