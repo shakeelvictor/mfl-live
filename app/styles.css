@@ -3160,3 +3160,8 @@ h1.bowl { font-size: clamp(38px, 11vw, 64px); }
    above the pane it inherited the pane's hero-white, and on the light
    theme's white card the last name and the points vanished. */
 .spot { color: var(--text-primary); }
+/* The Bowl's and the Pro Bowl's face-off names both sides, so the band
+   always names the picked one, leader or not (.face-off, markActive). */
+@media (min-width: 1024px) {
+  .team-page.hero-tab.face-off .tb-name { max-height: 60px; margin: 2px 0 4px; opacity: 1; transform: none; }
+}

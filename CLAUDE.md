@@ -457,6 +457,9 @@ leader's card when a game kicks off. A phone never moves it.
 card beside it names the team); `syncHeroAway`, one rAF per scroll burst,
 sets `.hero-away` on the pane once the card's bottom is above the band's,
 and the name slides in, and out again when the card is back.
+In the Fantasy Bowl and the Pro Bowl the band always names the picked
+team (`.face-off`): their card is a face-off naming both sides, not the
+picked one.
 **On a phone (and tablet) the Top scorer card sits right under the WEEK
 title**, above the capsules (same day; CSS `order` in `.col-board`, no
 markup change).

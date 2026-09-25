@@ -1839,6 +1839,9 @@ function markActive() {
   const heroWrap = document.getElementById("hero-wrap");
   place(heroWrap, desktop.matches && teams[0]?.id === open);
   page.classList.toggle("hero-tab", desktop.matches && !heroWrap.hidden && teams[0]?.id === open);
+  // The Bowl's and the Pro Bowl's card is a face-off naming both sides, not
+  // the picked one, so the band keeps the picked team's name (2026-09-25).
+  page.classList.toggle("face-off", Boolean(duel) || Boolean(post?.round?.bowl));
   syncHeroAway();
   heroWrap.classList.toggle("sel", phase !== "preseason" && teams[0]?.id === picked);
 }
