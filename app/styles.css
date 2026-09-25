@@ -3065,3 +3065,41 @@ h1.bowl {
 :root[data-theme="light"] { --sky-wave: transparent; }
 .sky-bg .c3 { left: -30vmax; bottom: -42vmax; background: radial-gradient(circle, var(--sky-violet-2) 0%, color-mix(in srgb, var(--sky-violet-2) 50%, transparent) 28%, transparent 64%); }
 .sky-bg .c4 { display: none; }
+
+/* The top as the canvas's pick (2026-09-25): WEEK larger, "Updated" beside
+   it on a laptop; the band names the team when it is not the leader (the
+   leader's card is its tab) and carries the latest play; a picked row is
+   no longer a tab into the pane but wears the league gradient, as the
+   leader's card does. */
+h1 { font-size: clamp(64px, 22vw, 92px); padding-right: .12em; margin-right: -.12em; }
+h1.bowl { font-size: clamp(38px, 11vw, 64px); }
+@media (min-width: 1024px) {
+  h1 { font-size: clamp(88px, 8.5vw, 128px); }
+  h1.bowl { font-size: clamp(56px, 5vw, 80px); }
+  .week { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: end; column-gap: 24px; row-gap: 8px; }
+  .week > .kicker, .week > .rounds { grid-column: 1 / -1; }
+  .week > .subhead { padding-bottom: .9em; }
+
+  .tb-sum { flex-wrap: wrap; row-gap: 14px; }
+  .tb-name { display: flex; align-items: center; gap: 10px; margin: 2px 0 4px; font: italic 800 40px/.95 var(--font-display); text-transform: uppercase; color: var(--hero-text); }
+  .tb-name .fav { flex: none; width: 34px; height: 34px; font: 700 12px/1 var(--font-display); font-style: normal; }
+  .team-page.hero-tab .tb-name { display: none; }
+  .tb-play { flex-basis: 100%; padding: 9px 12px; border-radius: 12px; background: var(--hero-strip); font: 600 13px/1.4 var(--font-data); color: var(--hero-text); }
+  .tb-play b { color: var(--hero-accent); font-weight: 700; }
+  .tb-rz { display: inline-block; margin-right: 8px; padding: 1px 6px; border-radius: 5px; background: var(--gap-critical); color: #fff; font: 700 12px/1.3 var(--font-display); letter-spacing: .04em; vertical-align: 1px; }
+  /* The leader's own play line moves to the band while its card is the tab. */
+  .hero-wrap.active .tfeed { display: none; }
+
+  /* A picked row: the league gradient, no bridge into the pane. */
+  .row.active, .row.active.fused {
+    background: var(--grad); color: var(--hero-text);
+    border-radius: var(--radius-row);
+    box-shadow: none;
+  }
+  .row.active::after { display: none; }
+  .row.active .rank { color: var(--hero-text); }
+  .row.active .rec { background: var(--hero-pill); color: var(--hero-text); }
+  .row.active .sub, .row.active .status { color: var(--hero-muted); }
+  .row.active .status.on, .row.active .delta { color: var(--hero-accent); }
+  .row.active .tfeed { color: var(--hero-text); }
+}

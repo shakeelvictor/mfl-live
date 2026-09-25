@@ -379,7 +379,6 @@ function renderCapsules() {
   caps.hidden = phase === "preseason";
   if (caps.hidden) return;
   const within = new Set(gaps.flatMap((g, i) => (gapTiers[i] !== "idle" && g < WITHIN ? [i, i + 1] : []))).size;
-  const atStake = gaps.filter((g, i) => gapTiers[i] !== "idle" && g < WITHIN).length;
   const startersLeft = teams.reduce((s, t) => s + t.toPlay, 0);
   const left = `<span class="capsule"><b class="accent">${startersLeft}</b>starters left</span>`;
   // Pakistan vs. the World: the margin, in the gap's tier.
@@ -404,9 +403,11 @@ function renderCapsules() {
       (cut === undefined ? "" : `<span class="capsule"><b class="${gapTiers[cutAt]}">${fmt(cut)}</b>cut line</span>`) + left;
     return;
   }
+  // Regular season (2026-09-25, the canvas's pick): the close gaps' franchises, the coin flips, who is left.
+  const flips = gapTiers.filter((tr) => tr === "critical").length;
   caps.innerHTML =
     `<span class="capsule"><b class="live">${within}</b>within ${WITHIN.toFixed(1)}</span>` +
-    `<span class="capsule"><b>${atStake}</b>wins at stake</span>` + left;
+    `<span class="capsule"><b>${flips}</b>coin flip${flips === 1 ? "" : "s"}</span>` + left;
 }
 
 // A franchise name is one column of the hero and the score is the other. A
@@ -1698,13 +1699,19 @@ function renderTeamSum(t, starters, bench, gap) {
   const done = Math.max(0, starters.length - on - toPlay);
   const tds = starters.reduce((a, p) => a + tdCount(p.st), 0);
   const fig = (n, l) => `<span class="tb-fig"><b>${n}</b><small>${l}</small></span>`;
+  // The latest play naming one of its live starters (one in the red zone first), with the down and the spot.
+  const playing = starters.filter((p) => lastPlayOf(p)).sort((a, b) => inRedZone(b) - inRedZone(a));
+  const pp = playing[0], sit = pp && sitOf(pp.tm);
+  const play = pp ? `<div class="tb-play">${inRedZone(pp) ? `<span class="tb-rz">RZ</span>` : ""}<b>${esc(lastName(pp.n))}</b> \u00b7 ${esc(lastPlayOf(pp))}` +
+    (sit?.dd && sit?.spot ? ` \u00b7 ${esc(sit.dd)} at ${esc(sit.spot)}` : "") + `</div>` : "";
   el.innerHTML =
-    `<div class="tb-main"><span class="tb-kick">Box score \u00b7 Week ${WEEK}</span><div class="tb-figs">` +
+    `<div class="tb-main"><span class="tb-kick">Box score \u00b7 Week ${WEEK}</span>` +
+      `<h2 class="tb-name">${franchiseMark(t)}<span>${esc(t.team)}</span></h2><div class="tb-figs">` +
       (top ? fig(fmt(top.pts), `${esc(lastName(top.n) || top.n)} \u00b7 top`) : "") +
       fig(on, "On now") + fig(toPlay, "To play") + fig(done, "Final") + fig(tds, tds === 1 ? "Touchdown" : "Touchdowns") +
     `</div></div>` +
     `<div class="tb-side">${gap ? `<span class="tb-gap">${esc(gap)}</span>` : ""}` +
-      (bench.length && !t.isSide ? `<span class="tb-bench">Bench ${fmt(sum(bench))} behind</span>` : "") + `</div>`;
+      (bench.length && !t.isSide ? `<span class="tb-bench">Bench ${fmt(sum(bench))} behind</span>` : "") + `</div>` + play;
 }
 
 // The team head's standing against its neighbour, as the Broadcast

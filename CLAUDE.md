@@ -426,6 +426,16 @@ mock's: no sea-blue `--wash` down the top (holidays keep theirs), the
 aurora's glows softer (teal high left, violet right and low left, no
 bottom-right cloud, no diagonal band). This supersedes the aurora's
 "Bowl's own strength" below for ordinary weeks.
+And the top (same day): WEEK at 92px on a phone and up to 128px on a
+laptop, "Updated" beside it there; the capsules are within 3.0, **coin
+flips** (the critical gaps; "wins at stake" came off) and starters left;
+the band carries the team's latest play (`.tb-play`, the red-zone one
+first, with ESPN's down and spot) and, for any team but the leader, its
+mark and name (`.tb-name`). **A picked row is no longer a tab into the
+pane** (Shakeel's call): it wears the league gradient like the leader's
+card, no bridge, every corner round; only the leader's card still joins
+the band. The laptop notes on tabs and `--join` further down describe
+the older pane.
 
 - **Blue under the mint** (2026-09-11, from `poc`): the dark canvas is
   blue-black (`#060a11`, also the manifest's splash and the `theme-color`
