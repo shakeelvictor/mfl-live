@@ -3083,7 +3083,10 @@ h1.bowl { font-size: clamp(38px, 11vw, 64px); }
   .tb-sum { flex-wrap: wrap; row-gap: 14px; }
   .tb-name { display: flex; align-items: center; gap: 10px; margin: 2px 0 4px; font: italic 800 40px/.95 var(--font-display); text-transform: uppercase; color: var(--hero-text); }
   .tb-name .fav { flex: none; width: 34px; height: 34px; font: 700 12px/1 var(--font-display); font-style: normal; }
-  .team-page.hero-tab .tb-name { display: none; }
+  /* The leader's name: folded away while its card is beside the band, in
+     once the card has scrolled away (.hero-away, syncHeroAway). */
+  .team-page.hero-tab .tb-name { max-height: 0; margin: 0; opacity: 0; overflow: hidden; transform: translateY(-6px); transition: max-height .3s ease, margin .3s ease, opacity .25s ease, transform .3s ease; }
+  .team-page.hero-tab.hero-away .tb-name { max-height: 60px; margin: 2px 0 4px; opacity: 1; transform: none; }
   .tb-play { flex-basis: 100%; padding: 9px 12px; border-radius: 12px; background: var(--hero-strip); font: 600 13px/1.4 var(--font-data); color: var(--hero-text); }
   .tb-play b { color: var(--hero-accent); font-weight: 700; }
   .tb-rz { display: inline-block; margin-right: 8px; padding: 1px 6px; border-radius: 5px; background: var(--gap-critical); color: #fff; font: 700 12px/1.3 var(--font-display); letter-spacing: .04em; vertical-align: 1px; }
@@ -3109,3 +3112,4 @@ h1.bowl { font-size: clamp(38px, 11vw, 64px); }
 @media (min-width: 1024px) {
   .spot-slot:has(> .spot:not([hidden])) { display: block; position: absolute; left: 0; right: 0; bottom: calc(100% + 20px); }
 }
+@media (prefers-reduced-motion: reduce) { .team-page.hero-tab .tb-name { transition: none; } }

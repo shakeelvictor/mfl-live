@@ -1839,9 +1839,26 @@ function markActive() {
   const heroWrap = document.getElementById("hero-wrap");
   place(heroWrap, desktop.matches && teams[0]?.id === open);
   page.classList.toggle("hero-tab", desktop.matches && !heroWrap.hidden && teams[0]?.id === open);
+  syncHeroAway();
   heroWrap.classList.toggle("sel", phase !== "preseason" && teams[0]?.id === picked);
 }
 addEventListener("resize", () => { if (desktop.matches) markActive(); });
+
+/* The leader's name in the band while its card is scrolled away (laptop,
+   2026-09-25): the card beside the band names the team, so the band hides
+   the name while the card is there; once the page scrolls the card up past
+   the band's bottom (the pane is sticky, the card is not), the name comes
+   in, and goes again when the card is back. One rAF per scroll burst. */
+let awayFrame = 0;
+function syncHeroAway() {
+  awayFrame = 0;
+  const heroWrap = document.getElementById("hero-wrap");
+  const band = document.getElementById("team-band");
+  const on = desktop.matches && page.classList.contains("hero-tab");
+  const away = on && heroWrap.getBoundingClientRect().bottom < band.getBoundingClientRect().bottom - 24;
+  page.classList.toggle("hero-away", away);
+}
+addEventListener("scroll", () => { if (!awayFrame) awayFrame = requestAnimationFrame(syncHeroAway); }, { passive: true });
 
 function openTeam(id, pick = true) {
   open = id; tab = "starters";

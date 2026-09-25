@@ -441,6 +441,11 @@ with no game live (`gamesOn()` false), the spotlight element itself moves
 into NFL now's slot above the pane (`placeSpot`, `#spot-slot`), so the
 day's top scorer or the MVP sits beside WEEK; it moves back under the
 leader's card when a game kicks off. A phone never moves it.
+**The leader's name comes into the band once its card scrolls away**
+(same day): while the leader is picked the band folds its name away (the
+card beside it names the team); `syncHeroAway`, one rAF per scroll burst,
+sets `.hero-away` on the pane once the card's bottom is above the band's,
+and the name slides in, and out again when the card is back.
 
 - **Blue under the mint** (2026-09-11, from `poc`): the dark canvas is
   blue-black (`#060a11`, also the manifest's splash and the `theme-color`
