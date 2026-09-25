@@ -250,53 +250,44 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------- header ---------- */
 
-.masthead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* The masthead, as mfl-manager's (2026-09-24): floating chrome that
+   follows the theme (dark on dark, white on light), sticky 12px from the
+   top; from 1024px it spans the window, 12px off each edge, over both
+   columns. The brand on the left, the manager's link and the theme on the
+   right (a phone keeps the brand and the theme). */
+.masthead { position: sticky; top: 12px; z-index: 20; display: flex; align-items: stretch; gap: 10px; pointer-events: none; }
+.chrome { pointer-events: auto; background: var(--chrome); color: var(--chrome-ink); border: 1px solid var(--chrome-edge); border-radius: 14px; box-shadow: var(--chrome-shadow); }
+.chrome-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; padding: 10px 12px 10px 16px; }
+.chrome-me { flex: none; display: flex; align-items: center; gap: 6px; padding: 0 8px; }
 .brandwrap { display: flex; align-items: center; gap: 10px; }
-
-/* The league's mark, cut to transparency (see design/cutout.py) so the
-   hands and ball sit on the header; the icons keep the white disc. */
-.brand-mark { width: 40px; height: 40px; display: grid; place-items: center; }
-.brand-mark img { width: 40px; height: 40px; display: block; }
-
-.brand {
-  font: italic 900 18px/1 var(--font-display);
-  letter-spacing: .02em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
+/* The league's mark, cut to transparency (see design/cutout.py). */
+.brand-mark { display: grid; place-items: center; }
+.brand-mark img { width: 32px; height: 32px; border-radius: 8px; display: block; }
+.brand { font: 700 26px/1 var(--font-display); letter-spacing: .01em; text-transform: uppercase; white-space: nowrap; }
 /* The LIVE in the wordmark: live red with a pulsing dot, always. It is
-   the app's name, not a status: it stays before the season and after a
-   week is final. */
-.brand-live { display: inline-flex; align-items: center; gap: 7px; color: var(--gap-critical); }
+   the app's name, not a status (the manager writes MANAGER the same way
+   in mint; red is its colour for its own Live link too). */
+.brand-live { display: inline-flex; align-items: center; gap: 7px; margin-left: -4px; font: 700 26px/1 var(--font-display); letter-spacing: .01em; text-transform: uppercase; white-space: nowrap; color: var(--gap-critical); }
 .brand-live .dot { width: 7px; height: 7px; }
-
-.seg {
-  display: flex; height: 40px; padding: 4px; gap: 2px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-glass);
-  border: 1px solid var(--border-strong);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-.seg-btn {
-  border: 0; cursor: pointer; height: 100%; padding: 0 13px;
-  border-radius: var(--radius-pill);
-  font: 800 11px/1 var(--font-data);
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  background: transparent; color: var(--text-secondary);
-  transition: background .25s, color .25s;
-}
-.seg-btn:hover { color: var(--text-primary); }
-.seg-btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
-
-/* Narrow phones: the wordmark plus Demo and theme controls do not fit at
-   full size, so the header compacts below 430px. */
-@media (max-width: 430px) {
-  .brand { font-size: 16px; }
+/* The right block: the manager's link and the theme, as the manager's. */
+.glass { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 9px; background: transparent; border: 1px solid var(--chrome-line); color: var(--chrome-ink); font: 700 14px/1 var(--font-display); letter-spacing: .04em; text-transform: uppercase; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.glass:hover { border-color: var(--chrome-ink); }
+a.glass.link { border-color: transparent; }
+a.glass.link:hover { border-color: var(--chrome-line); }
+a.glass.link .ext { font-size: 10px; opacity: .6; }
+.seg { display: flex; height: 36px; padding: 3px; gap: 2px; border-radius: 9px; background: rgba(128, 140, 150, .14); }
+.seg-btn { border: 0; cursor: pointer; height: 100%; width: 32px; padding: 0; border-radius: 7px; background: transparent; color: var(--chrome-muted); transition: background .25s, color .25s; font-size: 0; }
+.seg-btn::before { font-size: 15px; line-height: 1; }
+.seg-btn[data-theme="dark"]::before { content: "\263E"; }
+.seg-btn[data-theme="light"]::before { content: "\2600"; }
+.seg-btn:hover { color: var(--chrome-ink); }
+.seg-btn[aria-pressed="true"] { background: var(--chrome-ink); color: var(--chrome); }
+/* A phone: the brand and the theme, a size down. */
+@media (max-width: 767px) {
+  .chrome-main { padding: 8px 8px 8px 12px; }
+  .brand, .brand-live { font-size: 24px; }
   .brandwrap { gap: 8px; }
-  .seg-btn { padding: 0 9px; font-size: 10px; letter-spacing: .06em; }
-  .seg { padding: 3px; }
+  .chrome-me .glass.link { display: none; }
 }
 
 /* ---------- week title ---------- */
@@ -366,26 +357,31 @@ h1 {
   color: var(--hero-text);
   box-shadow: var(--hero-shadow);
   border: 1px solid var(--hero-border);
-  padding: 18px;
+  padding: 24px 26px;
   display: flex; flex-direction: column; gap: 14px;
   overflow: hidden;
   transition: background .3s;
+  /* The redesign's type scales with the hero's own width, not the window's
+     (2026-09-24): on a laptop the hero is the board column, not the page. */
+  container-type: inline-size;
 }
 button.hero { cursor: pointer; }
+@media (max-width: 599px) { .hero { padding: 20px; } }
 
 .hero-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.hero-label { display: inline-flex; align-items: center; gap: 8px; color: var(--hero-muted); }
+.hero-label { display: inline-flex; align-items: center; gap: 10px; color: var(--hero-muted); font: 700 11px/1 var(--font-data); letter-spacing: .14em; text-transform: uppercase; }
 .badge {
-  width: 26px; height: 26px; border-radius: 50%;
+  width: 30px; height: 30px; border-radius: 50%;
   background: var(--accent); color: var(--accent-ink);
   display: grid; place-items: center;
-  font: italic 900 12px/1 var(--font-display);
+  font: 700 16px/1 var(--font-display);
   letter-spacing: 0;
 }
 .hero-status {
-  padding: 6px 11px; border-radius: var(--radius-pill);
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 11px; border-radius: var(--radius-pill);
   background: var(--hero-pill);
-  font: 700 11px/1 var(--font-data);
+  font: 600 12px/1 var(--font-data); letter-spacing: .06em; text-transform: uppercase;
   white-space: nowrap;
 }
 
@@ -393,8 +389,8 @@ button.hero { cursor: pointer; }
 .hero-id { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .hero-name {
   margin: 0;
-  font: italic 900 28px/1 var(--font-display);
-  letter-spacing: -.02em;
+  font: italic 800 clamp(40px, 11cqi, 72px)/.92 var(--font-display);   /* the redesign's heavy italic */
+  letter-spacing: -.01em;
   text-transform: uppercase;
   text-wrap: balance;
 }
@@ -406,34 +402,34 @@ button.hero { cursor: pointer; }
 .hero-mid.stack .hero-id { display: contents; }   /* name across both columns, record beside the score */
 .hero-mid.stack .hero-name { grid-column: 1 / -1; }
 .hero-name.wrap-any { overflow-wrap: anywhere; }
-.hero-rec { font: 700 15px/1 var(--font-data); color: var(--hero-muted); }
+.hero-rec { font: 600 14px/1 var(--font-data); color: var(--hero-muted); }
 /* Franchise icons from MFL, when set: by the name in a hero, badged on the
    rank circle in the list (or in its place before the season). */
 .hero-icon { width: 34px; height: 34px; border-radius: 8px; object-fit: contain; vertical-align: -8px; margin-right: 10px; background: rgba(255, 255, 255, .12); }
 .hero-pts {
   flex: none;
-  font: 800 40px/1 var(--font-data);
-  letter-spacing: -.03em;
+  font: 700 clamp(56px, 13cqi, 96px)/.9 var(--font-display);
+  letter-spacing: .01em;
   transition: color .4s;
 }
 
 .hero-strip {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; border-radius: 16px;
+  padding: 10px 16px; border-radius: 14px;
   background: var(--hero-strip);
 }
 .tier {
-  padding: 5px 10px; border-radius: var(--radius-pill);
-  font: 800 10px/1 var(--font-data);
-  letter-spacing: .14em; text-transform: uppercase;
+  padding: 5px 8px; border-radius: 6px;
+  font: 700 12px/1 var(--font-display);
+  letter-spacing: .06em; text-transform: uppercase;
   white-space: nowrap;
   background: var(--hero-pill); color: var(--hero-text);
 }
 .tier.critical { background: var(--gap-critical); color: var(--gap-critical-ink); }
 .tier.live     { background: var(--gap-live);     color: var(--gap-live-ink); }
-.leads { font: 700 12px/1.3 var(--font-data); color: var(--hero-muted); min-width: 0; }
+.leads { font: 600 13px/1.3 var(--font-data); color: var(--hero-muted); min-width: 0; }
 .leads b { color: var(--hero-text); font-weight: 700; }
-.hero-gap { margin-left: auto; font: 800 18px/1 var(--font-data); letter-spacing: -.01em; white-space: nowrap; }
+.hero-gap { margin-left: auto; font: 700 28px/1 var(--font-display); letter-spacing: .01em; white-space: nowrap; }
 
 /* ---------- new-leader takeover ----------
    Fires on the hero when the #1 franchise changes: a mint strobe, three
@@ -441,7 +437,7 @@ button.hero { cursor: pointer; }
    badge spinning in and the new name rising into place. All layers live
    in .fx, which is invisible until the hero carries .takeover. */
 
-.hero-body { display: flex; flex-direction: column; gap: 14px; }
+.hero-body { display: flex; flex-direction: column; gap: 16px; }
 
 .fx {
   position: absolute; inset: 0;
@@ -1932,6 +1928,7 @@ body.pcard-open { overflow: hidden; }
     gap: 0 var(--gutter);
     align-items: start;
     --pane-pad: 16px;   /* the pane shell's side padding; the tab bridges run this far into the pane */
+    --pane-top: 84px;   /* the pane's content sticks under the sticky masthead (12 + its 60 + 12) */
     padding: 16px 40px 48px;   /* room for the picked row's lift: it grows leftward about its right edge, up to 6% of the board */
     --gutter: 28px;
   }
@@ -1957,13 +1954,15 @@ body.pcard-open { overflow: hidden; }
   }
   .team-page .wash { display: none; }
   .shell.layout > .foot { grid-column: 1 / -1; margin-top: 28px; }
-  .team-page > .shell { position: sticky; top: 16px; max-width: none; padding: 16px var(--pane-pad) 24px; animation: none; }
+  /* The masthead spans the window over both columns, 12px off each edge. */
+  .shell.layout > .masthead { grid-column: 1 / -1; margin: 0 calc(50% - 50vw + 12px) 20px; }
+  .team-page > .shell { position: sticky; top: var(--pane-top); max-width: none; padding: 16px var(--pane-pad) 24px; animation: none; }
   /* The pane never outgrows the window: the shell is capped at the
      viewport, the tabs stay put, and the roster card scrolls inside itself
      when the rows do not fit (a tall window never scrolls). A fade over the
      card's bottom edge says there is more, until the end is reached
      (data-more, kept by the script). */
-  .team-page > .shell { box-sizing: border-box; max-height: calc(100vh - 32px); }
+  .team-page > .shell { box-sizing: border-box; max-height: calc(100vh - var(--pane-top) - 16px); }
   .team-page .roster { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
   .team-page > .shell::after {
     content: ""; position: absolute; left: 17px; right: 17px; bottom: 25px; height: 36px;
@@ -2389,19 +2388,15 @@ a.round.past:hover { color: var(--text-primary); filter: brightness(1.06); }
   font: italic 900 15px/1 var(--font-display); text-transform: uppercase;
 }
 .duel-icon img { width: 34px; height: 34px; border-radius: 9px; object-fit: contain; display: block; }
-.duel-name { font: italic 900 22px/1 var(--font-display); letter-spacing: -.02em; text-transform: uppercase; text-wrap: balance; }
-.duel-pts { position: relative; font: 800 40px/1 var(--font-data); letter-spacing: -.03em; transition: color .4s; }
+.duel-name { font: italic 800 clamp(26px, 6.5cqi, 44px)/.95 var(--font-display); letter-spacing: -.01em; text-transform: uppercase; text-wrap: balance; }
+.duel-pts { position: relative; font: 700 clamp(44px, 11cqi, 80px)/.9 var(--font-display); letter-spacing: .01em; transition: color .4s; }
 .duel-side:not(.lead) .duel-name, .duel-side:not(.lead) .duel-pts { color: var(--hero-muted); }
 .hero.winner .duel-side.lead .duel-pts { color: var(--hero-gold); }
-.duel-sub { font: 700 12px/1 var(--font-data); color: var(--hero-muted); }
+.duel-sub { font: 600 13px/1 var(--font-data); color: var(--hero-muted); }
 .duel-v {
   width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
   background: var(--hero-pill); color: var(--hero-muted);
   font: italic 900 13px/1 var(--font-display);
-}
-@media (max-width: 430px) {
-  .duel-name { font-size: 18px; }
-  .duel-pts { font-size: 32px; }
 }
 /* The managers under a side: a shallower, sunken row. */
 .row.contrib {

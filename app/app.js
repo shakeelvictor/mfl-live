@@ -411,7 +411,7 @@ function renderCapsules() {
 // drop the score under it (.hero-mid.stack), and only past that let the word
 // break. Only measurable while the element is displayed, so openTeam() calls
 // it after showing the page. Multi-word names wrap and are left at full size.
-const NAME_MIN_PX = 24;
+const NAME_MIN_PX = 28;   // the redesign's floor (2026-09-24)
 function fitName(el) {
   if (!el) return;
   const mid = el.closest(".hero-mid");
@@ -3153,6 +3153,7 @@ function cascadeIn() {
   if (reducedMotion.matches) { pickOnLoad(); boardReady(); return; }
   const app = document.getElementById("app");
   const targets = [
+    document.querySelector(".masthead"),   // above the board column since the redesign (2026-09-24)
     ...[...document.querySelectorAll(".col-board > *")].flatMap((el) =>
       el.classList.contains("standings") ? [el.querySelector(".standings-head"), ...rowsEl.children] : [el]),
     page,

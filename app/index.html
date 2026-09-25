@@ -33,18 +33,26 @@
   <div class="wash"></div>
 
   <div class="shell layout">
-  <div class="col-board">
-
+    <!-- The masthead (2026-09-24, as mfl-manager's): floating chrome, sticky,
+         across both columns on a laptop. The mark and the wordmark on the
+         left; the manager and the theme on the right. -->
     <header class="masthead">
-      <div class="brandwrap">
-        <span class="brand-mark" aria-hidden="true"><img src="logo.png" alt="" width="40" height="40" decoding="async"></span>
-        <span class="brand">MFL <span class="brand-live" id="brand-live">Live<span class="dot" aria-hidden="true"></span></span></span>
+      <div class="chrome chrome-main">
+        <div class="brandwrap">
+          <span class="brand-mark" aria-hidden="true"><img src="logo.png" alt="" width="32" height="32" decoding="async"></span>
+          <span class="brand">MFL</span><span class="brand-live" id="brand-live">Live<span class="dot" aria-hidden="true"></span></span>
+        </div>
       </div>
-      <div class="seg" role="group" aria-label="Theme">
-        <button class="seg-btn" type="button" data-theme="dark" aria-pressed="true">Dark</button>
-        <button class="seg-btn" type="button" data-theme="light" aria-pressed="false">Light</button>
+      <div class="chrome chrome-me">
+        <a class="glass link" href="https://mfl-manager-2.up.railway.app" target="_blank" rel="noopener" title="The league on MFL Manager">Manager<span class="ext" aria-hidden="true">&nearr;</span></a>
+        <div class="seg" role="group" aria-label="Theme">
+          <button class="seg-btn" type="button" data-theme="dark" aria-pressed="true" title="Dark">Dark</button>
+          <button class="seg-btn" type="button" data-theme="light" aria-pressed="false" title="Light">Light</button>
+        </div>
       </div>
     </header>
+
+  <div class="col-board">
 
     <div class="week">
       <!-- Playoffs: "Playoffs · Week 15" over the round's name as the title. -->
