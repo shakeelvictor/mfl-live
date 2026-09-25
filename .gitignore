@@ -16,3 +16,6 @@ app/dist/
 
 # Local environment (MFL_UA etc.), read by dev.mjs.
 .env
+
+# The icon script's font, fetched from Google Fonts on first run (design/favicon.py).
+design/.fonts/

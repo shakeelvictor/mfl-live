@@ -620,6 +620,16 @@ them); a meta item never breaks inside itself.
   `apple-touch-icon.png`, since a badge reads the same on a dark tab bar.
   The 686px masters are `design/mfllive-logo-transparent.png` and
   `design/mfllive-logo.png`. The loader still spins the line-art football.
+  **The icons are "MFL" now, not the mark** (2026-09-25, the redesign):
+  `design/favicon.py` (Pillow; fetches Barlow Condensed ExtraBold Italic
+  from Google Fonts into `design/.fonts/`, gitignored) writes the
+  favicons, the apple-touch icon and both 512s, white letters on the
+  dark canvas for MFL Live and dark on white for MFL Manager
+  (`../mfl-manager/app`), so the two read apart in a row of tabs; tab
+  icons are rounded tiles, home-screen ones full-bleed (the platform
+  rounds them). `cutout.py` still writes the header's `logo.png`, and the
+  disc icons only with `--icons`. Bump the `?v=` on the icon links when
+  they change.
 - **Installed as an app** (2026-09-11): `app/manifest.webmanifest`
   (standalone, `background_color` and `theme_color` on the dark canvas)
   and two 512px icons `cutout.py` writes beside the favicons: `icon-512.png`,
