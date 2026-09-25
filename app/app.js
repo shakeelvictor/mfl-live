@@ -1100,9 +1100,9 @@ function renderSpotlight(flip = false) {
     (phaseChanged && newest.mvp && !reducedMotion.matches ? `<span class="spot-flash" aria-hidden="true"></span>` : "") +
     `<div class="spot-top"><span class="micro spot-label">${label}</span>${nav}</div>` +
     `<div class="spot-body"${changed || flip ? "" : ` style="animation:none"`}>` +
-      `<span class="spot-face">${avatar(top)}${logo}</span>` +
+      `<span class="spot-face" style="${teamVars(top.tm)}"><span class="pphoto">${avatar(top)}</span>${logo}</span>` +
       `<span class="spot-who">` +
-        `<span class="spot-name">${esc(top.n)}</span>` +
+        `<span class="spot-name">${nameHtml(top.n)}</span>` +
         `<span class="spot-meta"><span class="pos ${posClass(top.pos)}">${esc(top.pos)}</span><span>${esc(top.team || top.tm)}</span></span>` +
         `<span class="spot-stat">${esc(top.line || statLine(top.pos, top.st))}</span>` +
         `<span class="spot-for">for <b>${esc(top.franchise)}</b></span>` +

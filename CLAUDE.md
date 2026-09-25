@@ -1101,6 +1101,14 @@ the ones it changes.
   title's own italic 900 caps at 16px and the pills' text is the reading
   ink** (`--news-ink`, pure white in dark and pure black in light; the
   micro grey was hard to read on the card); the MVP's kicker stays gold.
+  **Since the redesign (2026-09-24) the card is in the rows' capitals**:
+  the kicker in the italic 800 at 24px (20px on a phone), the pills as
+  the manager's week pills (32px, 9px corners, display capitals, a
+  hairline outline, the shown one filled, the MVP's gold on `--gold-ink`),
+  the scorer's photo on his club's colours with the club mark in its
+  corner (the rows' `.pphoto`; the MVP's ringed gold), the name in 28px
+  display capitals with the first name quieter, the position, team, stat
+  line and "for <franchise>" in Barlow capitals, the points at 44px.
   On a phone the MVP kicker is wider than the pills leave room for, so
   the row wraps and the pills sit under it (`.spot-top` wraps). A flip re-renders with the body's own
   rise and no reveal, and gold only for the MVP entry; a new day's card
