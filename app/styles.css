@@ -3121,3 +3121,10 @@ h1.bowl { font-size: clamp(38px, 11vw, 64px); }
   .col-board > .spot { order: 1; }
   .col-board > :not(.week):not(.spot) { order: 2; }
 }
+/* The band never shrinks (2026-09-25): in the pane's height-capped shell a
+   flex item gives way by default, and a name on two lines squeezed the band
+   until its tabs slid under the box score. The box score is the part that
+   scrolls. */
+@media (min-width: 1024px) {
+  .team-page > .shell > .team-band { flex: none; }
+}
