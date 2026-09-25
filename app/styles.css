@@ -3156,3 +3156,7 @@ h1.bowl { font-size: clamp(38px, 11vw, 64px); }
   .roster .bxr > .pright { grid-area: 1 / -2 / 3 / -1; }
   .roster .bxr > .pplay { grid-area: 3 / 2 / 4 / -1; }
 }
+/* The Top scorer card sets its own ink (2026-09-25): moved into the slot
+   above the pane it inherited the pane's hero-white, and on the light
+   theme's white card the last name and the points vanished. */
+.spot { color: var(--text-primary); }
