@@ -3032,7 +3032,8 @@ async function loadLeague() {
   splashStep(0.55);   // the league is in; the live feed is the last answer
   const fr = toArray(lg.data.league?.franchises?.franchise);
   names = new Map(fr.map((f) => [f.id, f.name]));
-  if (lg.data.league?.name) LEAGUE = String(lg.data.league.name).trim();
+  // The export's name carries the year ("INDOMEXPAK 2026"); the kicker names the season itself.
+  if (lg.data.league?.name) LEAGUE = String(lg.data.league.name).trim().replace(/\s*\b(19|20)\d{2}\s*$/, "") || LEAGUE;
   icons = new Map(fr.filter((f) => f.icon || f.logo).map((f) => [f.id, f.icon || f.logo]));
   rosterIds = new Map(toArray(rs.data.rosters?.franchise).map((f) => [f.id, toArray(f.player).map((p) => p.id)]));
   headshotSrc = (p) => (p.sid ? `https://sleepercdn.com/content/nfl/players/thumb/${p.sid}.jpg` : null);
@@ -3321,6 +3322,7 @@ function cascadeIn() {
   if (reducedMotion.matches) { pickOnLoad(); boardReady(); return; }
   const app = document.getElementById("app");
   const targets = [
+    document.querySelector(".layout > .masthead"),
     ...[...document.querySelectorAll(".col-board > *")].flatMap((el) =>
       el.classList.contains("standings") ? [el.querySelector(".standings-head"), ...rowsEl.children] : [el]),
     page,

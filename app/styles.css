@@ -3030,3 +3030,25 @@ h1.bowl {
 .roster .bxr .pinj { padding: 0 4px; }
 .roster .bxr .pnew { width: 15px; }
 .roster .bxr .pnew svg { width: 8px; height: 8px; }
+
+/* The masthead spans both columns on a laptop, the manager's link and the
+   theme at the pane's right edge. The leader's card keeps still while it
+   is the pane's tab: its lift grew it above and below the band and
+   notched the seam. */
+@media (min-width: 1024px) {
+  .shell.layout > .masthead { grid-column: 1 / -1; margin-bottom: 20px; }
+  .hero-wrap.active.sel { transform: none; }
+}
+/* The leader's tab and the band in the mock's colours (2026-09-25): the
+   card keeps the league gradient (teal, blue, violet) and fades its right
+   edge onto the band's left end; the band runs from there through blue to
+   violet. The join is the tab pair's midpoint, so a holiday (which sets
+   --tab-a/--tab-b) still carries through. */
+:root { --band-end: oklch(0.32 0.12 290); }
+:root[data-theme="light"] { --band-end: #3b3f9a; }
+@media (min-width: 1024px) {
+  .team-page { --band-join: color-mix(in srgb, var(--tab-a), var(--tab-b)); }
+  .hero-wrap.active { --join: color-mix(in srgb, var(--tab-a), var(--tab-b)); }
+  .hero-wrap.active .hero:not(.winner) { background: linear-gradient(90deg, transparent 55%, var(--join) 100%), var(--grad); }
+  .team-band { background: linear-gradient(90deg, var(--band-join) 0%, var(--tab-b) 60%, var(--band-end) 100%); }
+}
