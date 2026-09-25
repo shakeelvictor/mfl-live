@@ -2862,6 +2862,7 @@ async function loadLeague() {
   showLoading("Connecting to the league\u2026");
   const [lg, rs] = await Promise.all([api("league"), api("rosters")]);
   for (const r of [lg, rs]) if (!r.ok) throw new Error(`${r.type}: ${r.error}`);
+  splashStep(0.55);   // the league is in; the live feed is the last answer
   const fr = toArray(lg.data.league?.franchises?.franchise);
   names = new Map(fr.map((f) => [f.id, f.name]));
   icons = new Map(fr.filter((f) => f.icon || f.logo).map((f) => [f.id, f.icon || f.logo]));
@@ -3100,16 +3101,50 @@ document.addEventListener("visibilitychange", () => {
 
 const loader = document.getElementById("loader");
 const loaderMsg = document.getElementById("loader-msg");
-const MIN_LOAD_MS = 2800;   // long enough for the scene to play through once
+// The cartoon needed 2.8s to play through once; the splash (2026-09-24,
+// mfl-manager's) needs only a beat for its name to be read filling.
+const MIN_LOAD_MS = 1200;
+
+// The name fills as the answers come in, as the manager's: a creep on
+// time alone toward 70% (MFL can be slow, and a word that sits still reads
+// as stuck), a floor raised by each answer that lands (splashStep), full
+// when the board is ready. The curtain opens once the fill has caught up,
+// so the word is seen whole for a beat.
+const spFill = document.getElementById("sp-fill"), spT0 = performance.now();
+let spP = 0, spFloor = 0, spRaf = 0, spOpen = null, spGone = false;
+function spFrame(now) {
+  spRaf = 0;
+  if (spGone) return;
+  const creep = 0.7 * (1 - Math.exp(-(now - spT0) / 5000));
+  const target = Math.max(spFloor, creep);
+  spP = reducedMotion.matches ? target : spP + (target - spP) * 0.07;
+  spFill.style.setProperty("--p", `${(spP * 100).toFixed(2)}%`);
+  if (spOpen && spP > 0.995) { spFill.style.setProperty("--p", "100%"); const go = spOpen; spOpen = null; setTimeout(go, reducedMotion.matches ? 0 : 280); return; }
+  spRaf = requestAnimationFrame(spFrame);
+}
+spRaf = requestAnimationFrame(spFrame);
+const splashStep = (p) => { spFloor = Math.max(spFloor, p); };
 
 function showLoading(msg) {
   if (msg) loaderMsg.textContent = msg;
   loader.hidden = false;
-  loader.classList.remove("out");
 }
-function hideLoading() {
-  loader.classList.add("out");
-  setTimeout(() => { loader.hidden = true; }, 450);
+// Fills the name, parts the curtain, and calls then() as it opens (the
+// board cascades in behind it). A tab in the background gets no frames,
+// so it opens at once there, and never later than 1.5s after the call.
+function hideLoading(then = () => {}) {
+  spFloor = 1;
+  let opened = false;
+  const open = () => {
+    if (opened) return; opened = true; spOpen = null; spGone = true;
+    loader.classList.add("gone");
+    then();
+    setTimeout(() => { loader.hidden = true; }, reducedMotion.matches ? 400 : 1300);
+  };
+  if (document.hidden) return open();
+  spOpen = open;
+  if (!spRaf) spRaf = requestAnimationFrame(spFrame);
+  setTimeout(open, 1500);
 }
 
 // Top to bottom: every block on the board, then each standings row and
@@ -3156,7 +3191,7 @@ async function boot() {
   if (desktop.matches) openTeam(teams[0].id, false);   // shown, not yet lifted: pickOnLoad() lifts it after the cascade
   await document.fonts.ready;
   const wait = Math.max(0, MIN_LOAD_MS - (performance.now() - loadStart));
-  setTimeout(() => { cascadeIn(); hideLoading(); if (QUERY.has("witch")) playWitchingHour(); if (QUERY.has("td")) checkTouchdown(QUERY.get("td")); }, wait);
+  setTimeout(() => hideLoading(() => { cascadeIn(); if (QUERY.has("witch")) playWitchingHour(); if (QUERY.has("td")) checkTouchdown(QUERY.get("td")); }), wait);
   if (!FIXTURE) schedulePoll();
 }
 

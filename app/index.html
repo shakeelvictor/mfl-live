@@ -151,16 +151,17 @@
   <div class="w-scene" id="witch-scene"></div>
 </div>
 
-<!-- Loading interstitial: shown by default so nothing paints before it. -->
-<div class="loader" id="loader" role="status" aria-live="polite">
-  <div class="wash"></div>
-  <div class="loader-inner">
-    <!-- The scene: three players behind a field strip, the leader in the
-         middle (design/loader-source.mp4, cut to alpha by design/loader.py).
-         It rises in, then loops; the wordmark wipes in under it. -->
-    <img class="loader-scene" src="loader.webp" alt="" width="620" height="288" decoding="async">
-    <div class="loader-brand" aria-label="MFL Live"><span style="--i:0">M</span><span style="--i:1">F</span><span style="--i:2">L</span><span class="sp" aria-hidden="true"></span><span class="live" style="--i:3">L</span><span class="live" style="--i:4">I</span><span class="live" style="--i:5">V</span><span class="live" style="--i:6">E</span></div>
-    <div class="loader-msg" id="loader-msg">Pulling the live feed&hellip;</div>
+<!-- Loading interstitial (2026-09-24, mfl-manager's redesigned splash):
+     shown by default so nothing paints before it. The name, outlined,
+     fills left to right with the league's colours as the first answers
+     land (app.js, spFrame); full, it parts down the middle like a curtain
+     on the board. The cartoon it replaced (loader.webp) is kept for now. -->
+<div class="splash" id="loader" role="status" aria-live="polite">
+  <div class="sp-curtain l" aria-hidden="true"></div><div class="sp-curtain r" aria-hidden="true"></div>
+  <div class="splash-box">
+    <div class="sp-word" aria-hidden="true"><span class="sp-out">MFL Live</span><span class="sp-fill" id="sp-fill">MFL Live</span></div>
+    <p class="splash-title" id="loader-msg">Pulling the live feed&hellip;</p>
+    <p class="splash-note">Collecting this week's scores from MyFantasyLeague. It takes a few seconds.</p>
   </div>
 </div>
 

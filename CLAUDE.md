@@ -474,7 +474,20 @@ the ones it changes.
   light gets near-black with deep teal, each at its own contrast. Held
   static mid-title under reduced motion.
 - **Loading interstitial** (`#loader`, shown by default in the markup so
-  nothing paints before it): a looping cartoon of three players behind a
+  nothing paints before it). **On `redesign` it is mfl-manager's splash,
+  "for now"** (2026-09-24, Shakeel's call): **MFL LIVE** in the display
+  face, outlined, filling left to right with the league gradient (mint
+  to violet; deep teal to indigo in light) as the answers land (`spFrame`
+  creeps toward 70% on time alone, `splashStep(0.55)` once the league and
+  rosters are in, full at `hideLoading`), the status as its title
+  (`showLoading(msg)` still sets it) over a one-line note; once the fill
+  has caught up the ground parts down the middle like a curtain
+  (`.sp-curtain`) and `hideLoading(then)` runs the cascade as it opens
+  (never later than 1.5s after the call; at once in a background tab).
+  `MIN_LOAD_MS` is 1200 (the cartoon needed 2.8s to play through). The
+  cartoon below is kept, files and all, to come back: `git show
+  0253a3d:app/index.html` and `:app/styles.css` have its markup and
+  rules, and `app.js` its 2.8s. **Until then**: a looping cartoon of three players behind a
   field strip, the leader in the middle raising a finger, in navy and
   orange. The source is `design/loader-source.mp4` (Shakeel's own
   Midjourney animation, 624px, 24fps, 5.2s; the GIF export of the same
