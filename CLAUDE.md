@@ -625,7 +625,10 @@ them); a meta item never breaks inside itself.
   from Google Fonts into `design/.fonts/`, gitignored) writes the
   favicons, the apple-touch icon and both 512s, white letters on the
   dark canvas for MFL Live and dark on white for MFL Manager
-  (`../mfl-manager/app`), so the two read apart in a row of tabs; tab
+  (`../mfl-manager/app`), so the two read apart in a row of tabs, each
+  with its word under MFL in its wordmark's accent (LIVE in the live
+  red, MANAGER in the light theme's deep mint; at 32px the word gets
+  more of the tile, and MANAGER is still only just legible there); tab
   icons are rounded tiles, home-screen ones full-bleed (the platform
   rounds them). `cutout.py` still writes the header's `logo.png`, and the
   disc icons only with `--icons`. Bump the `?v=` on the icon links when
