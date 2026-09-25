@@ -257,17 +257,25 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
    right (a phone keeps the brand and the theme). */
 .masthead { position: sticky; top: 12px; z-index: 20; display: flex; align-items: stretch; gap: 10px; pointer-events: none; }
 .chrome { pointer-events: auto; background: var(--chrome); color: var(--chrome-ink); border: 1px solid var(--chrome-edge); border-radius: 14px; box-shadow: var(--chrome-shadow); }
-.chrome-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; padding: 10px 12px 10px 16px; }
+.chrome-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; padding: 6px 12px 6px 12px; }
 .chrome-me { flex: none; display: flex; align-items: center; gap: 6px; padding: 0 8px; }
 .brandwrap { display: flex; align-items: center; gap: 10px; }
-/* The league's mark, cut to transparency (see design/cutout.py). */
-.brand-mark { display: grid; place-items: center; }
-.brand-mark img { width: 32px; height: 32px; border-radius: 8px; display: block; }
-.brand { font: 700 26px/1 var(--font-display); letter-spacing: .01em; text-transform: uppercase; white-space: nowrap; }
+/* The mark and the wordmark stay MFL Live's own inside the manager's
+   chrome (Shakeel's call, 2026-09-24): the league's mark at 40px, cut to
+   transparency (see design/cutout.py) so the hands and ball sit on the
+   bar, and MFL LIVE in the heavy italic. */
+.brand-mark { width: 40px; height: 40px; display: grid; place-items: center; }
+.brand-mark img { width: 40px; height: 40px; display: block; }
+.brand {
+  font: italic 800 20px/1 var(--font-display);
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
 /* The LIVE in the wordmark: live red with a pulsing dot, always. It is
-   the app's name, not a status (the manager writes MANAGER the same way
-   in mint; red is its colour for its own Live link too). */
-.brand-live { display: inline-flex; align-items: center; gap: 7px; margin-left: -4px; font: 700 26px/1 var(--font-display); letter-spacing: .01em; text-transform: uppercase; white-space: nowrap; color: var(--gap-critical); }
+   the app's name, not a status: it stays before the season and after a
+   week is final. */
+.brand-live { display: inline-flex; align-items: center; gap: 7px; color: var(--gap-critical); }
 .brand-live .dot { width: 7px; height: 7px; }
 /* The right block: the manager's link and the theme, as the manager's. */
 .glass { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 9px; background: transparent; border: 1px solid var(--chrome-line); color: var(--chrome-ink); font: 700 14px/1 var(--font-display); letter-spacing: .04em; text-transform: uppercase; cursor: pointer; text-decoration: none; white-space: nowrap; }
@@ -284,10 +292,10 @@ a.glass.link .ext { font-size: 10px; opacity: .6; }
 .seg-btn[aria-pressed="true"] { background: var(--chrome-ink); color: var(--chrome); }
 /* A phone: the brand and the theme, a size down. */
 @media (max-width: 767px) {
-  .chrome-main { padding: 8px 8px 8px 12px; }
-  .brand, .brand-live { font-size: 24px; }
+  .chrome-main { padding: 4px 8px 4px 10px; }
   .brandwrap { gap: 8px; }
-  .chrome-me .glass.link { display: none; }
+  .chrome-me { padding: 0 6px; gap: 4px; }
+  .chrome-me .glass.link { padding: 0 8px; font-size: 13px; }   /* kept on a phone too (Shakeel, 2026-09-24) */
 }
 
 /* ---------- week title ---------- */

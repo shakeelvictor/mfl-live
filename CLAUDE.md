@@ -543,13 +543,17 @@ the ones it changes.
   from the top, outside the board column (`.shell.layout > .masthead`),
   so from 1024px it spans the window 12px off each edge over both
   columns and the pane's sticky content sits under it (`--pane-top`,
-  84px). Left: the mark at 32px, MFL in the display face at 26px and
-  LIVE beside it in the live red with its dot. Right: "Manager ↗"
+  84px). Left: **MFL Live's own mark and wordmark, as before** (Shakeel's
+  call the same day, over the manager's 32px mark and upright 26px
+  wordmark): the league's mark at 40px and MFL LIVE in the heavy italic,
+  LIVE in the live red with its pulsing dot (20px: the italic 800 cut of
+  Barlow Condensed is narrower than Archivo's 18px was). Right: "Manager ↗"
   (`a.glass.link`, to <https://mfl-manager-2.up.railway.app>, the
   manager's preview; the manager's own "Live scoring" pill points back
   here; swap it when the manager has a production address) and the
   theme toggle as the manager's (a moon and a sun, the chosen one on the
-  chrome's ink). A phone drops the Manager link. The masthead leads the
+  chrome's ink). A phone keeps all three, the link a size down (it fits
+  at 360px). The masthead leads the
   first-load cascade.
 - **Hero names fit their column** (`fitName()` in `app.js`, 2026-09-07): a
   single word wider than the name column ("WhiskeyDitka" at 30px on a
