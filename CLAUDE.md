@@ -121,8 +121,13 @@ never come from them. See "Player images and stats".)
   leader (`leaderId` stays null before the season).
 - **Franchise icons**: MFL's league export carries `icon`/`logo` URLs for
   franchises that set one (3 of 11 today). They show by the name in the hero
-  and team page and badged on the rank circle in the list (in its place
-  pre-season). Plain `<img>` from MFL's host; a failed load removes itself.
+  and team page, and on the board as the row's **mark** (2026-09-24, as
+  mfl-manager's standings: `franchiseMark`, a 44px disc beside the rank;
+  a franchise with no icon shows its initials on its own hue,
+  `oklch(0.8 0.12 <hue>)` from `markHue`, the same hue the manager gives
+  it; a Pro Bowl side shows its flag). Plain `<img>` from MFL's host; a
+  failed load removes itself (on the board, it falls back to the
+  initials).
 - **The Week 1 opener measured MFL's liveScoring export refreshing on a
   fixed ~200s cycle** (2026-09-09, `spike/log-cadence.mjs` at 30s: every
   gap between changes was 183s or 214s, zero 429s). MFL's number cannot be
@@ -575,8 +580,16 @@ the ones it changes.
   leader's badge -- never urgency. Urgency is a separate warm scale:
   `--gap-critical` (< 0.25, coin flip) -> `--gap-live` (< 3.0, close; was
   2.5 until 2026-09-09) -> `--gap-settled`. Rows adjacent to a hot gap
-  **fuse into one card** (per-edge radius, shadow dropped); the rank circle
-  takes the hotter of its two gaps. **The divider's pill is the number
+  **fuse into one card** (per-edge radius, shadow dropped); the rank
+  takes the hotter of its two gaps. **Board rows are the manager's
+  standings rows** (2026-09-24): the rank in display numerals ("02"), the
+  franchise's mark, the name in 24px display capitals (20px on a phone,
+  wrapping, never an ellipsis), the record chip and In/Out chips in the
+  display face on 6px corners, the status in Barlow capitals, the score
+  at 32px, a hairline round the card (an inset shadow, dropped on fused
+  rows) and no chevron. A settled rank is the plain numeral; a close or
+  coin-flip gap fills its rounded tile in the tier's colour, so the
+  tiers stay as loud as the circle was. **The divider's pill is the number
   alone, and a close gap pulses** (2026-09-09): the "Coin flip" word came
   off the pill, and instead a ring breathes out of it (`.gap.live
   .pill::after`, transform and opacity only; faster and red for a coin

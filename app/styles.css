@@ -410,10 +410,6 @@ button.hero { cursor: pointer; }
 /* Franchise icons from MFL, when set: by the name in a hero, badged on the
    rank circle in the list (or in its place before the season). */
 .hero-icon { width: 34px; height: 34px; border-radius: 8px; object-fit: contain; vertical-align: -8px; margin-right: 10px; background: rgba(255, 255, 255, .12); }
-.rank { position: relative; }
-.rank-badge { position: absolute; right: -6px; bottom: -4px; width: 18px; height: 18px; border-radius: 50%; object-fit: cover; background: var(--surface); border: 1px solid var(--border-strong); }
-.rank.has-icon { background: var(--surface-raised); overflow: hidden; }
-.rank-icon { width: 36px; height: 36px; object-fit: cover; }
 .hero-pts {
   flex: none;
   font: 800 40px/1 var(--font-data);
@@ -642,16 +638,25 @@ button.hero { cursor: pointer; }
    above the pane, since filter makes .board a stacking context. */
 .board { display: flex; flex-direction: column; position: relative; z-index: 2; filter: drop-shadow(var(--shadow-row)); }
 
+/* A franchise's row, as mfl-manager's standings (2026-09-24): the rank in
+   display numerals, the franchise's mark, the name in display capitals
+   with the record chip and the status under it, the score large at the
+   right, a hairline round the card (an inset shadow, so a selection never
+   shifts the list) and no chevron. The rank keeps MFL Live's tiers: a
+   settled rank is the plain numeral, a close or coin-flip gap fills its
+   tile in the tier's colour. */
 .row {
   display: grid;
-  grid-template-columns: 36px 1fr 82px 14px;
-  gap: 12px; align-items: center;
+  grid-template-columns: 44px 44px minmax(0, 1fr) auto;
+  grid-template-areas: "rank fav who pts";
+  gap: 14px; align-items: center;
   width: 100%; text-align: left;
   border: 0; cursor: pointer;
-  padding: 12px 14px 12px 12px;
+  padding: 18px 20px;
   background: var(--surface);
   color: var(--text-primary);
-  border-radius: var(--radius-row);
+  box-shadow: inset 0 0 0 1px var(--border);
+  border-radius: 16px;
   position: relative; isolation: isolate;   /* its lift shadow (::before, z -1) stays inside the row's own stack */
   transition: background .25s, border-radius .3s, transform .45s cubic-bezier(.2, .8, .2, 1);
 }
@@ -665,7 +670,13 @@ button.hero { cursor: pointer; }
   opacity: 0; transition: opacity .45s;
   pointer-events: none;
 }
-.row:hover { filter: brightness(1.06); }
+.row > .rank { grid-area: rank; }
+.row > .fav { grid-area: fav; }
+.row > .who { grid-area: who; }
+.row > .pts { grid-area: pts; }
+/* Rows with no rank (pre-season, a Pro Bowl side's managers): the mark leads. */
+.row:is(.pre, .contrib) { grid-template-columns: 44px minmax(0, 1fr) auto; grid-template-areas: "fav who pts"; }
+.row:not(.fused):not(.active):hover { box-shadow: inset 0 0 0 1px var(--border-strong); }
 .row:focus-visible { outline-offset: -2px; }
 /* Cluster fusing: rows adjacent to a hot gap share one card. Each edge
    that borders a hot gap loses its radius; fused rows drop the shadow. */
@@ -683,7 +694,7 @@ button.hero { cursor: pointer; }
 .row.sel {
   transform: translateY(var(--dy, 0px)) perspective(900px) translateZ(51px);   /* 6% bigger */
   z-index: 3;
-  border-radius: var(--radius-row);   /* a lifted row leaves its fused cluster: every corner rounded again */
+  border-radius: 16px;   /* a lifted row leaves its fused cluster: every corner rounded again */
 }
 .row.sel::before { opacity: 1; }
 /* The hero's lift is lighter (it is already the biggest thing on the
@@ -701,37 +712,59 @@ button.hero { cursor: pointer; }
 .hero-wrap.sel { transform: perspective(1200px) translateZ(28px); z-index: 3; }
 .hero-wrap.sel::before { opacity: 1; }
 .rank {
-  width: 36px; height: 36px; border-radius: 50%;
+  width: 44px; height: 44px; border-radius: 12px;
   display: grid; place-items: center;
-  background: var(--surface-raised); color: var(--text-secondary);
-  font: 800 13px/1 var(--font-data);
+  background: transparent; color: var(--text-primary);
+  font: 700 26px/1 var(--font-display); letter-spacing: .01em;
   transition: background .3s, color .3s;
 }
+/* The mark: the franchise's MFL icon, or its initials on its own hue (--fav). */
+.fav {
+  width: 44px; height: 44px; border-radius: 50%; overflow: hidden;
+  display: grid; place-items: center;
+  background: var(--fav, var(--surface-raised)); color: #060a11;
+  font: 700 13px/1 var(--font-display); letter-spacing: .02em;
+}
+.fav img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fav.flag { background: var(--surface-raised); box-shadow: inset 0 0 0 1px var(--border-strong); }
+.fav.flag svg { display: block; height: 100%; width: auto; }   /* by height, centred: the circle crops the sides */
 .rank.critical { background: var(--gap-critical);  color: var(--gap-critical-ink); }
 .rank.live     { background: var(--gap-live-soft); color: var(--gap-live); }
+.rank.critical, .rank.live { font-size: 22px; }
 
 .who { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .name {
-  font: 700 15px/1.15 var(--font-display);
-  letter-spacing: -.01em;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font: 700 24px/1.05 var(--font-display);
+  letter-spacing: .02em; text-transform: uppercase;
+  text-wrap: balance;   /* a long name takes a second line, never an ellipsis */
 }
 /* The sub-line wraps as a whole (seed chip, In/Out and status can outgrow a
    narrow phone in the playoffs); a chip never breaks inside. */
-.sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font: 600 12.5px/1 var(--font-data); color: var(--text-muted); }
+.sub { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font: 600 12px/1.2 var(--font-data); letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
 /* The record chip reads at a glance (2026-09-16, Shakeel: 10.5px was far
    too small to be legible); the status beside it steps up with it. */
 .rec {
   white-space: nowrap;
-  padding: 4px 9px; border-radius: var(--radius-pill);
+  padding: 4px 8px; border-radius: 6px;
   background: var(--surface-raised);
-  font: 800 13.5px/1 var(--font-data);
+  font: 700 16px/1 var(--font-display); letter-spacing: .02em;
   color: var(--text-secondary);
 }
 .status { display: flex; align-items: center; gap: 5px; transition: color .4s; white-space: nowrap; }
 .status.on { color: var(--accent); }
 
-.pts { font: 800 20px/1 var(--font-data); text-align: right; letter-spacing: -.02em; transition: color .4s; }
+.pts { font: 700 32px/1 var(--font-display); text-align: right; letter-spacing: .01em; transition: color .4s; }
+/* A phone: the manager's 20px names, and the marks and score a step down. */
+@media (max-width: 759px) {
+  .row { grid-template-columns: 36px 36px minmax(0, 1fr) auto; gap: 10px; padding: 14px 16px 14px 12px; }
+  .row:is(.pre, .contrib) { grid-template-columns: 36px minmax(0, 1fr) auto; }
+  .rank, .fav { width: 36px; height: 36px; }
+  .rank { font-size: 22px; border-radius: 10px; }
+  .rank.critical, .rank.live { font-size: 18px; }
+  .fav { font-size: 12px; }
+  .name { font-size: 20px; }
+  .pts { font-size: 28px; }
+}
 
 /* A franchise's play feed (2026-09-17): the last play naming one of its
    live starters, under the "on now" names on its row and in the leader's
@@ -784,7 +817,6 @@ button.hero { cursor: pointer; }
   .row.active .tplay { color: var(--hero-text); }
   .row.active .tplay b { color: var(--hero-accent); }
 }
-.chev { font: 400 20px/1 var(--font-data); color: var(--text-faint); }
 
 /* ---------- gap divider: the designed object ---------- */
 
@@ -895,7 +927,6 @@ button.hero { cursor: pointer; }
 
 /* Pre-season rows: no rank, gap or points yet. */
 .row.pre .pts { color: var(--text-faint); }
-.row.pre .rank { font-family: var(--font-display); font-style: italic; font-weight: 900; }
 
 .roster {
   display: flex; flex-direction: column; gap: 8px;   /* the rows are cards of their own now (2026-09-24) */
@@ -1976,7 +2007,6 @@ body.pcard-open { overflow: hidden; }
       inset 0 -1px 0 var(--tab-line);
   }
   .row.active:hover { filter: none; }
-  .row.active .chev { opacity: 0; }
   .row.active::after {
     content: ""; position: absolute; top: 0; bottom: 0; left: 100%;
     /* Runs into the pane as far as its inner padding, not just over its
@@ -1992,7 +2022,7 @@ body.pcard-open { overflow: hidden; }
     animation: fflr-fade-in .2s ease-out;
   }
   /* Hero treatment for the row's parts: accent badge, glass record chip. */
-  .row.active .rank { background: var(--accent); color: var(--accent-ink); }
+  .row.active .rank { color: var(--hero-text); }
   .row.active .rank.critical { background: var(--gap-critical); color: var(--gap-critical-ink); }
   .row.active .rank.live { background: var(--gap-live); color: var(--gap-live-ink); }
   .row.active .rec { background: var(--hero-pill); color: var(--hero-text); }
@@ -2296,8 +2326,8 @@ a.round.past:hover { color: var(--text-primary); filter: brightness(1.06); }
 
 /* In / Out (Advances / Eliminated, Runner-up) beside the seed chip. */
 .fate {
-  padding: 3px 7px; border-radius: var(--radius-pill);
-  font: 800 10px/1 var(--font-data); letter-spacing: .1em; text-transform: uppercase;
+  padding: 4px 7px; border-radius: 6px;
+  font: 700 12px/1 var(--font-display); letter-spacing: .06em; text-transform: uppercase;
   white-space: nowrap;
 }
 .fate.in { background: var(--accent-soft); color: var(--accent); }
@@ -2328,7 +2358,7 @@ a.round.past:hover { color: var(--text-primary); filter: brightness(1.06); }
   color: var(--text-muted);
 }
 .board-sep::after { content: ""; flex: 1; height: 1px; background: var(--border); }
-.row.bye .rank { font: italic 900 10px/1 var(--font-display); letter-spacing: .04em; text-transform: uppercase; }
+.row.bye .rank { font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
 .row.bye .pts { color: var(--text-faint); }
 
 @media (min-width: 1024px) {
@@ -2382,15 +2412,14 @@ a.round.past:hover { color: var(--text-primary); filter: brightness(1.06); }
 }
 /* The managers under a side: a shallower, sunken row. */
 .row.contrib {
-  grid-template-columns: 30px 1fr 82px 14px;
-  padding: 9px 14px 9px 14px;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  padding: 10px 20px 10px 20px;
   background: var(--surface-sunken);
   box-shadow: inset 0 1px 0 var(--border);
 }
-.row.contrib .rank { width: 30px; height: 30px; font: italic 900 11px/1 var(--font-display); }
-.row.contrib .rank-icon { width: 30px; height: 30px; }
-.row.contrib .name { font-size: 14px; }
-.row.contrib .pts { font-size: 17px; }
+.row.contrib .fav { width: 30px; height: 30px; font-size: 11px; }
+.row.contrib .name { font-size: 17px; }
+.row.contrib .pts { font-size: 22px; }
 .pname .pmeta .pfrom { color: var(--text-secondary); text-transform: none; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Between the two sides: the v centred on a hairline. */
 .board-v { justify-content: center; padding: 10px 10px 8px; font: italic 900 12px/1 var(--font-display); text-transform: lowercase; letter-spacing: 0; }

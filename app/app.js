@@ -266,6 +266,17 @@ setInterval(() => {
 
 // A franchise's own icon, when one is set in MFL.
 const franchiseIcon = (t, cls = "ficon") => t.icon ? `<img class="${cls}" src="${t.icon}" alt="" loading="lazy" onerror="this.remove()">` : "";
+// A franchise's mark on the board (2026-09-24, as mfl-manager's standings):
+// its MFL icon, or its initials on its own hue, the same hue the manager
+// gives it (both key it off the franchise id). A failed icon falls back to
+// the initials.
+const markHue = (id) => ((parseInt(String(id).replace(/\D/g, ""), 10) || 0) * 137) % 360;
+const franchiseMark = (t) => {
+  const ini = esc(initials(t.team.trim() || "?"));
+  return `<span class="fav" style="--fav:oklch(0.8 0.12 ${markHue(t.id)})" aria-hidden="true">` +
+    (t.icon ? `<img src="${t.icon}" alt="" loading="lazy" onerror="this.replaceWith(document.createTextNode(this.dataset.fb))" data-fb="${ini}">` : ini) +
+  `</span>`;
+};
 
 /* ---------------- chrome ---------------- */
 
@@ -518,10 +529,9 @@ function renderRows(changed) {
     rowsEl.innerHTML = teams.map((t) =>
       `<button class="row pre" type="button" data-id="${t.id}"` +
       ` aria-label="${esc(t.team)}. Open roster.">` +
-        `<span class="rank${t.icon ? " has-icon" : ""}">${t.icon ? franchiseIcon(t, "rank-icon") : esc(t.team.trim()[0] || "?")}</span>` +
+        franchiseMark(t) +
         `<span class="who"><span class="name">${esc(t.team)}</span></span>` +
         `<span class="pts">&mdash;</span>` +
-        `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
       `</button>`).join("");
     markActive();
     return;
@@ -532,10 +542,16 @@ function renderRows(changed) {
   // carries the margin, so no divider between the sides.
   if (duel) {
     const dot = (t) => (t.onNow ? `<span class="dot"></span>` : "");
+    // A side's mark is its flag, where a franchise shows its icon.
+    const sideMark = (t) => {
+      const code = duel.sides.find((sd) => sd.id === t.id)?.flag;
+      return FLAGS[code] ? `<span class="fav flag" aria-hidden="true">${FLAGS[code]()}</span>` : franchiseMark(t);
+    };
     rowsEl.innerHTML = teams.map((t) =>
       `<button class="row side fuse-bottom" type="button" data-id="${t.id}"` +
       ` aria-label="${esc(t.team)}, ${fmt(t.live)} points, ${t.members.length} managers. Open lineup.">` +
-        `<span class="rank">${t.rank}</span>` +
+        `<span class="rank">${String(t.rank).padStart(2, "0")}</span>` +
+        sideMark(t) +
         `<span class="who">` +
           `<span class="name">${esc(t.team)}</span>` +
           `<span class="sub"><span class="rec">${t.record}</span><span class="rec">${t.starters.length} players</span>` +
@@ -543,19 +559,17 @@ function renderRows(changed) {
           (t.onNow ? playLine(t) : "") +
         `</span>` +
         `<span class="pts${fl(changed, t.id)}" data-tween="pts:${t.id}" data-delta>${fmt(t.live)}</span>` +
-        `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
       `</button>` +
       t.members.map((m, j, arr) =>
         `<button class="row contrib fuse-top${j < arr.length - 1 ? " fuse-bottom" : ""}" type="button" data-id="${m.id}"` +
         ` aria-label="${esc(m.team)}, ${m.starters.length} in the ${esc(t.team)} lineup, ${fmt(m.live)} points. Open lineup.">` +
-          `<span class="rank${m.icon ? " has-icon" : ""}">${m.icon ? franchiseIcon(m, "rank-icon") : esc(m.team.trim()[0] || "?")}</span>` +
+          franchiseMark(m) +
           `<span class="who">` +
             `<span class="name">${esc(m.team)}</span>` +
             `<span class="sub"><span class="rec">${m.starters.length} ${m.starters.length === 1 ? "player" : "players"}</span>` +
               `<span class="status${m.onNow ? " on" : ""}">${dot(m)}${statusOf(m)}</span></span>` +
           `</span>` +
           `<span class="pts${fl(changed, m.id)}" data-tween="pts:${m.id}" data-delta>${fmt(m.live)}</span>` +
-          `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
         `</button>`).join("")
     ).join(`<div class="board-sep board-v" role="presentation"><span>v</span></div>`);
     markActive();
@@ -593,7 +607,8 @@ function renderRows(changed) {
     const row =
       `<button class="${rowCls}" type="button" data-id="${t.id}"` +
       ` aria-label="Rank ${t.rank}, ${esc(t.team)}, ${t.record}, ${fmt(t.live)} points. Open lineup.">` +
-        `<span class="rank ${rankTier}">${t.rank}${franchiseIcon(t, "rank-badge")}</span>` +
+        `<span class="rank ${rankTier}">${String(t.rank).padStart(2, "0")}</span>` +
+        franchiseMark(t) +
         `<span class="who">` +
           `<span class="name">${esc(t.team)}</span>` +
           `<span class="sub">` +
@@ -605,7 +620,6 @@ function renderRows(changed) {
           (t.onNow ? playLine(t) : "") +
         `</span>` +
         `<span class="pts${fl(changed, t.id)}" data-tween="pts:${t.id}" data-delta>${fmt(t.live)}</span>` +
-        `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
       `</button>`;
 
     if (below === undefined || bowl) return row;
@@ -628,13 +642,13 @@ function renderRows(changed) {
   byeTeams.map((t) =>
     `<button class="row bye" type="button" data-id="${t.id}"` +
     ` aria-label="${esc(t.team)}, ${t.record}, bye this week. Open roster.">` +
-      `<span class="rank">Bye${franchiseIcon(t, "rank-badge")}</span>` +
+      `<span class="rank">Bye</span>` +
+      franchiseMark(t) +
       `<span class="who">` +
         `<span class="name">${esc(t.team)}</span>` +
         `<span class="sub"><span class="rec">${t.record}</span><span class="status">${statusOf(t)}</span></span>` +
       `</span>` +
       `<span class="pts">&mdash;</span>` +
-      `<span class="chev" aria-hidden="true">&rsaquo;</span>` +
     `</button>`).join("");
 
   markActive();
