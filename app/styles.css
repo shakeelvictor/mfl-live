@@ -1,94 +1,120 @@
 /* ===================================================================
-   FFLR Live token layer, ported as-is from the handoff's
-   tokens.css. DARK-FIRST: bare :root is the dark palette and
-   :root[data-theme="light"] is the override -- the inverse of the usual
-   pattern, and deliberate (matches Fantasy Architect). It also resolves
-   correctly in all three artifact host states (unstamped -> dark,
-   stamped dark -> dark, stamped light -> light).
+   Token layer, the redesign's (2026-09-24, design/redesign/tokens.css):
+   MFL Manager's "Night Game" dark / "Paper Stadium" light under MFL Live's
+   names, plus MFL Live's own (--wash here; the aurora, the Bowl, the
+   iridescence and the snow further down). DARK-FIRST: bare :root is the
+   dark palette and :root[data-theme="light"] is the override, on purpose;
+   the page never follows prefers-color-scheme.
 
    Accent (mint) carries "live / on now", the selected segment and the
    leader's rank badge -- never urgency. Urgency is its own warm scale:
    --gap-critical (coin flip) -> --gap-live (at risk) -> --gap-settled.
    =================================================================== */
 :root {
+  /* ground and surfaces (unchanged but for the hairlines and the card shadow) */
   --canvas: #060a11;
-  --wash: oklch(0.55 0.12 232 / 0.6);
+  --wash: oklch(0.55 0.12 232 / 0.6);                 /* MFL Live's own: the hero/pane wash */
   --surface: #0e161f;
   --surface-raised: #16212d;
   --surface-sunken: #0a1017;
   --surface-glass: rgba(255, 255, 255, 0.05);
-  --border: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 16px 40px rgba(0, 0, 0, 0.4);
-  --shadow-sheet: 0 -24px 80px rgba(0, 0, 0, 0.65);
+  --sheet: #0a1017;                                   /* new: the player/team sheet */
+  --border: rgba(255, 255, 255, 0.07);                /* was .06 */
+  --border-strong: rgba(255, 255, 255, 0.15);         /* was .14 */
+  --shadow-card: 0 16px 40px rgba(0, 0, 0, 0.35);     /* was an inset highlight + drop */
+  --shadow-sheet: 0 -30px 80px rgba(0, 0, 0, 0.45);   /* was -24px .65 */
+  --shadow-pane: 0 20px 50px rgba(0, 0, 0, 0.5);      /* was an inset highlight + drop */
   --scrim: rgba(3, 6, 12, 0.72);
-  --news-ink: #ffffff;   /* the news copy: pure white here, pure black in light, for reading (2026-09-11) */
+  --news-ink: #ffffff;
+
+  /* ink */
   --text-primary: #f6faf8;
   --text-secondary: #a7b3bb;
   --text-muted: #6b7882;
   --text-faint: #3f4b47;
+  --dim: #2c3844;                                     /* new: the ranks below the top places */
+
+  /* accent (mint: live / on now / selected; never urgency) */
   --accent: #4fe3c1;
   --accent-ink: #052a24;
+  --accent-text: #4fe3c1;                             /* new: mint as text (light needs a darker one) */
   --accent-soft: rgba(79, 227, 193, 0.14);
-  /* Teal into blue (2026-09-11): the hero starts on the mint's teal, reaches
-     a deep sea blue past its middle and fades to the surface. The canvas,
-     surfaces and pane carry the same blue. Gold never sits on it: the Week
-     winner's hero reads --hero-bg-gold, the green ground the gold sat on
-     before, so green and gold never share a surface with the blue. */
-  --hero-bg: linear-gradient(160deg, oklch(0.42 0.1 178) 0%, oklch(0.34 0.11 252) 52%, #0e161f 88%);
-  --hero-bg-gold: linear-gradient(160deg, oklch(0.42 0.1 178) 0%, #0f1917 70%);
-  --hero-text: #f6faf8;
-  --hero-muted: rgba(246, 250, 248, 0.66);
+  --accent-line: rgba(79, 227, 193, 0.5);             /* new */
+
+  /* violet: the one hue with no job; the aurora and the gradient's far end */
+  --violet: #8c6eff;
+  --violet-text: #a996ff;
+  --violet-soft: rgba(140, 110, 255, 0.18);
+  --violet-line: rgba(140, 110, 255, 0.6);
+
+  /* the league gradient: "the one that matters" (the leader, the Week winner's ground aside, the card bands) */
+  --grad: linear-gradient(160deg, oklch(0.42 0.1 178) 0%, oklch(0.34 0.11 252) 55%, oklch(0.32 0.12 290) 100%);
+  --hero-bg: var(--grad);                             /* was MFL Live's own teal-to-blue; now the gradient itself */
+  --hero-bg-gold: linear-gradient(160deg, oklch(0.42 0.1 178) 0%, #0f1917 70%);   /* gold never sits on the blue */
+  --hero-text: #ffffff;                               /* was #f6faf8 */
+  --hero-muted: rgba(255, 255, 255, 0.75);            /* was rgba(246,250,248,.66) */
   --hero-strip: rgba(255, 255, 255, 0.10);
   --hero-pill: rgba(255, 255, 255, 0.14);
-  /* In dark the hero's gradient fades to near-canvas, so a border and the
-     card shadow's inset highlight read as a stray outline: neither here. */
   --hero-border: transparent;
-  --hero-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
-  /* The hero gradient stays dark in both themes, so anything mint on it
-     needs the bright mint, not the theme accent (deep teal in light). */
+  --hero-shadow: none;                                /* was a drop shadow; the lift is a pseudo-element's */
   --hero-accent: #4fe3c1;
   --hero-accent-soft: rgba(79, 227, 193, 0.22);
-  /* Gold for the week's MVP; deepened in light for contrast on white. */
+
+  /* gold: the MVP, the Week winner, the Bowl */
   --gold: #f2c94c;
+  --gold-ink: #1a1300;                                /* new */
   --gold-soft: rgba(242, 201, 76, 0.16);
   --gold-line: rgba(242, 201, 76, 0.45);
   --hero-gold: #f2c94c;
   --hero-gold-soft: rgba(242, 201, 76, 0.22);
   --hero-gold-line: rgba(242, 201, 76, 0.5);
-  /* Laptop layout: the selected row and the team panel share this green.
-     Solid on purpose, so the tab matches the panel at any height. */
-  /* Pane top and bottom. Kept as sRGB hex on purpose: the tab's --join is
+
+  /* new: the masthead's floating chrome, which follows the theme */
+  --chrome: #111b26;
+  --chrome-ink: #f6faf8;
+  --chrome-muted: #a7b3bb;
+  --chrome-line: rgba(255, 255, 255, 0.12);
+  --chrome-edge: rgba(255, 255, 255, 0.08);
+  --chrome-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --foot-mark: #121c27;                               /* new: the footer's huge wordmark */
+
+  /* the laptop tab and the lifts (unchanged) */
+  /* --tab-a/--tab-b stay sRGB hex in both themes: the tab's --join is
      color-mix(in srgb) and a gradient of legacy colours interpolates in
-     sRGB, so the seam is exact. As oklch these interpolated in oklab and,
-     being outside the sRGB gamut, were gamut-mapped differently by the
-     gradient and the mix, so the bridge never quite matched the pane. */
-  --tab-a: #015145;   /* oklch(0.39 0.0715 178), the in-gamut cut of 0.39 0.09 */
-  --tab-b: #0c2a55;   /* the pane ends on the blue; the tab's seam mixes teal and blue in sRGB */   /* oklch(0.29 0.053 178) */
-  --tab-line: rgba(255, 255, 255, 0.12);
-  --hero-tab-start: oklch(0.42 0.1 178);
+     sRGB, so the seam is exact (as oklch they were gamut-mapped
+     differently by the gradient and the mix, and the bridge never matched). */
+  --tab-a: #015145; --tab-b: #0c2a55; --tab-line: rgba(255, 255, 255, 0.12); --hero-tab-start: oklch(0.42 0.1 178);
   --shadow-row: 0 4px 10px rgba(0, 0, 0, 0.42);
-  --shadow-lift: 0 24px 44px -10px rgba(0, 0, 0, 0.7), 0 6px 14px rgba(0, 0, 0, 0.4);   /* the picked row, risen off the board */
-  --shadow-pane: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 20px 50px rgba(0, 0, 0, 0.5);
+  --shadow-lift: 0 24px 44px -10px rgba(0, 0, 0, 0.7), 0 6px 14px rgba(0, 0, 0, 0.4);
+
+  /* urgency, the gaps (unchanged but the coin flip's soft and ink) */
   --gap-critical: #ff5d5d;
-  --gap-critical-soft: rgba(255, 93, 93, 0.14);
-  --gap-critical-ink: #2a0606;
+  --gap-critical-soft: rgba(255, 93, 93, 0.16);      /* was .14 */
+  --gap-critical-ink: #ffffff;                        /* was #2a0606: white on the red pill */
   --gap-live: #ff9a57;
   --gap-live-soft: rgba(255, 154, 87, 0.13);
   --gap-live-ink: #2a1204;
   --gap-settled: rgba(255, 255, 255, 0.10);
+
+  /* positions (unchanged) */
   --pos-qb: #f472b6; --pos-qb-soft: rgba(244, 114, 182, 0.16);
   --pos-rb: #34d399; --pos-rb-soft: rgba(52, 211, 153, 0.16);
   --pos-wr: #60a5fa; --pos-wr-soft: rgba(96, 165, 250, 0.16);
   --pos-te: #fbbf24; --pos-te-soft: rgba(251, 191, 36, 0.16);
   --pos-k:  #a78bfa; --pos-k-soft:  rgba(167, 139, 250, 0.16);
   --pos-lb: #a3e635; --pos-lb-soft: rgba(163, 230, 53, 0.16);
-  --radius-card: 24px;
-  --radius-row: 18px;
-  --radius-pill: 999px;
 
-  --font-display: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-data: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* shape */
+  --radius-card: 24px;
+  --radius-row: 14px;                                 /* was 18px */
+  --radius-pill: 10px;                                /* was 999px: pills are rounded rectangles now */
+  --radius-cta: 10px;                                 /* new: buttons (999px in light) */
+  --gutter: clamp(16px, 4.5vw, 64px);                 /* new */
+
+  /* type: Barlow Condensed for display (loaded as upright 700 and italic 800 ONLY,
+     so every 400 asked of it draws the 700), Barlow for data and reading */
+  --font-display: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
+  --font-data: "Barlow", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 :root[data-theme="light"] {
@@ -98,25 +124,38 @@
   --surface-raised: #f2f5f8;
   --surface-sunken: #e6ebf0;
   --surface-glass: rgba(255, 255, 255, 0.7);
-  --border: rgba(10, 18, 28, 0.04);
-  --border-strong: rgba(10, 18, 28, 0.10);
-  --shadow-card: 0 1px 2px rgba(12, 20, 30, 0.04), 0 16px 40px rgba(12, 20, 30, 0.09);
+  --sheet: #ffffff;
+  --border: rgba(10, 18, 28, 0.07);                   /* was .04 */
+  --border-strong: rgba(10, 18, 28, 0.15);            /* was .10 */
+  --shadow-card: 0 16px 40px rgba(12, 20, 30, 0.09);
   --shadow-sheet: 0 -24px 80px rgba(12, 20, 30, 0.25);
+  --shadow-pane: 0 20px 50px rgba(12, 20, 30, 0.16);
   --scrim: rgba(20, 30, 28, 0.38);
   --news-ink: #000000;
   --text-primary: #101514;
   --text-secondary: #475350;
-  --text-muted: #86908c;
+  --text-muted: #6f7a76;                              /* was #86908c: it did not read */
   --text-faint: #c3cac7;
+  --dim: #c3cac7;
   --accent: #0e9c83;
   --accent-ink: #ffffff;
+  --accent-text: #0b7f6b;
   --accent-soft: rgba(14, 156, 131, 0.12);
-  --hero-bg: linear-gradient(160deg, #0c5a4b 0%, #0e7a66 38%, #1d4d9c 100%);
+  --accent-line: rgba(14, 156, 131, 0.5);
+  --violet: #6e50dc;
+  --violet-text: #5b3fc4;
+  --violet-soft: rgba(110, 80, 220, 0.1);
+  --violet-line: rgba(110, 80, 220, 0.5);
+  --grad: linear-gradient(160deg, #0c5a4b 0%, #0e7a66 38%, #1d4d9c 100%);
   --hero-bg-gold: linear-gradient(160deg, #0c5a4b 0%, #0e7a66 100%);
-  --hero-text: #ffffff;
-  --hero-muted: rgba(255, 255, 255, 0.7);
   --hero-border: var(--border);
-  --hero-shadow: var(--shadow-card);
+  --chrome: #ffffff;
+  --chrome-ink: #101514;
+  --chrome-muted: #86908c;
+  --chrome-line: rgba(10, 18, 28, 0.12);
+  --chrome-edge: transparent;
+  --chrome-shadow: 0 10px 30px rgba(12, 20, 30, 0.1);
+  --foot-mark: #dde3e8;
   --gap-critical: #e0342f;
   --gap-critical-soft: rgba(224, 52, 47, 0.09);
   --gap-critical-ink: #ffffff;
@@ -131,15 +170,13 @@
   --pos-k:  #7c4fd8; --pos-k-soft:  rgba(124, 79, 216, 0.12);
   --pos-lb: #5a8a0c; --pos-lb-soft: rgba(90, 138, 12, 0.12);
   --gold: #9a6b00;
+  --gold-ink: #ffffff;
   --gold-soft: rgba(154, 107, 0, 0.12);
   --gold-line: rgba(154, 107, 0, 0.35);
-  --tab-a: #13907b;
-  --tab-b: #1d4d9c;
-  --tab-line: rgba(255, 255, 255, 0.18);
-  --hero-tab-start: #0c5a4b;
+  --tab-a: #13907b; --tab-b: #1d4d9c; --tab-line: rgba(255, 255, 255, 0.18); --hero-tab-start: #0c5a4b;
   --shadow-row: 0 3px 8px rgba(12, 20, 30, 0.12);
   --shadow-lift: 0 24px 44px -10px rgba(12, 20, 30, 0.28), 0 6px 14px rgba(12, 20, 30, 0.12);
-  --shadow-pane: 0 1px 2px rgba(12, 20, 30, 0.06), 0 20px 50px rgba(12, 20, 30, 0.16);
+  --radius-cta: 999px;
 }
 
 @keyframes fflr-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
@@ -149,6 +186,13 @@
 @keyframes fflr-fade-out { from { opacity: 1; } to { opacity: 0; } }
 
 * { box-sizing: border-box; }
+/* Every figure on the page is tabular, so a rolling number never changes
+   width. On every element and important because each `font:` shorthand
+   below resets font-variant-numeric (and font-feature-settings) to normal:
+   the old tabular-nums on body never reached a number set that way. Nunito
+   hid it; Barlow's default figures are proportional, and a score shook
+   between 46.6px and 57.6px across one roll (2026-09-24). */
+*, ::before, ::after { font-variant-numeric: tabular-nums !important; }
 
 body {
   margin: 0;
@@ -157,7 +201,6 @@ body {
   font-family: var(--font-data);
   font-size: 14px;
   line-height: 1.4;
-  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   transition: background .3s, color .3s;
 }
@@ -2495,6 +2538,11 @@ h1.bowl {
   --accent: #ffb13d;
   --accent-ink: #2b1600;
   --accent-soft: rgba(255, 177, 61, 0.16);
+  /* the redesign's three (2026-09-24): the league gradient and mint-as-text
+     take the holiday's own, or new components stay mint and teal-to-violet */
+  --grad: linear-gradient(160deg, oklch(0.5 0.15 52) 0%, oklch(0.36 0.12 28) 55%, oklch(0.3 0.1 12) 100%);
+  --accent-text: #ffb13d;
+  --accent-line: rgba(255, 177, 61, 0.5);
   --hero-bg: linear-gradient(160deg, oklch(0.5 0.15 52) 0%, oklch(0.36 0.12 28) 52%, #1f1610 88%);
   --hero-bg-gold: linear-gradient(160deg, oklch(0.5 0.15 52) 0%, #1f1610 70%);
   --hero-muted: rgba(251, 245, 236, 0.7);
@@ -2525,6 +2573,9 @@ h1.bowl {
   --accent: #c25a00;
   --accent-ink: #ffffff;
   --accent-soft: rgba(194, 90, 0, 0.12);
+  --grad: linear-gradient(160deg, #6b2d0e 0%, #b8561c 38%, #5b1f1d 100%);
+  --accent-text: #a34c00;
+  --accent-line: rgba(194, 90, 0, 0.5);
   --hero-bg: linear-gradient(160deg, #6b2d0e 0%, #b8561c 38%, #5b1f1d 100%);
   --hero-bg-gold: linear-gradient(160deg, #6b2d0e 0%, #b8561c 100%);
   --hero-accent: #ffb13d;
@@ -2555,6 +2606,9 @@ h1.bowl {
   --accent: #46e07a;
   --accent-ink: #03230f;
   --accent-soft: rgba(70, 224, 122, 0.15);
+  --grad: linear-gradient(160deg, oklch(0.42 0.13 152) 0%, oklch(0.38 0.15 22) 55%, oklch(0.3 0.12 10) 100%);
+  --accent-text: #46e07a;
+  --accent-line: rgba(70, 224, 122, 0.5);
   --hero-bg: linear-gradient(160deg, oklch(0.42 0.13 152) 0%, oklch(0.38 0.15 22) 52%, #0d1b13 88%);
   --hero-bg-gold: linear-gradient(160deg, oklch(0.42 0.13 152) 0%, #0d1b13 70%);
   --hero-muted: rgba(244, 251, 245, 0.68);
@@ -2582,6 +2636,9 @@ h1.bowl {
   --accent: #0f7a3a;
   --accent-ink: #ffffff;
   --accent-soft: rgba(15, 122, 58, 0.12);
+  --grad: linear-gradient(160deg, #0b4d26 0%, #146b38 38%, #8a1a2b 100%);
+  --accent-text: #0c6630;
+  --accent-line: rgba(15, 122, 58, 0.5);
   --hero-bg: linear-gradient(160deg, #0b4d26 0%, #146b38 38%, #8a1a2b 100%);
   --hero-bg-gold: linear-gradient(160deg, #0b4d26 0%, #146b38 100%);
   --hero-accent: #46e07a;

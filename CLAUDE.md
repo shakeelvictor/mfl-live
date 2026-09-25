@@ -350,6 +350,20 @@ files themselves (spec, prototype and its runtime, mock data, screenshots,
 the **gap between adjacent ranks is worth a full win**, so gaps are the loudest
 element and scores are second.
 
+**The redesign (branch `redesign`, from 2026-09-24)** brings the page into
+MFL Manager's "Night Game" dark / "Paper Stadium" light system, following
+`design/redesign/README.md` step by step (its "Working order"). Step 1 is
+in: the token blocks at the top of `styles.css` are
+`design/redesign/tokens.css` with MFL Live's own `--wash` kept (hairlines
+a touch stronger, simpler shadows, white on the coin-flip pill, a darker
+muted grey in light, `--radius-row` 14, `--radius-pill` 10; new names
+`--grad`, `--accent-text`/`--accent-line`, `--violet*`, `--dim`,
+`--chrome*`, `--foot-mark`, `--radius-cta`, `--gutter`, `--gold-ink`,
+`--sheet`), and `--hero-bg` is `--grad`, so the dark hero now runs teal to
+blue to violet instead of fading to the surface. The notes below describe
+the page before the redesign unless they say otherwise; each step updates
+the ones it changes.
+
 - **Blue under the mint** (2026-09-11, from `poc`): the dark canvas is
   blue-black (`#060a11`, also the manifest's splash and the `theme-color`
   meta's fallback), the surfaces blue-grey, the wash a sea blue, and the
@@ -399,8 +413,12 @@ element and scores are second.
   last), so the Dark/Light toggle still works and each gets a holiday
   cut: canvas, wash, surfaces, inks, accent (mint's jobs go to the
   holiday's own), hero gradient, `--tab-a`/`--tab-b` (sRGB hex still),
-  `--hero-tab-start`, and the aurora's two clouds (`--sky-teal` and
-  `--sky-violet` take the holiday's pair). Urgency keeps its scale.
+  `--hero-tab-start`, the aurora's two clouds (`--sky-teal` and
+  `--sky-violet` take the holiday's pair), and since the redesign
+  (2026-09-24) its own `--grad`, `--accent-text` and `--accent-line`,
+  so components built on them wear the holiday too (`--grad` is the
+  holiday hero run to a deeper third stop in dark, the light hero itself
+  in light). Urgency keeps its scale.
   **Thanksgiving** is pumpkin and amber over a warm brown ground, the
   hero pumpkin into a deep cranberry-brown, with the close gap moved to
   a cranberry (the stock orange sat on the amber accent and vanished).
@@ -431,8 +449,19 @@ element and scores are second.
   and remembers the choice in localStorage (`mfl-live-theme`), which an
   inline script in `index.html` re-stamps before the stylesheet loads so
   there is no flash. Nothing stored means dark.
-- **Archivo** for display (900 italic uppercase headers, 700 roman for names
-  in lists), **Nunito** for body and every number, `tabular-nums` on the root.
+- **Barlow Condensed** for display and **Barlow** for data and reading
+  (2026-09-24, the redesign; Archivo and Nunito until then). Barlow
+  Condensed is loaded in two cuts only, upright 700 and italic 800, so a
+  900 or a 400 asked of it draws the nearest of those; keep the two-cut
+  load (a third weight is a third download on a phone). Rules still
+  written for the old faces (`italic 900`, `800` on data) resolve to
+  those cuts until each surface is restyled. **Every figure is
+  tabular**: `*, ::before, ::after { font-variant-numeric: tabular-nums
+  !important }`. The `font:` shorthand resets `font-variant-numeric` and
+  `font-feature-settings` to normal, so the old `tabular-nums` on the
+  root never reached a number styled with it; Nunito hid that, but
+  Barlow's default figures are proportional and a rolling score shook
+  between 46.6px and 57.6px wide. Don't drop the `!important`.
   The **WEEK title** wears a slow colour drift: a gradient of the text
   colour with a band of the accent gliding through it, painted through
   the glyphs (`background-clip: text`, the spotlight's `fflr-wave`, 12s
