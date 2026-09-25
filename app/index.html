@@ -101,30 +101,38 @@
   <div class="wash"></div>
   <div class="shell">
 
+    <!-- NFL now (laptop): the games on the field, above the pane beside the week head. -->
+    <div class="nfl-now" id="nfl-now" hidden></div>
+
     <header class="team-head">
       <button class="glass back" id="back" type="button"><span class="chev-l" aria-hidden="true">&lsaquo;</span>Standings</button>
+      <span class="team-age" id="team-age"></span>
     </header>
 
-    <section class="hero">
-      <div class="hero-top">
-        <span class="micro hero-label"><span class="badge" id="team-rank"></span><span id="team-week"></span></span>
-        <span class="hero-status" id="team-status"></span>
-      </div>
-      <div class="hero-mid">
-        <div class="hero-id">
+    <!-- The scorebug (phone): the franchise on the league gradient, the
+         points beside it with the gap to the neighbouring rank. -->
+    <section class="hero sbug">
+      <div class="sb-l">
+        <span class="sb-mark" id="team-mark"></span>
+        <div class="sb-id">
           <h2 class="hero-name" id="team-name"></h2>
           <span class="hero-rec" id="team-rec"></span>
         </div>
+      </div>
+      <div class="sb-r">
         <span class="hero-pts" id="team-pts"></span>
+        <span class="sb-gap" id="team-gap"></span>
       </div>
     </section>
 
-    <!-- NFL now (laptop pane): the games on the field, over the box score. -->
-    <div class="nfl-now" id="nfl-now" hidden></div>
-
-    <div class="tabs" role="tablist" aria-label="Lineup">
-      <button class="tab" type="button" role="tab" data-tab="starters" aria-selected="true">Starters <span id="tab-starters-n"></span></button>
-      <button class="tab" type="button" role="tab" data-tab="bench" aria-selected="false">Bench <span id="tab-bench-n"></span></button>
+    <!-- The band (laptop): the box score's numbers on the gradient, level
+         with the leader's card, over the tabs. -->
+    <div class="team-band" id="team-band">
+      <div class="tb-sum" id="team-sum"></div>
+      <div class="tabs" role="tablist" aria-label="Lineup">
+        <button class="tab" type="button" role="tab" data-tab="starters" aria-selected="true">Box score <span id="tab-starters-n"></span></button>
+        <button class="tab" type="button" role="tab" data-tab="bench" aria-selected="false">Bench <span id="tab-bench-n"></span></button>
+      </div>
     </div>
 
     <section class="roster" id="roster"></section>

@@ -13,6 +13,7 @@ let rosters = [];              // [{ id, team, pts, toPlay, starters, bench }]
 let headshotSrc = () => null;  // (player) -> img src, or null for the initials fallback
 let logoSrc = () => null;      // (NFL team code) -> img src, or null
 let WEEK = 12;
+let LEAGUE = "INDOMEXPAK";   // the league's name, from its export (the board's kicker)
 let SEASON = 2026;   // the NFL season (the proxy names it on every answer)
 let UPDATED = "4:12 PM";   // when a number on the page last changed: MFL's snapshot (scores, lineups) or Sleeper's lines
 let updatedAt = 0;         // the same instant, for the age that ticks in the subhead while games are on
@@ -283,7 +284,10 @@ const franchiseMark = (t) => {
 function renderChrome() {
   // Playoffs: the round's name is the title, "Playoffs · Week 15" above it.
   const kicker = document.getElementById("kicker");
-  kicker.hidden = !post && !duel;
+  // The regular season: the league, the season and the week over the title (the redesign's kicker).
+  kicker.hidden = phase === "preseason" && !post && !duel;
+  kicker.classList.toggle("league", !post && !duel);
+  if (!post && !duel) kicker.textContent = `${LEAGUE} \u00b7 ${SEASON} \u00b7 Week ${WEEK}`;
   if (post || duel) {
     kicker.innerHTML = (duel ? `Week ${WEEK} &middot; Pakistan vs. the World` : `Playoffs &middot; Week ${WEEK}`) +
       // Looking back at a finished round (?w=15): a way back to the live one.
@@ -327,6 +331,8 @@ const ageText = () => {
 function syncAge() {
   const el = document.getElementById("age");
   if (el) el.textContent = ageText();
+  const teamAge = document.getElementById("team-age");
+  if (teamAge) teamAge.textContent = phase === "preseason" ? "" : `Updated ${ageText()}`;
   const on = ageTicks();
   if (on && !ageTimer) ageTimer = setInterval(syncAge, 1000);
   if (!on && ageTimer) { clearInterval(ageTimer); ageTimer = null; }
@@ -399,7 +405,7 @@ function renderCapsules() {
     return;
   }
   caps.innerHTML =
-    `<span class="capsule"><b>${within}</b>within ${WITHIN.toFixed(1)}</span>` +
+    `<span class="capsule"><b class="live">${within}</b>within ${WITHIN.toFixed(1)}</span>` +
     `<span class="capsule"><b>${atStake}</b>wins at stake</span>` + left;
 }
 
@@ -466,7 +472,7 @@ function renderHero(changed, takeover) {
     const sub = (t) => (duel ? `${t.members.length} managers` : `#${t.seed} seed &middot; ${t.season}`) + (t.toPlay ? ` &middot; ${t.toPlay} to play` : "");
     heroBody.innerHTML =
       `<div class="hero-top">` +
-        `<span class="micro hero-label"><span class="badge">1</span>${label}</span>` +
+        `<span class="micro hero-label"><span class="badge">01</span>${label}</span>` +
         `<span class="hero-status">${statusOf(lead)}</span>` +
       `</div>` +
       `<div class="duel">` +
@@ -485,12 +491,12 @@ function renderHero(changed, takeover) {
       `</div>`;
   } else heroBody.innerHTML =
     `<div class="hero-top">` +
-      `<span class="micro hero-label"><span class="badge">1</span>${label}</span>` +
+      `<span class="micro hero-label"><span class="badge">01</span>${label}</span>` +
       `<span class="hero-status">${statusOf(lead)}</span>` +
     `</div>` +
     `<div class="hero-mid">` +
       `<div class="hero-id">` +
-        `<span class="hero-name">${franchiseIcon(lead, "hero-icon")}${esc(lead.team)}</span>` +
+        `<span class="hero-line"><span class="hero-mark">${franchiseMark(lead)}</span><span class="hero-name">${esc(lead.team)}</span></span>` +
         `<span class="hero-rec">${post ? `#${lead.seed} seed &middot; ${lead.season}` : `${lead.record} all-play`}</span>` +
       `</div>` +
       `<span class="hero-pts${fl(changed, lead.id)}" data-tween="pts:${lead.id}" data-delta>${fmt(lead.live)}</span>` +
@@ -1186,7 +1192,7 @@ let rosterEnter = false;
    line with the game (both scores, the ball) between the name and the
    columns, and the photo a size up. Photos on at every width. */
 const bxNum = (l, ...ks) => ({ l, v: (st) => String(ks.reduce((a, k) => a + (st[k] || 0), 0)), z: (st) => !ks.some((k) => st[k]) });
-const bxFrac = (l, a, b) => ({ l, v: (st) => `${st[a] || 0}/${st[b] || st[a] || 0}`, z: (st) => !st[a] && !st[b] });
+const bxFrac = (l, a, b) => ({ l, frac: true, v: (st) => `${st[a] || 0}/${st[b] || st[a] || 0}`, z: (st) => !st[a] && !st[b] });
 const BOX = {
   QB: ["Passing", [bxFrac("C/ATT", "pass_cmp", "pass_att"), bxNum("YDS", "pass_yd"), bxNum("TD", "pass_td"), bxNum("INT", "pass_int"), bxNum("RUSH", "rush_yd")]],
   RB: ["Rushing", [bxNum("CAR", "rush_att"), bxNum("YDS", "rush_yd"), bxNum("REC", "rec"), bxNum("RYD", "rec_yd"), bxNum("TD", "rush_td", "rec_td")]],
@@ -1206,10 +1212,12 @@ const rosterHtml = (list, bench, isTop) => {
   return [...byGroup].map(([g, ps]) => {
     const [title, cols] = BOX[g];
     const head = `<div class="bx-head" role="presentation">` +
-      `<span class="bx-t">${title}</span><span class="bx-sp"></span><span class="bx-gl">Game</span>` +
+      `<span class="bx-t">${title}</span><span class="bx-sp">Player</span><span class="bx-gl">Game</span>` +
       cols.map((c) => `<span class="bx-l">${esc(c.l)}</span>`).join("") +
       `<span class="bx-pl">Pts</span></div>`;
-    return `<section class="bx" data-g="${g}" style="--bx-n:${cols.length}" aria-label="${title}">${head}` +
+    // Fixed column widths (a fraction wider), so every row lines up under the labels.
+    const widths = cols.map((c) => (c.frac ? "var(--bx-f)" : "var(--bx-c)")).join(" ");
+    return `<section class="bx" data-g="${g}" style="--bx-n:${cols.length};--bx-cols:${widths}" aria-label="${title}">${head}` +
       ps.map((p) => playerRow(p, bench, !bench && isTop(p), rosterEnter ? i++ : -1, cols, g)).join("") +
     `</section>`;
   }).join("");
@@ -1629,20 +1637,20 @@ function renderTeam(changed = new Set()) {
   fetchRosterStatus(t);
 
   const pre = phase === "preseason";
-  document.getElementById("team-rank").textContent = pre ? t.team.trim()[0] || "?" : t.bye ? "Bye" : t.rank ?? t.team.trim()[0];
-  document.getElementById("team-week").textContent = duel ? `${EXHIBITION.name} \u00b7 Week ${WEEK}` : post ? `${post.round.name} \u00b7 Week ${WEEK}` : `Week ${WEEK}`;
-  const statusEl = document.getElementById("team-status");
-  statusEl.hidden = pre;
-  statusEl.innerHTML = statusOf(t);
+  document.getElementById("team-mark").innerHTML = franchiseMark(t);
   const nameEl = document.getElementById("team-name");
-  nameEl.innerHTML = `${franchiseIcon(t, "hero-icon")}${esc(t.team)}`;
+  nameEl.textContent = t.team;
   fitName(nameEl);   // a no-op while the page is closed; openTeam() fits it once shown
+  const toPlay = !pre && t.toPlay ? ` \u00b7 ${t.toPlay} to play` : "";
   document.getElementById("team-rec").textContent = pre
     ? (starters.length ? `pre-season \u00b7 ${starters.length} starters set` : "pre-season \u00b7 lineup due at kickoff")
-    : post ? `#${t.seed} seed \u00b7 ${t.season} regular season`
-    : t.isSide ? `${t.members.length} managers \u00b7 one super lineup`
+    : post ? `#${t.seed} seed \u00b7 ${t.season}${toPlay}`
+    : t.isSide ? `${t.members.length} managers${toPlay}`
     : t.side ? `${t.starters.length} in the ${t.side.name} lineup`
-    : `${t.record} all-play${gapNote(t)}`;
+    : `${t.rank ? ORD(t.rank) + " \u00b7 " : ""}${t.record}${toPlay}`;
+  const gap = gapNote(t);
+  document.getElementById("team-gap").textContent = gap;
+  renderTeamSum(t, starters, bench, gap);
   const ptsEl = document.getElementById("team-pts");
   ptsEl.textContent = pre || t.bye ? "\u2014" : fmt(t.live);
   ptsEl.dataset.tween = `pts:${t.id}`;
@@ -1678,6 +1686,27 @@ function renderTeam(changed = new Set()) {
   refreshPlayerCard();
 }
 
+// The band over the laptop pane's box score (2026-09-25, the Broadcast
+// mock): the top starter's points, who is on, to play and done, the
+// touchdowns, the gap to the neighbour and the bench.
+function renderTeamSum(t, starters, bench, gap) {
+  const el = document.getElementById("team-sum");
+  if (phase === "preseason" || t.bye || !starters.length) { el.innerHTML = ""; return; }
+  const top = starters.reduce((a, p) => (p.pts > (a?.pts ?? 0) ? p : a), null);
+  const on = starters.filter((p) => isLive(p) && !sidelined(p)).length;
+  const toPlay = t.toPlay || 0;
+  const done = Math.max(0, starters.length - on - toPlay);
+  const tds = starters.reduce((a, p) => a + tdCount(p.st), 0);
+  const fig = (n, l) => `<span class="tb-fig"><b>${n}</b><small>${l}</small></span>`;
+  el.innerHTML =
+    `<div class="tb-main"><span class="tb-kick">Box score \u00b7 Week ${WEEK}</span><div class="tb-figs">` +
+      (top ? fig(fmt(top.pts), `${esc(lastName(top.n) || top.n)} \u00b7 top`) : "") +
+      fig(on, "On now") + fig(toPlay, "To play") + fig(done, "Final") + fig(tds, tds === 1 ? "Touchdown" : "Touchdowns") +
+    `</div></div>` +
+    `<div class="tb-side">${gap ? `<span class="tb-gap">${esc(gap)}</span>` : ""}` +
+      (bench.length && !t.isSide ? `<span class="tb-bench">Bench ${fmt(sum(bench))} behind</span>` : "") + `</div>`;
+}
+
 // The team head's standing against its neighbour, as the Broadcast
 // scorebug has it: the leader's cushion over 2nd, everyone else's
 // distance to the rank above. Regular season, once the franchise has begun.
@@ -1687,8 +1716,8 @@ const gapNote = (t) => {
   const i = teams.indexOf(t);
   if (i < 0 || teams.length < 2) return "";
   return i === 0
-    ? ` · +${fmt(t.live - teams[1].live)} on 2nd`
-    : ` · ${fmt(teams[i - 1].live - t.live)} back of ${ORD(i)}`;
+    ? `+${fmt(t.live - teams[1].live)} on 2nd`
+    : `${fmt(teams[i - 1].live - t.live)} back of ${ORD(i)}`;
 };
 
 /* NFL now (2026-09-25, laptop pane): every game on the field this minute
@@ -1698,25 +1727,34 @@ const gapNote = (t) => {
    the box score alone. */
 const nflNowEl = document.getElementById("nfl-now");
 function renderNflNow() {
-  const seen = new Set(), live = [];
+  const seen = new Set(), all = [];
   for (const g of games.values()) {
     const m = g.match;
     if (!m || seen.has(m)) continue;
     seen.add(m);
     const sit = sitOf(m.home.id);
     const secs = sitSecs(m.home.id) ?? g.secs;
-    if (Date.now() < m.kickoff || !(secs > 0)) continue;
-    live.push({ m, sit, secs });
+    const started = Date.now() >= m.kickoff || secs < 3600;
+    all.push({ m, sit, secs, started, live: started && secs > 0 });
   }
-  nflNowEl.hidden = !live.length || phase !== "live";
+  const live = all.filter((x) => x.live);
+  // No game on: the NFL day's slate instead (Eastern), so the space beside
+  // the week head reads the day's finals and what is still to come.
+  const today = ET_DATE.format(new Date());
+  const shown = live.length ? live : all.filter((x) => ET_DATE.format(x.m.kickoff) === today);
+  nflNowEl.hidden = !shown.length || phase !== "live";
   if (nflNowEl.hidden) { nflNowEl.innerHTML = ""; return; }
-  live.sort((a, b) => a.m.kickoff - b.m.kickoff || a.m.home.id.localeCompare(b.m.home.id));
-  nflNowEl.innerHTML = `<span class="nn-label">NFL now · ${live.length} live</span><div class="nn-row">` + live.map(({ m, sit, secs }) => {
+  shown.sort((a, b) => b.live - a.live || a.m.kickoff - b.m.kickoff || a.m.home.id.localeCompare(b.m.home.id));
+  const label = live.length ? `NFL now \u00b7 ${live.length} live` : "NFL today";
+  nflNowEl.classList.toggle("many", shown.length > 6);
+  nflNowEl.innerHTML = `<span class="nn-label"><span>${label}</span>${live.some((x) => x.sit?.rz) ? `<span>Red zone in <em>red</em></span>` : ""}</span><div class="nn-row">` + shown.map(({ m, sit, secs, started, live: on }) => {
     const view = (s) => (sit ? { ...s, score: sit.scores?.[s.id] ?? s.score, poss: sit.poss === s.id, rz: sit.poss === s.id && sit.rz } : s);
     const a = view(m.away), h = view(m.home);
-    const clock = sit?.state === "in" && sit.period && sit.clock ? `${sit.period > 4 ? "OT" : `Q${sit.period}`} ${sit.clock}` : clockText(secs);
-    const side = (s) => `<span class="nn-t${s.poss ? " poss" : ""}"><span class="nn-id">${esc(s.id)}</span><b>${s.score}</b></span>`;
-    return `<div class="nn-box${a.rz || h.rz ? " rz" : ""}">${side(a)}${side(h)}<span class="nn-clock">${esc(clock)}${a.rz || h.rz ? ` <span class="pg-rz">RZ</span>` : ""}</span></div>`;
+    const rz = on && (a.rz || h.rz);
+    const clock = !started ? fmtKick(m.kickoff) : !on ? "Final"
+      : sit?.state === "in" && sit.period && sit.clock ? `${sit.period > 4 ? "OT" : `Q${sit.period}`} ${sit.clock}` : clockText(secs);
+    const side = (s) => `<span class="nn-t${on && s.poss ? " poss" : ""}"><span class="nn-sw" style="${teamVars(s.id)}"></span><span class="nn-id">${esc(s.id)}</span><b>${started ? s.score : ""}</b></span>`;
+    return `<div class="nn-box${rz ? " rz" : ""}${on ? " live" : ""}">${side(a)}${side(h)}<span class="nn-clock">${esc(clock)}${rz ? ` <span class="nn-rz">RZ</span>` : ""}</span></div>`;
   }).join("") + `</div>`;
 }
 
@@ -1756,6 +1794,12 @@ addEventListener("resize", markMore);
 // pane's colour at its own height, so each active element is told how far
 // down the pane it sits (--tab-t) and the CSS mixes the matching colour.
 function markActive() {
+  const heroWrap0 = document.getElementById("hero-wrap");
+  if (desktop.matches && !heroWrap0.hidden) {
+    const col = heroWrap0.closest(".col-board").getBoundingClientRect(), h = heroWrap0.getBoundingClientRect();
+    page.style.setProperty("--pane-top", `${Math.max(0, h.top - col.top)}px`);
+    page.style.setProperty("--hero-h", `${h.height}px`);
+  } else { page.style.removeProperty("--pane-top"); page.style.removeProperty("--hero-h"); }
   const pane = page.getBoundingClientRect();
   const place = (el, on) => {
     el.classList.toggle("active", on);
@@ -1770,6 +1814,7 @@ function markActive() {
   }
   const heroWrap = document.getElementById("hero-wrap");
   place(heroWrap, desktop.matches && teams[0]?.id === open);
+  page.classList.toggle("hero-tab", desktop.matches && !heroWrap.hidden && teams[0]?.id === open);
   heroWrap.classList.toggle("sel", phase !== "preseason" && teams[0]?.id === picked);
 }
 addEventListener("resize", () => { if (desktop.matches) markActive(); });
@@ -2987,6 +3032,7 @@ async function loadLeague() {
   splashStep(0.55);   // the league is in; the live feed is the last answer
   const fr = toArray(lg.data.league?.franchises?.franchise);
   names = new Map(fr.map((f) => [f.id, f.name]));
+  if (lg.data.league?.name) LEAGUE = String(lg.data.league.name).trim();
   icons = new Map(fr.filter((f) => f.icon || f.logo).map((f) => [f.id, f.icon || f.logo]));
   rosterIds = new Map(toArray(rs.data.rosters?.franchise).map((f) => [f.id, toArray(f.player).map((p) => p.id)]));
   headshotSrc = (p) => (p.sid ? `https://sleepercdn.com/content/nfl/players/thumb/${p.sid}.jpg` : null);

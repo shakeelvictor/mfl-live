@@ -2089,15 +2089,6 @@ body.pcard-open { overflow: hidden; }
   }
   .team-page[data-more="1"] > .shell::after { opacity: 1; }
   .team-page .team-head { display: none; }   /* only held the back button */
-  .nfl-now:not([hidden]) { display: flex; flex-direction: column; gap: 6px; flex: none; }
-  .nn-label { font: 700 11px/1 var(--font-data); letter-spacing: .14em; text-transform: uppercase; color: var(--hero-muted); }
-  .nn-row { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
-  .nn-row::-webkit-scrollbar { display: none; }
-  .nn-box { flex: none; min-width: 108px; display: flex; flex-direction: column; gap: 3px; padding: 7px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); color: var(--text-primary); }
-  .nn-box.rz { border-color: color-mix(in srgb, var(--gap-critical) 65%, transparent); }
-  .nn-t { display: flex; justify-content: space-between; gap: 10px; font: 700 15px/1.1 var(--font-display); letter-spacing: .02em; }
-  .nn-t.poss .nn-id::after { content: "\1F3C8"; margin-left: 4px; font-size: 9px; vertical-align: 1px; }
-  .nn-clock { display: flex; justify-content: space-between; align-items: center; gap: 6px; font: 700 10px/1.2 var(--font-data); letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); }
   /* Compact roster so twelve starters fit the panel without scrolling:
      team, status and stat line share one row under the name. */
   .team-page > .shell { gap: 12px; }
@@ -2872,3 +2863,170 @@ h1.bowl {
 @keyframes fflr-snow-fall { to { transform: translateY(106vh); } }
 @keyframes fflr-snow-sway { from { transform: translateX(calc(-1 * var(--sway))); } to { transform: translateX(var(--sway)); } }
 @media (prefers-reduced-motion: reduce) { .snow { display: none; } }
+
+/* ---------- the pick (2026-09-25): the Design canvas's "Night Game board +
+   Broadcast team page", as close as the page allows ----------
+   Board: the league kicker over WEEK, the capsules as three tiles, the
+   leader's rank as the rows' numeral tile and the franchise's mark by its
+   name. Team page: a scorebug (the name on the league gradient, the points
+   and the gap beside it), pill tabs, each stat group its own card, one
+   line a row with the photo on every width. Laptop: the pane starts level
+   with the leader's card on a dark body, its gradient band (the box
+   score's numbers and the tabs) the leader's tab runs into; a selected row
+   is a mint-edged tab into the dark; NFL now sits above the pane. */
+.week .kicker.league { color: var(--accent-text); font: 700 12px/1 var(--font-data); letter-spacing: .14em; text-transform: uppercase; }
+
+.capsules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.capsule {
+  height: auto; flex-direction: column; align-items: flex-start; gap: 3px;
+  padding: 10px 12px; border-radius: 14px; box-shadow: none;
+  font: 700 11px/1.2 var(--font-data); letter-spacing: .12em; text-transform: uppercase;
+}
+.capsule b { font: 700 30px/1 var(--font-display); letter-spacing: .01em; }
+
+.badge { border-radius: 8px; width: 30px; font-size: 16px; }
+.hero-line { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.hero-line .hero-name { flex: 1 1 auto; min-width: 0; }
+.hero-mark { flex: none; }
+.hero-mark .fav { width: 40px; height: 40px; font-size: 14px; }
+.hero-mid.stack .hero-line { grid-column: 1 / -1; }
+
+/* The team page's head: the back button in the one voice, the age beside it. */
+.team-head .back { height: 38px; padding: 0 14px 0 10px; border-radius: 10px; font: 700 14px/1 var(--font-display); letter-spacing: .04em; text-transform: uppercase; }
+.team-age { font: 500 13px/1 var(--font-data); color: var(--text-secondary); }
+
+/* The scorebug. */
+.team-page .hero.sbug {
+  flex-direction: row; align-items: stretch; gap: 0; padding: 0;
+  border-radius: 14px; background: var(--surface); border: 1px solid var(--border); box-shadow: none;
+}
+.sb-l { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--grad); color: #fff; }
+.sb-mark .fav { width: 40px; height: 40px; font-size: 14px; }
+.sb-id { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.team-page .sbug .hero-name { font-size: 40px; line-height: .9; }
+.team-page .sbug .hero-rec { font: 700 10px/1.2 var(--font-data); letter-spacing: .12em; text-transform: uppercase; color: rgba(255, 255, 255, .8); }
+.sb-r { flex: none; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 5px; padding: 12px 14px; color: var(--text-primary); }
+.team-page .sbug .hero-pts { font-size: 40px; line-height: .9; }
+.sb-gap { font: 700 10px/1.2 var(--font-data); letter-spacing: .12em; text-transform: uppercase; color: var(--accent-text); }
+.sb-gap:empty { display: none; }
+
+/* Tabs as pills, left to right. */
+.team-band { display: flex; flex-direction: column; gap: 14px; }
+.tb-sum { display: none; }
+.team-page .tabs { justify-content: flex-start; gap: 6px; padding: 0; background: none; border: 0; box-shadow: none; border-radius: 0; }
+.team-page .tab {
+  flex: none; height: 36px; padding: 0 14px; border-radius: 9px;
+  border: 1px solid var(--border-strong); background: transparent; color: var(--text-primary);
+  font: 700 14px/1 var(--font-display); letter-spacing: .04em; text-transform: uppercase;
+}
+.team-page .tab[aria-selected="true"] { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+.team-page .tab span { font: 600 12px/1 var(--font-data); letter-spacing: 0; text-transform: none; }
+#tab-starters-n { display: none; }
+
+/* Each stat group its own card; one line a row, the photo on every width. */
+.team-page .roster { background: none; border: 0; box-shadow: none; padding: 0; gap: 12px; }
+.bx { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 10px 10px 4px; --pf-w: 34px; --pf-h: 40px; --bx-c: 24px; --bx-f: 36px; --bx-pts: 48px; }
+.bx-head, .roster .prow.bxr { grid-template-columns: var(--pf-w) minmax(0, 1fr) var(--bx-cols) var(--bx-pts); column-gap: 6px; }
+.bx-head { row-gap: 8px; padding: 0 4px 6px; border-bottom: 0; }
+.bx-sp { grid-area: 2 / 1 / 3 / 3; text-align: left; }
+.bx-l, .bx-pl, .bx-gl, .bx-sp { font: 700 10px/1 var(--font-data); letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
+.bx-l { grid-row: 2; text-align: right; }
+.roster .prow.bxr { --pf-w: 34px; --pf-h: 40px; grid-template-rows: auto; row-gap: 4px; padding: 8px 4px; border-bottom: 0; border-top: 1px solid var(--border); }
+.roster .bxr > .pface { grid-area: 1 / 1 / 2 / 2; align-self: center; }
+.roster .bxr > .pname { grid-area: 1 / 2 / 2 / 3; }
+.roster .bxr > .bx-v { grid-row: 1; font-size: 15px; }
+.roster .bxr > .pright { grid-area: 1 / -2 / 2 / -1; }
+.roster .bxr > .pplay { grid-area: 2 / 2 / 3 / -1; }
+.roster .bxr .pphoto { border-radius: 8px; }
+.roster .bxr .pphoto .avatar-fb { font-size: 13px; }
+.roster .bxr .plogo { width: 15px; height: 15px; left: -4px; bottom: -4px; }
+.roster .bxr .pname { gap: 2px; }
+.roster .bxr .pname b { font-size: 14px; line-height: 1.05; }
+.roster .bxr .pmeta { font: 700 9px/1.3 var(--font-data); letter-spacing: .08em; }
+.roster .bxr .ppts { font-size: 17px; }
+.bx-game { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 0 5px; font: 600 12px/1.3 var(--font-data); letter-spacing: .04em; }
+.bg-t b { font: inherit; }
+@container roster (min-width: 540px) {
+  .bx { padding: 10px 18px 4px; --pf-w: 46px; --pf-h: 52px; --bx-c: 40px; --bx-f: 52px; --bx-pts: 64px; }
+  .bx-head, .roster .prow.bxr { grid-template-columns: var(--pf-w) minmax(0, 1.3fr) minmax(0, 1fr) var(--bx-cols) var(--bx-pts); column-gap: 8px; }
+  .bx-t { grid-area: 1 / 1 / 2 / -1; }
+  .bx-sp { display: block; grid-area: 2 / 1 / 3 / 3; }
+  .bx-gl { display: block; grid-area: 2 / 3 / 3 / 4; }
+  .bx-l { grid-row: 2; }
+  .bx-pl { grid-area: 2 / -2 / 3 / -1; }
+  .roster .prow.bxr { --pf-w: 46px; --pf-h: 52px; padding: 8px 4px; }
+  .roster .bxr > .bx-v { font-size: 17px; }
+  .roster .bxr .pname b { font-size: 18px; }
+  .roster .bxr .ppts { font-size: 22px; }
+  .roster .bxr .plogo { width: 18px; height: 18px; }
+}
+
+@media (min-width: 1024px) {
+  /* The pane: level with the leader's card, a dark body, the band on top. */
+  .team-page, .team-page[data-open="true"], .team-page[data-open="closing"] {
+    margin-top: var(--pane-top, 0px);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+  }
+  .team-page.hero-tab { border-top-left-radius: 0; }
+  .team-page > .shell { gap: 16px; padding: 0 18px 24px; }
+  .team-band {
+    margin: 0 -18px; padding: 22px 26px; box-sizing: border-box; min-height: var(--hero-h, 0px);
+    justify-content: space-between; gap: 14px;
+    background: linear-gradient(90deg, var(--tab-a) 0%, var(--tab-b) 100%);
+    border-radius: 0 var(--radius-card) 0 0;
+    color: var(--hero-text);
+  }
+  .team-page:not(.hero-tab) .team-band { border-top-left-radius: var(--radius-card); }
+  .tb-sum:not(:empty) { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .tb-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .tb-kick { font: 700 11px/1 var(--font-data); letter-spacing: .14em; text-transform: uppercase; color: var(--hero-muted); }
+  .tb-figs { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+  .tb-fig b { display: block; font: 700 34px/1 var(--font-display); letter-spacing: .01em; }
+  .tb-fig small { display: block; margin-top: 3px; font: 700 10px/1.2 var(--font-data); letter-spacing: .12em; text-transform: uppercase; color: var(--hero-muted); }
+  .tb-side { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; text-align: right; flex: none; }
+  .tb-gap { font: 700 11px/1.2 var(--font-data); letter-spacing: .12em; text-transform: uppercase; color: var(--hero-accent); }
+  .tb-bench { font: 600 12px/1.2 var(--font-data); color: var(--hero-muted); }
+  .team-band .tab { border-color: rgba(255, 255, 255, .3); color: var(--hero-text); }
+  .team-band .tab[aria-selected="true"] { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+  .team-page .roster { padding: 0; gap: 14px; color: var(--text-primary); }
+  .team-page > .shell::after { background: linear-gradient(transparent, var(--surface-sunken)); }
+
+  /* The leader's card runs into the band: its join is the band's left end. */
+  .hero-wrap.active { --join: var(--tab-a); }
+  /* A selected row is a mint-edged tab into the dark body. */
+  .row.active {
+    --join: var(--surface-sunken);
+    background: linear-gradient(90deg, var(--surface) 0%, var(--join) 100%);
+    color: var(--text-primary);
+    box-shadow: inset 2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent);
+  }
+  .row.active::after { background: var(--join); box-shadow: inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+  .row.active .rank { color: var(--text-primary); }
+  .row.active .rec { background: var(--surface-raised); color: var(--text-primary); }
+  .row.active .sub, .row.active .status { color: var(--text-secondary); }
+  .row.active .status.on, .row.active .delta { color: var(--accent-text); }
+
+  /* NFL now, above the pane beside the week head: three across, two rows. */
+  .nfl-now:not([hidden]) { display: flex; flex-direction: column; gap: 8px; position: absolute; left: 0; right: 0; bottom: calc(100% + 20px); }
+  .nn-label { display: flex; justify-content: space-between; font: 700 11px/1 var(--font-data); letter-spacing: .14em; text-transform: uppercase; color: var(--text-secondary); }
+  .nn-label em { font-style: normal; color: var(--gap-critical); }
+  .nn-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .nfl-now.many .nn-row { grid-template-columns: none; grid-template-rows: repeat(2, auto); grid-auto-flow: column; grid-auto-columns: calc((100% - 16px) / 3); overflow-x: auto; scrollbar-width: none; }
+  .nn-row::-webkit-scrollbar { display: none; }
+  .nn-box { min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); color: var(--text-primary); }
+  .nn-box.rz { border-color: color-mix(in srgb, var(--gap-critical) 60%, transparent); }
+  .nn-t { display: flex; align-items: center; gap: 6px; }
+  .nn-sw { flex: none; width: 8px; height: 8px; border-radius: 2px; background: var(--tc1, var(--surface-raised)); box-shadow: 0 0 0 1px rgba(255, 255, 255, .25); }
+  .nn-id { flex: 1; font: 700 15px/1.1 var(--font-display); letter-spacing: .02em; }
+  .nn-t b { font: 700 17px/1.1 var(--font-display); }
+  .nn-t.poss b::after { content: "\1F3C8"; margin-left: 4px; font-size: 9px; vertical-align: 2px; }
+  .nn-clock { display: flex; justify-content: space-between; align-items: center; gap: 6px; font: 700 10px/1.2 var(--font-data); letter-spacing: .08em; text-transform: uppercase; color: var(--text-secondary); }
+  .nn-box.live .nn-clock { color: var(--accent-text); }
+  .nn-rz { color: var(--gap-critical); }
+}
+/* The badges by a box-score name, a size down so the row keeps to its line. */
+.roster .bxr :is(.pinj, .pnew) { height: 15px; border-radius: 4px; font-size: 10px; }
+.roster .bxr .pinj { padding: 0 4px; }
+.roster .bxr .pnew { width: 15px; }
+.roster .bxr .pnew svg { width: 8px; height: 8px; }

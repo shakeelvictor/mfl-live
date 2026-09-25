@@ -400,6 +400,22 @@ with **NFL now** (`renderNflNow`, `#nfl-now`, laptop only): a score box
 per game on the field, the ball, RZ and ESPN's clock, nothing while no
 game is on. The team head's record adds the gap to the neighbour
 (`gapNote`: "+51.87 on 2nd", "7.88 back of 1st"), regular season only.
+**Brought to the mock the same day** (the canvas's "The pick" row):
+the board gets the league kicker over WEEK ("INDOMEXPAK · 2026 · Week
+3", `LEAGUE` from the league export), the capsules as three tiles, the
+leader's rank as an "01" tile and its mark beside the name
+(`.hero-line`). The phone team page is a scorebug (`.hero.sbug`: mark,
+name, "1st · 22-8 · 2 to play" on the gradient, the points and the gap
+beside it), "Box score" / "Bench" pills, each stat group its own card,
+one line a row at every width with fixed column widths (`--bx-cols`) so
+rows line up under the labels. On laptop the pane starts level with the
+leader's card (`--pane-top`, set by `markActive`), on a dark body
+(`--surface-sunken`), with a gradient band as tall as the card
+(`--hero-h`; `renderTeamSum`: the top starter, on now, to play, final,
+touchdowns, the gap, the bench) holding the tabs; the leader's tab joins
+the band (`--join: var(--tab-a)`), a selected row is a mint-edged tab
+into the dark, and NFL now sits above the pane beside the week head
+(the day's slate when no game is on, three across, two rows).
 
 - **Blue under the mint** (2026-09-11, from `poc`): the dark canvas is
   blue-black (`#060a11`, also the manifest's splash and the `theme-color`
