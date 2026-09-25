@@ -3414,6 +3414,9 @@ desktop.addEventListener("change", (e) => {
   // Before the first render there is no team to show; boot() opens one.
   if (e.matches) { if (open === null && teams.length) open = teams[0].id; if (open !== null) renderTeam(); }
   else open = null;
+  // The Top scorer card may be in the laptop's slot inside the pane, which a
+  // phone hides: bring it home when the window narrows (2026-09-25; it vanished).
+  placeSpot();
   markActive();
 });
 
