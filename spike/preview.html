@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MFL Live previews</title>
+<!-- Local only: served by dev.mjs at /preview, started by spike/preview.mjs.
+     Every link opens the page on the 2025 archive in one state; the theme
+     and holiday pickers apply to all of them. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;1,800&family=Barlow:wght@500;600;700&display=swap">
+<style>
+:root {
+  --canvas: #060a11; --surface: #0e161f; --raised: #16212d; --border: rgba(255,255,255,.08); --border-s: rgba(255,255,255,.16);
+  --ink: #f6faf8; --ink-2: #a7b3bb; --accent: #4fe3c1; --accent-ink: #052a24; --gold: #f2c94c; --red: #ff5d5d;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif; --data: Barlow, system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: radial-gradient(60% 40% at 0% 0%, rgba(40,160,150,.22), transparent 70%), radial-gradient(50% 40% at 100% 30%, rgba(140,110,255,.16), transparent 70%), var(--canvas); color: var(--ink); font: 500 15px/1.4 var(--data); min-height: 100vh; }
+main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 64px; display: flex; flex-direction: column; gap: 28px; }
+.kick { font: 700 12px/1 var(--data); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+h1 { margin: 6px 0 0; font: italic 800 clamp(48px, 9vw, 96px)/.9 var(--display); text-transform: uppercase; }
+.lede { margin: 10px 0 0; color: var(--ink-2); max-width: 60ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; position: sticky; top: 12px; z-index: 2; }
+.control { display: flex; align-items: center; gap: 10px; }
+.control > span { font: 700 11px/1 var(--data); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+.seg { display: flex; gap: 4px; }
+.seg button { height: 36px; padding: 0 14px; border-radius: 9px; border: 1px solid var(--border-s); background: transparent; color: var(--ink); font: 700 14px/1 var(--display); letter-spacing: .04em; text-transform: uppercase; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+.seg button:focus-visible, a.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+section { display: flex; flex-direction: column; gap: 12px; }
+h2 { margin: 0; font: italic 800 30px/1 var(--display); text-transform: uppercase; }
+.hint { margin: -4px 0 0; color: var(--ink-2); font-size: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+a.card { display: flex; flex-direction: column; gap: 6px; min-height: 110px; padding: 14px 16px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); color: var(--ink); text-decoration: none; transition: border-color .15s, background .15s; }
+a.card:hover { border-color: var(--border-s); background: var(--raised); }
+a.card .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+a.card .wk { font: 700 11px/1 var(--data); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+a.card .tag { font: 700 11px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; padding: 3px 6px; border-radius: 5px; background: var(--raised); color: var(--ink-2); }
+a.card .tag.live { background: rgba(79,227,193,.14); color: var(--accent); }
+a.card .tag.gold { background: rgba(242,201,76,.16); color: var(--gold); }
+a.card b { font: 700 24px/1.05 var(--display); text-transform: uppercase; letter-spacing: .01em; }
+a.card small { color: var(--ink-2); font-size: 13px; }
+a.card[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+.warn { padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,93,93,.4); color: var(--ink); background: rgba(255,93,93,.08); }
+.warn[hidden] { display: none; }
+code { font: 600 13px/1 ui-monospace, Menlo, monospace; color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="kick">Local preview · 2025 archive</div>
+    <h1>MFL Live previews</h1>
+    <p class="lede">Each card opens the page in one state, in a new tab. The theme and holiday you pick here apply to every card. The final states are the 2025 season as MFL recorded it; mid-game states put each week's two latest games back on the field.</p>
+  </header>
+
+  <div class="controls" role="group" aria-label="Preview options">
+    <div class="control"><span id="l-theme">Theme</span>
+      <div class="seg" role="group" aria-labelledby="l-theme" data-opt="theme">
+        <button type="button" data-v="dark" aria-pressed="true">Dark</button>
+        <button type="button" data-v="light" aria-pressed="false">Light</button>
+      </div>
+    </div>
+    <div class="control"><span id="l-hol">Holiday</span>
+      <div class="seg" role="group" aria-labelledby="l-hol" data-opt="holiday">
+        <button type="button" data-v="" aria-pressed="true">None</button>
+        <button type="button" data-v="thanksgiving" aria-pressed="false">Thanksgiving</button>
+        <button type="button" data-v="christmas" aria-pressed="false">Christmas</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="warn" id="no-live" hidden>The mid-game server isn't running, so those cards are off. Start both servers with <code>node spike/preview.mjs</code>.</p>
+
+  <section>
+    <h2>Playoffs, final</h2>
+    <p class="hint">Each round as it finished: Advances and Eliminated, the cut line, the Bowl's champion and gold.</p>
+    <div class="grid">
+      <a class="card" data-q="w=15"><span class="top"><span class="wk">Week 15</span><span class="tag">Final</span></span><b>Round 1</b><small>Seeds 2–6 play, bottom two out; the No. 1 seed on its bye</small></a>
+      <a class="card" data-q="w=16"><span class="top"><span class="wk">Week 16</span><span class="tag">Final</span></span><b>Semifinal</b><small>Four play, bottom two out</small></a>
+      <a class="card" data-q="w=17"><span class="top"><span class="wk">Week 17</span><span class="tag gold">Final</span></span><b>Fantasy Bowl</b><small>Head to head; the champion, the trophy, the gold flourish</small></a>
+      <a class="card" data-q="w=18"><span class="top"><span class="wk">Week 18</span><span class="tag">Final</span></span><b>Pro Bowl</b><small>Pakistan vs. the World, each side's managers fused under it</small></a>
+    </div>
+  </section>
+
+  <section>
+    <h2>Playoffs, mid-game</h2>
+    <p class="hint">The same weeks with two games still on: In and Out, the live cut line, starters left, a red-zone drive.</p>
+    <div class="grid">
+      <a class="card" data-live data-q="w=15"><span class="top"><span class="wk">Week 15</span><span class="tag live">Mid-game</span></span><b>Round 1</b><small>The cut line moving</small></a>
+      <a class="card" data-live data-q="w=16"><span class="top"><span class="wk">Week 16</span><span class="tag live">Mid-game</span></span><b>Semifinal</b><small>Four chasing two places</small></a>
+      <a class="card" data-live data-q="w=17"><span class="top"><span class="wk">Week 17</span><span class="tag live">Mid-game</span></span><b>Fantasy Bowl</b><small>The face-off with games still on</small></a>
+      <a class="card" data-live data-q="w=18"><span class="top"><span class="wk">Week 18</span><span class="tag live">Mid-game</span></span><b>Pro Bowl</b><small>The sides' margin still moving</small></a>
+    </div>
+  </section>
+
+  <section>
+    <h2>Regular season</h2>
+    <div class="grid">
+      <a class="card" data-q="w=12"><span class="top"><span class="wk">Week 12</span><span class="tag gold">Final</span></span><b>A finished week</b><small>The Week winner, the MVP card and each day's top scorer</small></a>
+      <a class="card" data-q="source=fixture"><span class="top"><span class="wk">Week 12</span><span class="tag live">Sunday on</span></span><b>Mid-Sunday</b><small>The embedded fixture: two games on, close gaps, on-now names</small></a>
+      <a class="card" data-q="w=12&amp;mvp=quinn"><span class="top"><span class="wk">Week 12</span><span class="tag gold">Final</span></span><b>Quinn, MVP</b><small>The Week 2 surprise on a finished week</small></a>
+    </div>
+  </section>
+
+  <section>
+    <h2>Moments</h2>
+    <p class="hint">Played once the board has loaded.</p>
+    <div class="grid">
+      <a class="card" data-q="w=12&amp;td=KCC"><span class="top"><span class="wk">Card</span><span class="tag">Touchdown</span></span><b>A touchdown</b><small>The card in the scorer's team colours</small></a>
+      <a class="card" data-q="w=12&amp;td=CHI"><span class="top"><span class="wk">Card</span><span class="tag">Touchdown</span></span><b>Bear down</b><small>The Bears' card, a tier above every team</small></a>
+      <a class="card" data-q="w=12&amp;witch=1"><span class="top"><span class="wk">Takeover</span><span class="tag">10s</span></span><b>The Witching Hour</b><small>Escape skips it</small></a>
+    </div>
+  </section>
+</main>
+<script>
+// %LIVE_PORT% is filled in by dev.mjs; empty when the mid-game server isn't running.
+const LIVE_PORT = "%LIVE_PORT%";
+const opts = { theme: "dark", holiday: "" };
+try { Object.assign(opts, JSON.parse(localStorage.getItem("mfl-live-preview") || "{}")); } catch (e) {}
+
+function hrefFor(card) {
+  const q = new URLSearchParams(card.dataset.q);
+  q.set("theme", opts.theme);
+  if (opts.holiday) q.set("holiday", opts.holiday);
+  const origin = card.hasAttribute("data-live") ? `${location.protocol}//${location.hostname}:${LIVE_PORT}` : location.origin;
+  return `${origin}/?${q}`;
+}
+function sync() {
+  for (const seg of document.querySelectorAll(".seg[data-opt]")) {
+    for (const b of seg.querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.v === opts[seg.dataset.opt]));
+  }
+  for (const card of document.querySelectorAll("a.card")) {
+    const off = card.hasAttribute("data-live") && !LIVE_PORT;
+    card.setAttribute("aria-disabled", String(off));
+    if (off) { card.removeAttribute("href"); continue; }
+    card.href = hrefFor(card);
+    card.target = "_blank";
+    card.rel = "noopener";
+  }
+  document.getElementById("no-live").hidden = Boolean(LIVE_PORT);
+  try { localStorage.setItem("mfl-live-preview", JSON.stringify(opts)); } catch (e) {}
+}
+for (const seg of document.querySelectorAll(".seg[data-opt]")) {
+  seg.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    opts[seg.dataset.opt] = b.dataset.v;
+    sync();
+  });
+}
+sync();
+</script>
+</body>
+</html>

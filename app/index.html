@@ -2,8 +2,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MFL Live</title>
 <!-- Remembered theme, stamped before the stylesheet so there is no flash.
-     No stored choice means dark: dark is the default. -->
-<script>try{if(localStorage.getItem("mfl-live-theme")==="light"||/[?&]theme=light\b/.test(location.search))document.documentElement.dataset.theme="light"}catch(e){}</script>
+     No stored choice means dark: dark is the default. ?theme=light or
+     ?theme=dark overrides the stored choice for that load (the local
+     preview page, spike/preview.html, sets one on every link). -->
+<script>try{var q=location.search;if(!/[?&]theme=dark\b/.test(q)&&(localStorage.getItem("mfl-live-theme")==="light"||/[?&]theme=light\b/.test(q)))document.documentElement.dataset.theme="light"}catch(e){}</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

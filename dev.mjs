@@ -41,6 +41,18 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // The local preview page (spike/preview.html): every playoff round, the
+  // Bowl and the Pro Bowl, final and mid-game, and the holidays, one click
+  // each. Dev only: it lives outside app/, so Netlify never publishes it.
+  // spike/preview.mjs starts the two servers it links to.
+  if (url.pathname === '/preview') {
+    const html = fs.readFileSync(path.join(import.meta.dirname, 'spike', 'preview.html'), 'utf8')
+      .replaceAll('%LIVE_PORT%', process.env.PREVIEW_LIVE_PORT || '');
+    res.writeHead(200, { 'Content-Type': MIME['.html'], 'Cache-Control': 'no-cache' });
+    res.end(html);
+    return;
+  }
+
   // Static, confined to app/.
   let file = path.normalize(path.join(ROOT, decodeURIComponent(url.pathname)));
   if (!file.startsWith(ROOT)) { res.writeHead(403); res.end(); return; }

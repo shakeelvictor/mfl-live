@@ -230,6 +230,17 @@ be total.
   put back on the field, so the cut line, In/Out and starters left show
   mid-round). `MFL_FAKE_DIR` serves `<type>-w<W>.json` or `<type>.json`
   from a directory when the file exists, MFL otherwise; dev only.
+  **One local preview for all of it** (2026-09-25): `node
+  spike/preview.mjs` (`.claude/launch.json`: `app-preview`) starts two dev
+  servers on the 2025 archive, PORT (every week final) and PORT+1 (Weeks
+  15-18 mid-game, staged by `fake-round.mjs` on first run and gathered
+  into `spike/data/preview-live/`, since the fake files are named by
+  week), and `http://localhost:8770/preview` (`spike/preview.html`,
+  served by `dev.mjs` only, so Netlify never publishes it) links every
+  round, the Bowl and the Pro Bowl both ways, the regular season, Quinn,
+  the touchdown cards and the Witching Hour, with Dark/Light and a
+  holiday applied to every link. `?theme=dark` now overrides a stored
+  Light for that load, as `?theme=light` always did.
 - **Week 18, Pakistan vs. the World** (the rules' Pro Bowl, $20 a head):
   each side fields one super lineup of its managers' players, and in MFL
   each manager starts only the players he contributes, so a side's score
