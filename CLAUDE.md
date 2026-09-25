@@ -416,6 +416,16 @@ touchdowns, the gap, the bench) holding the tabs; the leader's tab joins
 the band (`--join: var(--tab-a)`), a selected row is a mint-edged tab
 into the dark, and NFL now sits above the pane beside the week head
 (the day's slate when no game is on, three across, two rows).
+Then (same day, on Shakeel's review of the preview): the masthead spans
+both columns on laptop (the theme at the pane's right edge); the leader's
+card does not lift while it is the pane's tab (the lift notched the seam
+with the band) and keeps the league gradient (`--grad`) fading onto the
+band, which runs blue to violet (`--band-join`, `--band-end`); the kicker
+drops the year the league's name carries; and the page's ground is the
+mock's: no sea-blue `--wash` down the top (holidays keep theirs), the
+aurora's glows softer (teal high left, violet right and low left, no
+bottom-right cloud, no diagonal band). This supersedes the aurora's
+"Bowl's own strength" below for ordinary weeks.
 
 - **Blue under the mint** (2026-09-11, from `poc`): the dark canvas is
   blue-black (`#060a11`, also the manifest's splash and the `theme-color`

@@ -3052,3 +3052,16 @@ h1.bowl {
   .hero-wrap.active .hero:not(.winner) { background: linear-gradient(90deg, transparent 55%, var(--join) 100%), var(--grad); }
   .team-band { background: linear-gradient(90deg, var(--band-join) 0%, var(--tab-b) 60%, var(--band-end) 100%); }
 }
+/* The page's ground as the canvas's pick (2026-09-25): the near-black
+   canvas with three soft glows, teal high on the left, violet on the right
+   and low on the left, and nothing else: no sea-blue wash down the top of
+   the page (the holidays still set their own) and no diagonal band. */
+:root, :root[data-theme="light"] { --wash: transparent; }
+:root:not([data-theme="light"]):not([data-holiday]) {
+  --sky-teal: rgba(40, 160, 150, .28); --sky-teal-2: rgba(40, 160, 150, .11);
+  --sky-violet: rgba(140, 110, 255, .22); --sky-violet-2: rgba(140, 110, 255, .09);
+  --sky-wave: transparent;
+}
+:root[data-theme="light"] { --sky-wave: transparent; }
+.sky-bg .c3 { left: -30vmax; bottom: -42vmax; background: radial-gradient(circle, var(--sky-violet-2) 0%, color-mix(in srgb, var(--sky-violet-2) 50%, transparent) 28%, transparent 64%); }
+.sky-bg .c4 { display: none; }
