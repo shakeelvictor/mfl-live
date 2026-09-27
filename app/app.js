@@ -1771,13 +1771,14 @@ function renderNflNow() {
   shown.sort((a, b) => b.live - a.live || a.m.kickoff - b.m.kickoff || a.m.home.id.localeCompare(b.m.home.id));
   const label = live.length ? `NFL now \u00b7 ${live.length} live` : "NFL today";
   nflNowEl.classList.toggle("many", shown.length > 6);
+  nflNowEl.style.setProperty("--nn-cols", Math.ceil(shown.length / 2));
   nflNowEl.innerHTML = `<span class="nn-label"><span>${label}</span>${live.some((x) => x.sit?.rz) ? `<span>Red zone in <em>red</em></span>` : ""}</span><div class="nn-row">` + shown.map(({ m, sit, secs, started, live: on }) => {
     const view = (s) => (sit ? { ...s, score: sit.scores?.[s.id] ?? s.score, poss: sit.poss === s.id, rz: sit.poss === s.id && sit.rz } : s);
     const a = view(m.away), h = view(m.home);
     const rz = on && (a.rz || h.rz);
     const clock = !started ? fmtKick(m.kickoff) : !on ? "Final"
       : sit?.state === "in" && sit.period && sit.clock ? `${sit.period > 4 ? "OT" : `Q${sit.period}`} ${sit.clock}` : clockText(secs);
-    const side = (s) => `<span class="nn-t${on && s.poss ? " poss" : ""}"><span class="nn-sw" style="${teamVars(s.id)}"></span><span class="nn-id">${esc(s.id)}</span><b>${started ? s.score : ""}</b></span>`;
+    const side = (s) => `<span class="nn-t${on && s.poss ? " poss" : ""}"><span class="nn-sw" style="${teamVars(s.id)}"></span><span class="nn-id">${esc(s.id)}${on && s.poss ? `<i class="nn-ball" aria-label="has the ball"></i>` : ""}</span><b>${started ? s.score : ""}</b></span>`;
     return `<div class="nn-box${rz ? " rz" : ""}${on ? " live" : ""}">${side(a)}${side(h)}<span class="nn-clock">${esc(clock)}${rz ? ` <span class="nn-rz">RZ</span>` : ""}</span></div>`;
   }).join("") + `</div>`;
 }
