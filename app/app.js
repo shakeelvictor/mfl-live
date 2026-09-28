@@ -2511,12 +2511,13 @@ function renderTdMore() {
 }
 
 function showNextTouchdown() {
+  stopFx();
   const ev = tdQueue.shift();
-  if (!ev) { tdShowing = false; tdModal.dataset.open = "false"; return; }
+  if (!ev) { tdShowing = false; tdModal.dataset.open = "false"; tdFxEl.innerHTML = ""; return; }
   tdShowing = true;
   const p = ev.player;
   const over = Boolean(ev.overturned);
-  const ms = over ? TD_MS : p.tm === "CHI" ? TD_CHI_MS : TD_MS;
+  const ms = (over ? TD_MS : p.tm === "CHI" ? TD_CHI_MS : TD_MS) + (tdStyle ? TDX_EXTRA_MS : 0);
   tdCard.style.setProperty("--td-ms", `${ms}ms`);
   const colors = TEAM_COLORS[p.tm];   // a free agent's card keeps the theme's own
   tdModal.classList.toggle("td-team", Boolean(colors));
@@ -2524,7 +2525,9 @@ function showNextTouchdown() {
   tdModal.classList.toggle("td-over", over);   // overturned on review: the same card, muted, the points struck
   tdModal.style.setProperty("--td-ground", colors ? colors[0] : "");
   tdModal.style.setProperty("--td-accent", colors ? colors[1] : "");
-  tdCard.innerHTML =
+  tdModal.classList.toggle("tdx-on", Boolean(tdStyle));
+  if (tdStyle) renderFx(ev, colors);
+  else { tdFxEl.innerHTML = ""; tdCard.innerHTML =
     `<span class="td-rays" aria-hidden="true"></span>` +
     `<span class="td-flash" aria-hidden="true"></span>` +
     `<span class="td-more" id="td-more" hidden></span>` +
@@ -2536,7 +2539,7 @@ function showNextTouchdown() {
     `<span class="td-meta"><span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span><span>${esc(p.tm)}</span></span>` +
     `<span class="td-for"><i>for</i><b>${esc(ev.franchise)}</b></span>` +
     (over ? `<span class="td-pts"><s>+${fmt(ev.pts)}</s></span>` : `<span class="td-pts">+${fmt(ev.pts)}</span>`) +
-    `<span class="td-bar" aria-hidden="true"></span>`;
+    `<span class="td-bar" aria-hidden="true"></span>`; }
   renderTdMore();
   tdModal.dataset.open = "true";
   clearTimeout(tdTimer);
@@ -2549,7 +2552,89 @@ function dismissTouchdown() {
   clearTimeout(tdTimer);
   if (tdModal.dataset.open !== "true") return;
   tdModal.dataset.open = "closing";
-  setTimeout(showNextTouchdown, 240);
+  if (tdFx) tdFx.exit();
+  setTimeout(showNextTouchdown, tdStyle && !reducedMotion.matches ? TDX_EXIT_MS : 240);
+}
+
+/* The redesign's touchdown styles, a prototype (2026-09-27; td-fx.js):
+   no portrait disc, the player's own cut-out (Sleeper's full-size photo,
+   a transparent PNG; the fixture has only its inlined thumbs) over a
+   particle canvas, the same facts as the card under him. ?tdstyle=1..4
+   picks one (0 or none is the card); with the parameter set a picker
+   along the bottom switches style, team and overturned, and replays. */
+let tdStyle = (() => { const n = Number(QUERY.get("tdstyle")); return n >= 1 && n <= 4 ? n : 0; })();
+const TDX_EXTRA_MS = 1200;   // the entrances run longer than the card's slam
+const TDX_EXIT_MS = 650;
+const tdFxEl = document.getElementById("td-fx");
+let tdFx = null, fxToken = 0;
+function stopFx() { if (tdFx) { tdFx.stop(); tdFx = null; } }
+const cutoutSrc = (p) => (!FIXTURE && p.sid ? `https://sleepercdn.com/content/nfl/players/${p.sid}.jpg` : headshotSrc(p));
+function renderFx(ev, colors) {
+  const p = ev.player, over = Boolean(ev.overturned);
+  const word = over ? "Overturned" : "Touchdown";
+  const src = cutoutSrc(p), logo = logoSrc(p.tm);
+  const still = reducedMotion.matches;
+  tdCard.innerHTML = "";
+  tdFxEl.className = `tdx tdx-${tdStyle}`;
+  tdModal.dataset.tdx = tdStyle;
+  tdFxEl.innerHTML =
+    `<canvas class="tdx-fx" aria-hidden="true"></canvas>` +
+    `<span class="td-more" id="td-more" hidden></span>` +
+    `<div class="tdx-col">` +
+      `<div class="tdx-hero">` +
+        `<span class="tdx-word" aria-hidden="true"><span class="o">${word}</span><span class="f">${word}</span></span>` +
+        `<span class="tdx-beam" aria-hidden="true"></span>` +
+        `<div class="tdx-stage">${src ? `<img class="tdx-shot" crossorigin="anonymous" alt="" src="${esc(src)}">` : `<span class="tdx-shot tdx-init">${esc(initials(p.n))}</span>`}</div>` +
+        `<span class="tdx-flash" aria-hidden="true"></span>` +
+      `</div>` +
+      `<div class="tdx-info">` +
+        (p.tm === "CHI" && !over ? chant("Bear down!") : "") +
+        `<span class="tdx-meta">${logo ? `<img src="${esc(logo)}" alt="">` : ""}<span class="pos ${posClass(p.pos)}">${esc(p.pos)}</span><span>${esc(p.tm)}</span></span>` +
+        `<span class="tdx-name">${esc(p.n)}</span>` +
+        (over ? `<span class="tdx-review">No touchdown on review</span>` : "") +
+        `<span class="tdx-for"><i>for</i> <b>${esc(ev.franchise)}</b></span>` +
+        (over ? `<span class="tdx-pts"><s>+${fmt(ev.pts)}</s></span>`
+          : `<span class="tdx-pts">+<b>${fmt(tdStyle === 3 && !still ? 0 : ev.pts)}</b></span>`) +
+      `</div>` +
+    `</div>`;
+  const token = ++fxToken;
+  const img = tdFxEl.querySelector("img.tdx-shot");
+  const go = () => {
+    if (token !== fxToken) return;
+    tdFxEl.classList.add("go");
+    if (!still) tdFx = TdFx.play(tdStyle, tdFxEl, { accent: colors?.[1], ground: colors?.[0], over, pts: ev.pts, fmt });
+  };
+  if (img) {
+    img.addEventListener("error", () => { const fb = headshotSrc(p); if (fb && img.src !== fb) { img.removeAttribute("crossorigin"); img.src = fb; } }, { once: true });
+    Promise.race([img.decode().catch(() => {}), new Promise((r) => setTimeout(r, 900))]).then(go);
+  } else go();
+}
+if (QUERY.has("tdstyle")) {
+  const bar = document.createElement("div");
+  bar.className = "tdx-pick";
+  const start = QUERY.get("td") || "KCC";
+  bar.innerHTML = [0, 1, 2, 3, 4].map((n) => `<button type="button" data-s="${n}" aria-pressed="${n === tdStyle}">${n ? `${n} ${TdFx.STYLES[n]}` : "Card"}</button>`).join("") +
+    `<select aria-label="Team">${Object.keys(TEAM_COLORS).sort().map((t) => `<option${t === start ? " selected" : ""}>${t}</option>`).join("")}</select>` +
+    `<label><input type="checkbox"> Overturned</label>` +
+    `<button type="button" data-go>Replay</button>`;
+  document.body.appendChild(bar);
+  const sel = bar.querySelector("select"), chk = bar.querySelector("input");
+  const fire = () => {
+    tdQueue.length = 0; clearTimeout(tdTimer); stopFx();
+    tdShowing = false; tdModal.dataset.open = "false";
+    checkTouchdown(sel.value, chk.checked);
+  };
+  bar.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.s != null) {
+      tdStyle = Number(b.dataset.s);
+      bar.querySelectorAll("[data-s]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      const u = new URL(location.href); u.searchParams.set("tdstyle", tdStyle); history.replaceState(history.state, "", u);
+    }
+    fire();
+  });
+  sel.addEventListener("change", fire);
 }
 
 // Rule: only a starter's touchdown gets a card. Bench points never reach
@@ -2566,10 +2651,10 @@ document.getElementById("td-scrim").addEventListener("click", dismissTouchdown);
 // No demo bar on main: ?td=<NFL team> raises a card for that team's first
 // starter on the board once it is up (any starter when the team has
 // none), for checking the team colours.
-function checkTouchdown(tm) {
+function checkTouchdown(tm, overturned = false) {
   const all = teams.flatMap((t) => t.starters.map((p) => ({ p, t })));
   const hit = all.find((x) => x.p.tm === tm) || all[0];
-  if (hit) announceTouchdown({ player: hit.p, franchise: hit.t.team, pts: 8.5, starter: true });
+  if (hit) announceTouchdown({ player: hit.p, franchise: hit.t.team, pts: 8.5, starter: true, overturned });
 }
 
 /* ---------------- The Witching Hour ----------------

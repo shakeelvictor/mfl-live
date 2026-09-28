@@ -1591,6 +1591,164 @@ button.hero { cursor: pointer; }
   animation-delay: calc(.55s + var(--i) * 65ms);
 }
 .td-chant .sp { width: .35em; }
+
+/* ---------- touchdown styles, a prototype (2026-09-27) ----------
+   The redesign's four takes on the card (td-fx.js, ?tdstyle=1..4): no
+   portrait disc, the player's cut-out over a particle canvas, TOUCHDOWN
+   huge behind him, the same facts as the card under him. Literal colours
+   in both themes, as the card's are. `.go` lands once his photo has
+   decoded, so every entrance starts together. */
+.tdx { display: none; }
+.td.tdx-on .td-card { display: none; }
+.td.tdx-on .tdx { display: block; position: absolute; inset: 0; overflow: hidden; color: #fff; }
+.td.tdx-on .td-scrim {
+  background: radial-gradient(120% 85% at 50% 36%, color-mix(in srgb, var(--td-ground, #0b2a3a) 80%, #000), #03060b 90%);
+  animation-duration: .35s;
+}
+.td.tdx-on[data-tdx="3"] .td-scrim {
+  background:
+    radial-gradient(60% 45% at 30% 30%, rgba(79, 227, 193, .16), transparent 70%),
+    radial-gradient(60% 50% at 72% 62%, rgba(140, 110, 255, .2), transparent 70%),
+    radial-gradient(120% 90% at 50% 40%, #0d1630, #04070d 80%);
+}
+.td.tdx-on.td-over .td-scrim { background: radial-gradient(120% 85% at 50% 36%, #1c2026, #05070a 90%); }
+.td.tdx-on[data-open="closing"] .td-scrim { animation: fflr-fade-out .45s ease-in .2s forwards; }
+
+.tdx-fx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
+.tdx-2 .tdx-fx, .tdx-3 .tdx-fx { z-index: 1; }
+.tdx-col {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: clamp(6px, 2vh, 18px); padding: 16px;
+}
+.tdx .td-more { top: 16px; right: 16px; z-index: 4; background: rgba(255, 255, 255, .14); color: #fff; }
+
+.tdx-hero { position: relative; width: min(94vw, 640px); display: grid; place-items: center; }
+.tdx-stage { position: relative; z-index: 2; width: min(84vw, 480px, 58vh); aspect-ratio: 350 / 254; }
+.tdx-shot {
+  display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0;
+  /* The photos stop at the chest: fade that cut into the ground instead of a hard edge. */
+  -webkit-mask: linear-gradient(#000 62%, transparent 98%); mask: linear-gradient(#000 62%, transparent 98%);
+}
+.td.tdx-on.td-over .tdx-shot { filter: grayscale(1) brightness(.75); }
+.tdx-init { display: grid; place-items: center; font: italic 800 110px/1 var(--font-display); color: rgba(255, 255, 255, .8); }
+.tdx-word {
+  position: absolute; z-index: 0; left: 50%; top: 0; translate: -50% 0;
+  display: grid; white-space: nowrap; pointer-events: none;
+  font: italic 800 clamp(64px, 19vw, 190px)/.82 var(--font-display);
+  letter-spacing: -.01em; text-transform: uppercase;
+}
+.tdx-word > span { grid-area: 1 / 1; }
+.tdx-word .o { color: transparent; -webkit-text-stroke: 1.5px color-mix(in srgb, var(--td-accent, #4fe3c1) 70%, #fff); opacity: 0; }
+.tdx-word .f { color: var(--td-accent, #4fe3c1); clip-path: inset(0 100% 0 0); }
+.td.tdx-on.td-over .tdx-word .f { color: #9aa3ad; }
+.tdx-beam, .tdx-flash { display: none; }
+
+.tdx-info { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.tdx-meta { display: flex; align-items: center; gap: 8px; font: 700 13px/1 var(--font-data); letter-spacing: .12em; text-transform: uppercase; }
+.tdx-meta img { width: 28px; height: 28px; object-fit: contain; }
+.tdx-meta .pos { background: rgba(255, 255, 255, .16); color: #fff; }
+.tdx-name { font: italic 800 clamp(34px, 9vw, 60px)/.95 var(--font-display); text-transform: uppercase; letter-spacing: .01em; }
+.tdx-review { font: 700 13px/1 var(--font-data); letter-spacing: .14em; text-transform: uppercase; color: #ff8a8a; }
+.tdx-for { display: flex; flex-direction: column; align-items: center; gap: 3px; font: 700 11px/1.2 var(--font-data); letter-spacing: .16em; text-transform: uppercase; color: rgba(255, 255, 255, .7); }
+.tdx-for i { font-style: normal; }
+.tdx-for b { font: italic 800 22px/1 var(--font-display); letter-spacing: .02em; color: #fff; }
+.tdx-pts { font: 700 clamp(48px, 13vw, 84px)/1 var(--font-display); color: var(--td-accent, #4fe3c1); }
+.td.tdx-on.td-over .tdx-pts { color: #9aa3ad; }
+.tdx-3 .tdx-pts { color: #fff; }
+
+/* The facts under him rise in one after another once his entrance lands (--info-at per style). */
+.tdx { --info-at: 1.2s; }
+.tdx-2 { --info-at: .7s; }
+.tdx-3 { --info-at: .95s; }
+.tdx-4 { --info-at: .95s; }
+.tdx-info > :not(.td-chant) { opacity: 0; }
+.tdx.go .tdx-info > :not(.td-chant) { animation: tdx-rise .5s cubic-bezier(.2, .8, .2, 1) var(--info-at) both; }
+.tdx.go .tdx-info > :nth-child(2) { animation-delay: calc(var(--info-at) + 70ms); }
+.tdx.go .tdx-info > :nth-child(3) { animation-delay: calc(var(--info-at) + 140ms); }
+.tdx.go .tdx-info > :nth-child(4) { animation-delay: calc(var(--info-at) + 210ms); }
+.tdx.go .tdx-info > :nth-child(5) { animation-delay: calc(var(--info-at) + 280ms); }
+.tdx.go .tdx-info > :nth-child(6) { animation-delay: calc(var(--info-at) + 350ms); }
+.td[data-open="closing"] .tdx-info, .td[data-open="closing"] .tdx-word { animation: fflr-fade-out .3s ease-in forwards; }
+@keyframes tdx-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes tdx-show { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tdx-fill { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+/* 1. Embers: the outline first, the fill sweeping through it as he forms. */
+.tdx-1.go .tdx-word .o { animation: tdx-show .5s ease-out .2s both; opacity: .9; }
+.tdx-1.go .tdx-word .f { animation: tdx-fill .9s cubic-bezier(.6, 0, .2, 1) 1s both; }
+.tdx-1.go .tdx-shot { animation: tdx-show .7s ease-out .8s both; }
+.td[data-open="closing"] .tdx-1 .tdx-shot { animation: fflr-fade-out .35s ease-in forwards; }
+
+/* 2. Smoke: the script drives his run in and out; the word wipes in on the same stroke. */
+.tdx-2 .tdx-shot { opacity: 1; transform: translateX(-110vw); }
+.tdx-2 .tdx-word .f { transform: skewX(-8deg); }
+.tdx-2.go .tdx-word .f { animation: tdx-fill .6s cubic-bezier(.3, .7, .2, 1) .35s both; }
+
+/* 3. Pylon: a beam drops, he rises into it, the word in the league's gradient. */
+.tdx-3 .tdx-beam {
+  display: block; position: absolute; z-index: 1; left: 50%; top: -40vh; bottom: -40vh; width: 180px;
+  translate: -50% 0; transform-origin: top; transform: scaleY(0);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--td-accent, #4fe3c1) 22%, transparent) 42%, color-mix(in srgb, var(--td-accent, #4fe3c1) 22%, transparent) 58%, transparent);
+  -webkit-mask: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+  mask: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+}
+.tdx-3 .tdx-beam::after {
+  content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; translate: -50% 0;
+  background: linear-gradient(#4fe3c1, #5b8cff, #8c6eff);
+  box-shadow: 0 0 16px 3px rgba(91, 140, 255, .55);
+}
+.tdx-3.go .tdx-beam { animation: tdx-beam .5s cubic-bezier(.5, 0, .2, 1) both; }
+.td[data-open="closing"] .tdx-3 .tdx-beam { animation: tdx-beam-out .35s ease-in forwards; }
+@keyframes tdx-beam { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes tdx-beam-out { from { transform: scaleY(1); } to { transform: scale(0, 1); } }
+.tdx-3 .tdx-word .o { display: none; }
+.tdx-3 .tdx-word .f { clip-path: none; opacity: 0; background: linear-gradient(90deg, #4fe3c1, #5b8cff 50%, #8c6eff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.td.tdx-on.td-over .tdx-3 .tdx-word .f { background: none; color: #9aa3ad; }
+.tdx-3.go .tdx-word .f { animation: tdx-word3 .9s ease-out .45s both; }
+@keyframes tdx-word3 { from { opacity: 0; letter-spacing: .12em; } to { opacity: .85; letter-spacing: -.01em; } }
+.tdx-3.go .tdx-shot { animation: tdx-rise-shot .8s cubic-bezier(.2, .8, .2, 1) .85s both; }
+@keyframes tdx-rise-shot { from { opacity: 0; transform: translateY(34px); } to { opacity: 1; transform: none; } }
+.td[data-open="closing"] .tdx-3 .tdx-shot { animation: fflr-fade-out .35s ease-in forwards; }
+
+/* 4. Chalk: a freeze-frame flash as the field stops; the word stencilled on the turf under his feet. */
+.tdx-4 .tdx-word { top: auto; bottom: -6%; font-size: clamp(52px, 16vw, 150px); transform: perspective(420px) rotateX(56deg); transform-origin: 50% 100%; }
+.tdx-4 .tdx-word .o { display: none; }
+.tdx-4 .tdx-info { margin-top: 14px; }
+.tdx-4 .tdx-word .f { color: rgba(255, 255, 255, .82); }
+.tdx-4.go .tdx-word .f { animation: tdx-fill .5s cubic-bezier(.4, 0, .2, 1) .9s both; }
+.tdx-4.go .tdx-shot { animation: tdx-freeze .4s cubic-bezier(.2, .8, .2, 1) .7s both; }
+@keyframes tdx-freeze { 0% { opacity: 0; transform: translateX(46px) scale(1.08); } 1% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+.td[data-open="closing"] .tdx-4 .tdx-shot { animation: none; opacity: 1; }   /* the script slides him off with the field */
+.tdx-4 .tdx-flash { display: block; position: absolute; inset: -60vh -60vw; z-index: 3; background: #fff; opacity: 0; pointer-events: none; }
+.tdx-4.go .tdx-flash { animation: tdx-flash .45s ease-out .7s both; }
+@keyframes tdx-flash { 0% { opacity: 0; } 1% { opacity: .6; } 100% { opacity: 0; } }
+
+/* Reduced motion: no canvas runs, every piece lands where it ends. */
+@media (prefers-reduced-motion: reduce) {
+  .tdx.go *, .tdx.go *::after { animation: none !important; }
+  .tdx.go .tdx-shot, .tdx.go .tdx-info > * { opacity: 1; transform: none; }
+  .tdx.go .tdx-word .f { clip-path: none; opacity: .85; }
+  .tdx-3.go .tdx-beam { transform: none; }
+  .tdx-4 .tdx-flash { display: none; }
+}
+
+/* The prototype's picker (?tdstyle): style, team, overturned, replay. */
+.tdx-pick {
+  position: fixed; z-index: 70; left: 50%; bottom: 12px; translate: -50% 0;
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px;
+  width: max-content; max-width: calc(100vw - 16px); padding: 6px; border-radius: 14px;
+  background: rgba(6, 10, 17, .88); border: 1px solid rgba(255, 255, 255, .14);
+  font: 700 11px/1 var(--font-data); letter-spacing: .06em; text-transform: uppercase; color: #fff;
+}
+.tdx-pick button, .tdx-pick select {
+  font: inherit; letter-spacing: inherit; text-transform: inherit; color: #fff;
+  background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .14); border-radius: 9px;
+  padding: 8px 10px; cursor: pointer;
+}
+.tdx-pick [aria-pressed="true"] { background: #4fe3c1; color: #04241d; border-color: transparent; }
+.tdx-pick label { display: flex; align-items: center; gap: 5px; padding: 0 6px; cursor: pointer; }
+.tdx-pick [data-go] { background: #fff; color: #060a11; }
 @keyframes fflr-stomp {
   0% { transform: translateY(-46px) scale(1.9) rotate(-8deg); opacity: 0; }
   60% { transform: translateY(5px) scale(.94) rotate(2deg); opacity: 1; }

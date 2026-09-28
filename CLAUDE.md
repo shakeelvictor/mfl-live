@@ -1221,6 +1221,16 @@ them); a meta item never breaks inside itself.
   and `?theme=light` stamps the light theme on load, both for checking. In the mockup a TD is a
   simulated event (6 + yardage); with the feed, the trigger is ESPN's
   play naming a starter's touchdown (see "What is already settled").
+  **Four redesign takes on the card, a prototype** (2026-09-27,
+  `app/td-fx.js`, `?tdstyle=1..4`: Embers, Smoke, Pylon, Chalk): no
+  portrait disc, the player's cut-out (Sleeper's full-size
+  `content/nfl/players/<sid>.jpg` is a transparent PNG and CORS-open, so
+  a canvas can sample its alpha) over one particle canvas drawn from
+  pre-made soft sprites, TOUCHDOWN huge behind him and the card's facts
+  under him. With `tdstyle` set a picker along the bottom switches
+  style, team and overturned and replays; the preview page links all
+  four. The modal's class is `tdx-on`, not `fx`: `.fx` is the lead
+  change's takeover layer, `visibility: hidden`, and hid the whole modal.
 - **Spotlight card** under the hero, a between-days card: once a day's
   games are all final it shows that day's highest-scoring *starter*
   (headshot, logo, stat line, franchise, points) and goes away when the
