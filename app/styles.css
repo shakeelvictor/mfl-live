@@ -1611,6 +1611,17 @@ button.hero { cursor: pointer; }
     radial-gradient(60% 50% at 72% 62%, rgba(140, 110, 255, .2), transparent 70%),
     radial-gradient(120% 90% at 50% 40%, #0d1630, #04070d 80%);
 }
+/* 5, Embers bare: no fill across the page, the board stays in view; a soft pool of dark behind
+   him and his facts, gone well before the edges, keeps the type readable over the rows. */
+.td.tdx-on[data-tdx="5"] .td-scrim,
+.td.tdx-on.td-over[data-tdx="5"] .td-scrim {
+  --pool: radial-gradient(min(82vw, 600px) min(52vh, 500px) at 50% 56%, #000 45%, rgba(0, 0, 0, .6) 72%, transparent);
+  background: radial-gradient(min(82vw, 600px) min(52vh, 500px) at 50% 56%, rgba(3, 6, 11, .86) 40%, rgba(3, 6, 11, .5) 72%, transparent);
+  /* The rows under the pool soften too, so their figures stop reading through his; masked to the same pool. */
+  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+  -webkit-mask: var(--pool); mask: var(--pool);
+}
+.tdx-bare .tdx-info, .tdx-bare .tdx-word { text-shadow: 0 2px 14px rgba(0, 0, 0, .7), 0 0 2px rgba(0, 0, 0, .6); }
 .td.tdx-on.td-over .td-scrim { background: radial-gradient(120% 85% at 50% 36%, #1c2026, #05070a 90%); }
 .td.tdx-on[data-open="closing"] .td-scrim { animation: fflr-fade-out .45s ease-in .2s forwards; }
 

@@ -2562,7 +2562,9 @@ function dismissTouchdown() {
    particle canvas, the same facts as the card under him. ?tdstyle=1..4
    picks one (0 or none is the card); with the parameter set a picker
    along the bottom switches style, team and overturned, and replays. */
-let tdStyle = (() => { const n = Number(QUERY.get("tdstyle")); return n >= 1 && n <= 4 ? n : 0; })();
+let tdStyle = (() => { const n = Number(QUERY.get("tdstyle")); return n >= 1 && n <= 5 ? n : 0; })();
+// Style 5 is Embers with no backdrop: the board stays in view behind him (2026-09-27, Shakeel's pick of the four).
+const fxEngine = (n) => (n === 5 ? 1 : n);
 const TDX_EXTRA_MS = 1200;   // the entrances run longer than the card's slam
 const TDX_EXIT_MS = 650;
 const tdFxEl = document.getElementById("td-fx");
@@ -2575,7 +2577,7 @@ function renderFx(ev, colors) {
   const src = cutoutSrc(p), logo = logoSrc(p.tm);
   const still = reducedMotion.matches;
   tdCard.innerHTML = "";
-  tdFxEl.className = `tdx tdx-${tdStyle}`;
+  tdFxEl.className = `tdx tdx-${fxEngine(tdStyle)}${tdStyle === 5 ? " tdx-bare" : ""}`;
   tdModal.dataset.tdx = tdStyle;
   tdFxEl.innerHTML =
     `<canvas class="tdx-fx" aria-hidden="true"></canvas>` +
@@ -2602,7 +2604,7 @@ function renderFx(ev, colors) {
   const go = () => {
     if (token !== fxToken) return;
     tdFxEl.classList.add("go");
-    if (!still) tdFx = TdFx.play(tdStyle, tdFxEl, { accent: colors?.[1], ground: colors?.[0], over, pts: ev.pts, fmt });
+    if (!still) tdFx = TdFx.play(fxEngine(tdStyle), tdFxEl, { accent: colors?.[1], ground: colors?.[0], over, pts: ev.pts, fmt });
   };
   if (img) {
     img.addEventListener("error", () => { const fb = headshotSrc(p); if (fb && img.src !== fb) { img.removeAttribute("crossorigin"); img.src = fb; } }, { once: true });
@@ -2613,7 +2615,7 @@ if (QUERY.has("tdstyle")) {
   const bar = document.createElement("div");
   bar.className = "tdx-pick";
   const start = QUERY.get("td") || "KCC";
-  bar.innerHTML = [0, 1, 2, 3, 4].map((n) => `<button type="button" data-s="${n}" aria-pressed="${n === tdStyle}">${n ? `${n} ${TdFx.STYLES[n]}` : "Card"}</button>`).join("") +
+  bar.innerHTML = [0, 1, 2, 3, 4, 5].map((n) => `<button type="button" data-s="${n}" aria-pressed="${n === tdStyle}">${n ? `${n} ${TdFx.STYLES[n]}` : "Card"}</button>`).join("") +
     `<select aria-label="Team">${Object.keys(TEAM_COLORS).sort().map((t) => `<option${t === start ? " selected" : ""}>${t}</option>`).join("")}</select>` +
     `<label><input type="checkbox"> Overturned</label>` +
     `<button type="button" data-go>Replay</button>`;

@@ -1230,7 +1230,11 @@ them); a meta item never breaks inside itself.
   under him. With `tdstyle` set a picker along the bottom switches
   style, team and overturned and replays; the preview page links all
   four. The modal's class is `tdx-on`, not `fx`: `.fx` is the lead
-  change's takeover layer, `visibility: hidden`, and hid the whole modal.
+  change's takeover layer, `visibility: hidden`, and hid the whole modal. Shakeel
+  picked Embers; **style 5 is Embers with no backdrop** (`tdx-bare`): the
+  board stays in view, and only a soft pool of dark behind him and his
+  facts (a backdrop blur masked to the same pool, so the rows' figures
+  stop reading through his) keeps the type readable.
 - **Spotlight card** under the hero, a between-days card: once a day's
   games are all final it shows that day's highest-scoring *starter*
   (headshot, logo, stat line, franchise, points) and goes away when the

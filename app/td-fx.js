@@ -358,5 +358,5 @@ const TdFx = (() => {
     };
   }
 
-  return { play, STYLES: { 1: "Embers", 2: "Smoke", 3: "Pylon", 4: "Chalk" } };
+  return { play, STYLES: { 1: "Embers", 2: "Smoke", 3: "Pylon", 4: "Chalk", 5: "Embers bare" } };
 })();
