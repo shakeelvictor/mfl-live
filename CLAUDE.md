@@ -490,7 +490,11 @@ element and scores are second.
 - The header is the mark and the wordmark: **MFL LIVE**, with LIVE in the live red
   and a pulsing dot after it, always (it is the name, not a status: it
   used to drop the dot before the season and once a week was official,
-  changed 2026-09-05). There is no separate status line.
+  changed 2026-09-05). There is no separate status line. Beside the
+  theme control, **"Manager ↗"** (`.mast-link`, 2026-09-27) links to MFL
+  Manager's production, <https://mfl-manager.up.railway.app>; under 400px
+  the mark shrinks to 32px and the pill drops its arrow so the header
+  fits a 360px phone.
 - **Hero names fit their column** (`fitName()` in `app.js`, 2026-09-07): a
   single word wider than the name column ("WhiskeyDitka" at 30px on a
   375px phone) used to run under the score. The script steps the name
@@ -1059,7 +1063,9 @@ element and scores are second.
   whoever the NFL sent (`QUINN`, `quinnWeek` in `app.js`; his photo is
   `app/quinn.jpg`, the league mark his badge, 6 REC, 2 TD, 1 pick six,
   24.00 under the rules); the day cards stay real. `?mvp=quinn` shows him
-  on any finished week. Rehearsed on `app-2025` `?w=12`.
+  on any finished week. Rehearsed on `app-2025` `?w=12`. **And Week 3**
+  (2026-09-27, Shakeel's call): "5 TDs in Gym Shoes" (5 REC, 5 TD under
+  the rules); `QUINN` is keyed by week, `?mvp=quinn3` shows that card.
   The week is final once
   every game is (`slate.weekFinal = slate.sunFinal`; MFL's "official"
   mark is not read, the same rule the playoffs use), which turns the
