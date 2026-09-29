@@ -590,6 +590,7 @@ button.hero { cursor: pointer; }
 .spot-meta .pos { height: 20px; padding: 0 7px; border-radius: 6px; font: 700 13px/1 var(--font-display); letter-spacing: .06em; }
 .spot-stat { font: 500 12px/1.3 var(--font-data); letter-spacing: .03em; text-transform: uppercase; color: var(--text-secondary); text-wrap: pretty; }
 .spot-stat:empty { display: none; }
+.spot-stat.as-is { text-transform: none; }
 .spot-for { font: 600 12px/1.2 var(--font-data); letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
 .spot-for b { color: var(--text-secondary); font-weight: 700; }
 .spot-pts { font: 700 44px/1 var(--font-display); letter-spacing: .01em; text-align: right; transition: color .3s; }

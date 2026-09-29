@@ -1288,7 +1288,11 @@ them); a meta item never breaks inside itself.
   whoever the NFL sent (`QUINN`, `quinnWeek` in `app.js`; his photo is
   `app/quinn.jpg`, the league mark his badge, 6 REC, 2 TD, 1 pick six,
   24.00 under the rules); the day cards stay real. `?mvp=quinn` shows him
-  on any finished week. Rehearsed on `app-2025` `?w=12`.
+  on any finished week. Rehearsed on `app-2025` `?w=12`. **And Week 3**
+  (2026-09-27, Shakeel's call): "5 TDs in Gym Shoes" (5 REC, 5 TD under
+  the rules); `QUINN` is keyed by week, `?mvp=quinn3` shows that card.
+  On `redesign` the line keeps its own case (`asIs`, `.spot-stat.as-is`),
+  since the redesign's stat line is otherwise capitals.
   The week is final once
   every game is (`slate.weekFinal = slate.sunFinal`; MFL's "official"
   mark is not read, the same rule the playoffs use), which turns the

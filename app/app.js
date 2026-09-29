@@ -1056,7 +1056,8 @@ function spotlightEntries() {
     const mvp = entry(all,
       post ? `\u2605 MVP of ${post.round.ref}` : duel ? "\u2605 MVP of the Pro Bowl" : "\u2605 MVP of the week",
       `${post ? post.round.name : duel ? EXHIBITION.name : `Week ${WEEK}`} final`, true);
-    if (mvp && quinnWeek()) { mvp.top = QUINN; mvp.key = `${mvp.when}:${QUINN.key}`; }
+    const q = quinnWeek();
+    if (mvp && q) { mvp.top = q; mvp.key = `${mvp.when}:${q.key}`; }
     out.push(mvp);
   }
   return out.filter(Boolean);
@@ -1065,15 +1066,24 @@ function spotlightEntries() {
    sends (Shakeel's surprise for the league, 2026-09-18): once the week's
    games are all final, after Monday night, his card takes the MVP slot in
    the same design and entrance; the day cards stay real. His points are
-   his line under the league's rules. `?mvp=quinn` puts him on any finished
-   week's MVP card for checking. */
-const QUINN_ST = { rec: 6, rec_td: 2, idp_int: 1, idp_def_td: 1 };
+   his line under the league's rules. And again in Week 3 (2026-09-27):
+   five touchdowns in gym shoes. `?mvp=quinn` puts him (Week 2's card) on
+   any finished week's MVP card for checking; `?mvp=quinn3` Week 3's. */
+const quinnCard = (st, line, key, asIs = false) => ({
+  key, asIs, n: "Quinn", pos: "WR", tm: "", team: "Special guest", franchise: "3rd and 1",
+  img: "quinn.jpg", logo: "logo.png", line, st, pts: r2(Scoring.scoreLine(st)),
+});
 const QUINN = {
-  key: "quinn", n: "Quinn", pos: "WR", tm: "", team: "Special guest", franchise: "3rd and 1",
-  img: "quinn.jpg", logo: "logo.png", line: "6 REC \u00b7 2 TD \u00b7 1 PICK SIX",
-  st: QUINN_ST, pts: r2(Scoring.scoreLine(QUINN_ST)),
+  2: quinnCard({ rec: 6, rec_td: 2, idp_int: 1, idp_def_td: 1 }, "6 REC \u00b7 2 TD \u00b7 1 PICK SIX", "quinn"),
+  3: quinnCard({ rec: 5, rec_td: 5 }, "5 TDs in Gym Shoes", "quinn3", true),   // as written: the stat line is otherwise capitals
 };
-const quinnWeek = () => QUERY.get("mvp") === "quinn" || (!FIXTURE && SEASON === 2026 && WEEK === 2 && !post && !duel);
+// Quinn's card for this week, or null.
+const quinnWeek = () => {
+  const ask = QUERY.get("mvp");
+  if (ask === "quinn") return QUINN[2];
+  if (ask === "quinn3") return QUINN[3];
+  return !FIXTURE && SEASON === 2026 && !post && !duel ? QUINN[WEEK] || null : null;
+};
 let spotIndex = null;   // the entry the arrows have flipped to; null is the newest
 
 // flip: a render for the arrows, which shows another entry with the body's
@@ -1111,7 +1121,7 @@ function renderSpotlight(flip = false) {
       `<span class="spot-who">` +
         `<span class="spot-name">${nameHtml(top.n)}</span>` +
         `<span class="spot-meta"><span class="pos ${posClass(top.pos)}">${esc(top.pos)}</span><span>${esc(top.team || top.tm)}</span></span>` +
-        `<span class="spot-stat">${esc(top.line || statLine(top.pos, top.st))}</span>` +
+        `<span class="spot-stat${top.asIs ? " as-is" : ""}">${esc(top.line || statLine(top.pos, top.st))}</span>` +
         `<span class="spot-for">for <b>${esc(top.franchise)}</b></span>` +
       `</span>` +
       `<span class="spot-pts" data-tween="p:${top.key}">${fmt(top.pts)}</span>` +
