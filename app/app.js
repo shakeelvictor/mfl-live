@@ -2573,10 +2573,15 @@ function dismissTouchdown() {
 /* The redesign's touchdown styles, a prototype (2026-09-27; td-fx.js):
    no portrait disc, the player's own cut-out (Sleeper's full-size photo,
    a transparent PNG; the fixture has only its inlined thumbs) over a
-   particle canvas, the same facts as the card under him. ?tdstyle=1..4
-   picks one (0 or none is the card); with the parameter set a picker
-   along the bottom switches style, team and overturned, and replays. */
-let tdStyle = (() => { const n = Number(QUERY.get("tdstyle")); return n >= 1 && n <= 5 ? n : 0; })();
+   particle canvas, the same facts as the card under him. ?tdstyle=1..5
+   picks one (0 is the old card); with the parameter set a picker along
+   the bottom switches style, team and overturned, and replays. With no
+   parameter it is 5 (2026-10-01: a live touchdown still raised the old
+   card, since the pick had only ever been behind the parameter). */
+let tdStyle = (() => {
+  if (!QUERY.has("tdstyle")) return 5;
+  const n = Number(QUERY.get("tdstyle")); return n >= 1 && n <= 5 ? n : 0;
+})();
 // Style 5 is Embers with no backdrop: the board stays in view behind him (2026-09-27, Shakeel's pick of the four).
 const fxEngine = (n) => (n === 5 ? 1 : n);
 const TDX_EXTRA_MS = 1200;   // the entrances run longer than the card's slam

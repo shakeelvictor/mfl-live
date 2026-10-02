@@ -1229,7 +1229,11 @@ them); a meta item never breaks inside itself.
   picked Embers; **style 5 is Embers with no backdrop** (`tdx-bare`): the
   board stays in view, and only a soft pool of dark behind him and his
   facts (a backdrop blur masked to the same pool, so the rows' figures
-  stop reading through his) keeps the type readable.
+  stop reading through his) keeps the type readable. **Style 5 is the
+  default on `redesign`** (2026-10-01: Fannin's live touchdown raised
+  the old card, since the pick had only ever been behind the
+  parameter); `?tdstyle=0` brings back the card. `main` still has only
+  the card.
 - **Spotlight card** under the hero, a between-days card: once a day's
   games are all final it shows that day's highest-scoring *starter*
   (headshot, logo, stat line, franchise, points) and goes away when the
