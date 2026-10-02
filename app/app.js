@@ -1256,14 +1256,18 @@ const rosterHtml = (list, bench, isTop) => {
 };
 // The row's game in the wide cut: away over home, scores once kicked off,
 // the player's team bright, a football by whoever has the ball, RZ.
+// The side with more points is the bright one (2026-10-01; it was the
+// player's own team): a tie, or a game not yet begun, lights both.
+const ahead = (s, o, started) => !started || !(Number(o.score) > Number(s.score));
 const gameCell = (p) => {
   const gs = gameState(p);
   if (!gs) return "";
   const { g, started, live, sit } = gs;
   const view = (s) => (sit ? { ...s, score: sit.scores?.[s.id] ?? s.score, poss: sit.poss === s.id, rz: sit.poss === s.id && sit.rz } : s);
-  const side = (s, at) => `<span class="bg-t${s.id === p.tm ? " mine" : ""}${live && s.poss ? " poss" : ""}">` +
+  const a = view(g.away), h = view(g.home);
+  const side = (s, at) => `<span class="bg-t${ahead(s, s === a ? h : a, started) ? " ahead" : ""}${live && s.poss ? " poss" : ""}">` +
     `${at ? `<i>@</i>` : ""}${esc(s.id)}${started ? ` <b>${s.score}</b>` : ""}${live && s.rz ? ` <span class="pg-rz">RZ</span>` : ""}</span>`;
-  return side(view(g.away), false) + side(view(g.home), true);
+  return side(a, false) + side(h, true);
 };
 
 const initials = (name) => name.split(/[\s-]+/).filter(Boolean)
@@ -1316,15 +1320,16 @@ const gameStrip = (p) => {
   const view = (s) => (sit ? { ...s, score: sit.scores?.[s.id] ?? s.score, poss: sit.poss === s.id, rz: sit.poss === s.id && sit.rz } : s);
   const spot = sit && sit.dd && sit.spot ? `${sit.dd} at ${sit.spot}` : sit?.spot ? `ball at ${sit.spot}` : "";
   const play = live && sit?.state === "in" && sit.lastPlay ? playText(sit.lastPlay) : "";
+  const a = view(g.away), h = view(g.home);
   const team = (s) =>
-    `<span class="pg-team${s.id === p.tm ? " mine" : ""}${live && s.poss ? " poss" : ""}">` +
+    `<span class="pg-team${ahead(s, s === a ? h : a, started) ? " ahead" : ""}${live && s.poss ? " poss" : ""}">` +
       (logoSrc(s.id) ? `<img src="${logoSrc(s.id)}" alt="" loading="lazy">` : "") +
       `<span class="pg-id">${esc(s.id)}</span>` +
       (started ? `<b class="pg-score">${s.score}</b>` : "") +
       (live && s.rz ? `<span class="pg-rz">RZ</span>` : "") +
     `</span>`;
   return `<div class="pgame${live ? " live" : ""}">` +
-    team(view(g.away)) + `<span class="pg-at">${started ? "@" : "at"}</span>` + team(view(g.home)) +
+    team(a) + `<span class="pg-at">${started ? "@" : "at"}</span>` + team(h) +
     `<span class="pg-state">${live ? `<span class="dot"></span>` : ""}${esc(state)}</span>` +
     (spot ? `<span class="pg-spot">${esc(spot)}</span>` : "") +
     (play ? `<span class="pg-play">${esc(play)}</span>` : "") +
@@ -1807,7 +1812,7 @@ function renderNflNow() {
     const a = view(m.away), h = view(m.home);
     const rz = on && (a.rz || h.rz);
     const clock = !started ? fmtKick(m.kickoff) : !on ? "Final" : gameClock(m.home.id, secs);
-    const side = (s) => `<span class="nn-t${on && s.poss ? " poss" : ""}"><span class="nn-sw" style="${teamVars(s.id)}"></span><span class="nn-id">${esc(s.id)}${on && s.poss ? `<i class="nn-ball" aria-label="has the ball"></i>` : ""}</span><b>${started ? s.score : ""}</b></span>`;
+    const side = (s) => `<span class="nn-t${ahead(s, s === a ? h : a, started) ? " ahead" : ""}${on && s.poss ? " poss" : ""}"><span class="nn-sw" style="${teamVars(s.id)}"></span><span class="nn-id">${esc(s.id)}${on && s.poss ? `<i class="nn-ball" aria-label="has the ball"></i>` : ""}</span><b>${started ? s.score : ""}</b></span>`;
     return `<div class="nn-box${rz ? " rz" : ""}${on ? " live" : ""}">${side(a)}${side(h)}<span class="nn-clock">${esc(clock)}${rz ? ` <span class="nn-rz">RZ</span>` : ""}</span></div>`;
   }).join("") + `</div>`;
 }
