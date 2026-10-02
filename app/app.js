@@ -684,9 +684,13 @@ const TWEEN_MS = 700;
 // read the half-rolled text as a new value against the roll's target and
 // popped a chip for the difference: red on a gain, mint on a loss, beside
 // the true chip a beat later (2026-09-14, Walker's row on the Week 1
-// Monday night).
+// Monday night). And the closed page is left out of #app's pass too: its
+// #team-pts kept the last opened franchise's key and old score, so the
+// snapshot read that (0.00) over the hero's and every poll rolled the
+// leader up from it again with a chip for the whole score (2026-10-01,
+// Smells Like Goat's 4.40 in Week 4).
 const liveNumberEls = () => [...new Set([
-  ...document.querySelectorAll("#app [data-tween]"),
+  ...[...document.querySelectorAll("#app [data-tween]")].filter((el) => !page.contains(el)),
   ...(open !== null ? page.querySelectorAll("[data-tween]") : []),
   ...(pcKey !== null ? pcSheet.querySelectorAll("[data-tween]") : []),
 ])];

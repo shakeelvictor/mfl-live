@@ -962,18 +962,13 @@ element and scores are second.
   situation beside the poll) read the half-rolled text on the second
   pass as a new value against the roll's target and popped a chip for
   the difference, red on a gain, beside the true chip. Seen as "the
-  chip is red when a player scores". **Open (2026-09-17): on a Brave
-  home-screen app on Android a static score sometimes rolls back to its
-  own value every 30s-1m**; Chrome's app and the Mac are fine. Not
-  reproduced. Suspect: a roll's start is `performance.now()` but its
-  frames read the rAF timestamp, and if those drift (a page frozen and
-  resumed, which Brave's saved-tab apps do often) the roll never reaches
-  `TWEEN_MS`, stays in `tweens`, and every render's "unchanged" branch
-  rejoins it from its old `from`. Fix if it comes back: use
-  `performance.now()` inside `frame`, rejoin only a roll still inside
-  `TWEEN_MS`, and a timeout that lands the final value if frames never
-  come. First rule out stale code (swipe the app away and reopen; a
-  Brave app can run a days-old copy). The "Simulate live scoring" toggle under the
+  chip is red when a player scores". **A closed team page is not read** (2026-10-01): its `#team-pts`
+  keeps the last opened franchise's key and score, and `#app`'s pass
+  read it over the live surface, so once that franchise scored, every
+  poll rolled its score up from the old value with a chip for the
+  difference (Smells Like Goat's 4.40 from 0, "+4.40", on a phone).
+  This is most likely the "static score rolls back every 30s-1m" seen
+  on 2026-09-17 and never reproduced. The "Simulate live scoring" toggle under the
   footnote exercises this by bumping one starter at a time -- it is a mockup
   affordance, not a feed, and it keeps team total == starters sum.
 - **Lead change** fires a takeover on the hero (mint strobe, lightning
