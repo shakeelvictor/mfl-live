@@ -1060,7 +1060,11 @@ them); a meta item never breaks inside itself.
   schedule's game clocks so the day's and week's final follow ESPN's
   whistle): liveScoring's per-player clock refreshes with the points on
   MFL's cycle and sat on "Q4 0:26" for ten minutes after the opener
-  ended, until MFL marked the game final. Context only:
+  ended, until MFL marked the game final. **A break reads as one**
+  (2026-10-01, `gameClock`): at halftime ESPN's period and clock are
+  "2, 0:00", 30:00 left as seconds, which `clockText` wrote "Q3 15:00";
+  ESPN's `detail` now gives "Halftime" and "End Q1" (MFL's clock on
+  exactly 1800 with no situation is "Halftime" too). Context only:
   nothing from ESPN touches a score, and `spike/` has nothing on it,
   because a fantasy point never depends on it.
   **Red zone** (2026-09-08): a live row whose player's offense is

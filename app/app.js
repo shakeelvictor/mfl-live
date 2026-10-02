@@ -844,6 +844,23 @@ const clockText = (secs) => {
   const q = 4 - Math.floor((secs - 1) / 900), left = ((secs - 1) % 900) + 1;
   return `Q${q} ${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
 };
+// A game's clock as the page shows it (2026-10-01): at a break ESPN's
+// period and clock read "2, 0:00", which as seconds left is the next
+// quarter's 15:00, so halftime read "Q3 15:00". ESPN's detail names the
+// break ("Halftime", "End of 1st"); with no situation, MFL's clock standing
+// on exactly 30:00 left is the half too.
+const gameClock = (tm, secs) => {
+  const sit = sitOf(tm);
+  if (sit?.state === "in") {
+    const d = String(sit.detail || "");
+    if (/halftime/i.test(d)) return "Halftime";
+    const end = d.match(/end of (?:the )?(\d)/i);
+    if (end) return `End Q${end[1]}`;
+    if (/end of (?:the )?(?:ot|overtime)/i.test(d)) return "End OT";
+    if (sit.period && sit.clock) return `${sit.period > 4 ? "OT" : `Q${sit.period}`} ${sit.clock}`;
+  }
+  return secs === 1800 ? "Halftime" : clockText(secs);
+};
 const isLive = (p) => !slate.sunFinal && (FIXTURE
   ? LIVE_NFL.has(p.tm)
   : (secsOf(p) != null && secsOf(p) > 0 && secsOf(p) < 3600));
@@ -854,7 +871,7 @@ const isLive = (p) => !slate.sunFinal && (FIXTURE
 const SIDELINED = new Set(["Doubtful", "Out", "IR", "PUP", "Sus", "NA"]);
 const sidelined = (p) => Boolean(p.sid) && SIDELINED.has(rosterStatus.get(String(p.sid))?.inj);
 const onField = (p) => isLive(p) && !sidelined(p);
-const clockFor = (p) => (FIXTURE ? LIVE_NFL.get(p.tm) : clockText(secsOf(p)));
+const clockFor = (p) => (FIXTURE ? LIVE_NFL.get(p.tm) : gameClock(p.tm, secsOf(p)));
 // Red zone: an offensive player's own team, with the ball, inside the
 // other side's 20. Live players only, not IDP (a defender facing a
 // red-zone drive is not the same signal). The game situation (ESPN,
@@ -1289,8 +1306,7 @@ const gameState = (p) => {
   const started = Date.now() >= g.kickoff || (secs != null && secs < 3600);
   const live = started && secs != null && secs > 0;
   const sit = live ? sitOf(p.tm) : null;
-  const sitClock = sit?.state === "in" && sit.period && sit.clock ? `${sit.period > 4 ? "OT" : `Q${sit.period}`} ${sit.clock}` : null;
-  const state = !started ? fmtKick(g.kickoff) : secs == null || secs <= 0 ? "Final" : sitClock || clockText(secs);
+  const state = !started ? fmtKick(g.kickoff) : secs == null || secs <= 0 ? "Final" : gameClock(p.tm, secs);
   return { g, started, live, sit, state };
 };
 const gameStrip = (p) => {
@@ -1790,8 +1806,7 @@ function renderNflNow() {
     const view = (s) => (sit ? { ...s, score: sit.scores?.[s.id] ?? s.score, poss: sit.poss === s.id, rz: sit.poss === s.id && sit.rz } : s);
     const a = view(m.away), h = view(m.home);
     const rz = on && (a.rz || h.rz);
-    const clock = !started ? fmtKick(m.kickoff) : !on ? "Final"
-      : sit?.state === "in" && sit.period && sit.clock ? `${sit.period > 4 ? "OT" : `Q${sit.period}`} ${sit.clock}` : clockText(secs);
+    const clock = !started ? fmtKick(m.kickoff) : !on ? "Final" : gameClock(m.home.id, secs);
     const side = (s) => `<span class="nn-t${on && s.poss ? " poss" : ""}"><span class="nn-sw" style="${teamVars(s.id)}"></span><span class="nn-id">${esc(s.id)}${on && s.poss ? `<i class="nn-ball" aria-label="has the ball"></i>` : ""}</span><b>${started ? s.score : ""}</b></span>`;
     return `<div class="nn-box${rz ? " rz" : ""}${on ? " live" : ""}">${side(a)}${side(h)}<span class="nn-clock">${esc(clock)}${rz ? ` <span class="nn-rz">RZ</span>` : ""}</span></div>`;
   }).join("") + `</div>`;
