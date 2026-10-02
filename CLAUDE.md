@@ -783,7 +783,8 @@ element and scores are second.
   reads the same map before its own fetch lands. **The game
   strip** heads the game (`gameStrip()`): away @ home with both scores once kicked off
   (from `nflSchedule`'s per-team `score`, kept on each `games` entry as
-  `match`), the player's team bright, a football after the score of the
+  `match`), the side with more points bright (2026-10-01, `ahead`; it
+  was the player's own team; a tie or a game not begun lights both), a football after the score of the
   side with `hasPossession`, RZ in the coin-flip red for `inRedZone`,
   and the state on the right: kickoff day and time before the game
   ("MIA at PIT"), the player's own clock from liveScoring while on, or

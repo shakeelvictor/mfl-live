@@ -1244,6 +1244,9 @@ const gameState = (p) => {
   const state = !started ? fmtKick(g.kickoff) : secs == null || secs <= 0 ? "Final" : gameClock(p.tm, secs);
   return { g, started, live, sit, state };
 };
+// The side with more points is the bright one (2026-10-01; it was the
+// player's own team): a tie, or a game not yet begun, lights both.
+const ahead = (s, o, started) => !started || !(Number(o.score) > Number(s.score));
 const gameStrip = (p) => {
   const gs = gameState(p);
   if (!gs) return "";
@@ -1251,15 +1254,16 @@ const gameStrip = (p) => {
   const view = (s) => (sit ? { ...s, score: sit.scores?.[s.id] ?? s.score, poss: sit.poss === s.id, rz: sit.poss === s.id && sit.rz } : s);
   const spot = sit && sit.dd && sit.spot ? `${sit.dd} at ${sit.spot}` : sit?.spot ? `ball at ${sit.spot}` : "";
   const play = live && sit?.state === "in" && sit.lastPlay ? playText(sit.lastPlay) : "";
+  const a = view(g.away), h = view(g.home);
   const team = (s) =>
-    `<span class="pg-team${s.id === p.tm ? " mine" : ""}${live && s.poss ? " poss" : ""}">` +
+    `<span class="pg-team${ahead(s, s === a ? h : a, started) ? " ahead" : ""}${live && s.poss ? " poss" : ""}">` +
       (logoSrc(s.id) ? `<img src="${logoSrc(s.id)}" alt="" loading="lazy">` : "") +
       `<span class="pg-id">${esc(s.id)}</span>` +
       (started ? `<b class="pg-score">${s.score}</b>` : "") +
       (live && s.rz ? `<span class="pg-rz">RZ</span>` : "") +
     `</span>`;
   return `<div class="pgame${live ? " live" : ""}">` +
-    team(view(g.away)) + `<span class="pg-at">${started ? "@" : "at"}</span>` + team(view(g.home)) +
+    team(a) + `<span class="pg-at">${started ? "@" : "at"}</span>` + team(h) +
     `<span class="pg-state">${live ? `<span class="dot"></span>` : ""}${esc(state)}</span>` +
     (spot ? `<span class="pg-spot">${esc(spot)}</span>` : "") +
     (play ? `<span class="pg-play">${esc(play)}</span>` : "") +
