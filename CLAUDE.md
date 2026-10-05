@@ -1069,6 +1069,8 @@ element and scores are second.
   on any finished week. Rehearsed on `app-2025` `?w=12`. **And Week 3**
   (2026-09-27, Shakeel's call): "5 TDs in Gym Shoes" (5 REC, 5 TD under
   the rules); `QUINN` is keyed by week, `?mvp=quinn3` shows that card.
+  **And Week 4** (2026-10-04): 3 TD and a pick six (3 REC assumed, one
+  per touchdown as in Week 3), `?mvp=quinn4`.
   The week is final once
   every game is (`slate.weekFinal = slate.sunFinal`; MFL's "official"
   mark is not read, the same rule the playoffs use), which turns the
