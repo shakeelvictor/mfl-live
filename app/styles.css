@@ -712,6 +712,11 @@ button.hero { cursor: pointer; }
 }
 .status { display: flex; align-items: center; gap: 5px; transition: color .4s; white-space: nowrap; }
 .status.on { color: var(--accent); }
+/* A row's status wraps inside its column (2026-10-04): held to one line,
+   "Montgomery, Henry +4 · on now" ran past the column on a phone and
+   under the score. The dot and the RZ pill stay whole. */
+.row .status { white-space: normal; min-width: 0; }
+.row .status .dot, .row .status .rzn { flex: none; white-space: nowrap; }
 
 .pts { font: 800 20px/1 var(--font-data); text-align: right; letter-spacing: -.02em; transition: color .4s; }
 

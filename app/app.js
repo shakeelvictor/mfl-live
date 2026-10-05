@@ -2461,7 +2461,10 @@ function endWitchingHour() {
 // clock says; the instant is found by reading a guess back through
 // Intl and correcting for the offset (twice covers a DST edge). Fires
 // once per Sunday per browser; a hidden tab plays it when shown again,
-// as long as that is within the hour.
+// as long as that is within WITCH_LATE_MS. The timer itself is checked
+// too: a phone freezes a background tab's timers and runs them when the
+// tab wakes, so a phone that slept through 2:30 Central played it at
+// 4:15 on waking, as if on time (2026-10-04).
 const zoneParts = (d) => Object.fromEntries(new Intl.DateTimeFormat("en-US", {
   timeZone: WITCH_TZ, hourCycle: "h23", weekday: "short",
   year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric",
@@ -2484,17 +2487,19 @@ function nextWitchingHour(now = Date.now()) {
   }
   return null;
 }
+const WITCH_LATE_MS = 10 * 60e3;   // past 2:40 Central the moment has gone
 function scheduleWitchingHour() {
   const t = nextWitchingHour();
   if (t == null) return;
   const key = "mfl-live-witch", stamp = String(t);
   const fire = () => {
     try { if (localStorage.getItem(key) === stamp) return; localStorage.setItem(key, stamp); } catch {}
+    if (Date.now() - t > WITCH_LATE_MS) return;
     if (!document.hidden) { playWitchingHour(); return; }
     const onShow = () => {
       if (document.hidden) return;
       document.removeEventListener("visibilitychange", onShow);
-      if (Date.now() - t < 3600e3) playWitchingHour();
+      if (Date.now() - t < WITCH_LATE_MS) playWitchingHour();
     };
     document.addEventListener("visibilitychange", onShow);
   };
@@ -2842,6 +2847,15 @@ function judgePlay(g, gk, seen) {
   tdPlayTexts.add(sig);
   const named = [];
   for (const t of rosters) for (const p of t.starters) if (p.tm === g.away || p.tm === g.home) { const at = nameAt(head, p); if (at >= 0) named.push({ t, p, at }); }
+  // On a turnover the score is the defense's: only a starter named after
+  // the last change of hands (INTERCEPTED by, RECOVERED by, a lateral) can
+  // have scored it. The offense named before it is who lost the ball:
+  // "J.Brissett pass short left intended for Mi.Wilson INTERCEPTED by
+  // D.Banks ... for 98 yards, TOUCHDOWN" raised Wilson's card (2026-10-04).
+  if (turnover) {
+    const handed = Math.max(...[...head.matchAll(/INTERCEPT|FUMBLE|RECOVER|LATERAL/gi)].map((m) => m.index));
+    for (let i = named.length - 1; i >= 0; i--) if (named[i].at < handed) named.splice(i, 1);
+  }
   if (!named.length) return;
   named.sort((a, b) => b.at - a.at);
   const card = (x, role) => { const pts = playPoints(role, yds); if (tdFromPlay(x.t, x.p, pts)) seen.raised.push({ t: x.t, p: x.p, pts }); };
