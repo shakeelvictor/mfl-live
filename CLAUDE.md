@@ -297,7 +297,10 @@ Each of these was verified against real 2025 data, not inferred:
   points (the yards it names through `playPoints`, so a 12-yard run reads
   +7.60, a 9-yard pass +6.36 for the passer; a return or a defensive
   score reads the flat 6). A play marked NULLIFIED, REVERSED, NO PLAY or
-  a two-point try raises nothing, and the first play after a load or a
+  a two-point try raises nothing; on an interception or fumble only a
+  starter named after the ball changed hands can have scored (2026-10-04:
+  a pick-six "intended for Mi.Wilson INTERCEPTED by D.Banks" raised
+  Wilson's card); and the first play after a load or a
   two-minute gap is not judged on arrival (`playSeen`), since it may be
   old. **That hold is no longer a drop** (2026-09-20): until then the
   unjudged play went into `ids` and was never looked at again, so a
@@ -1352,7 +1355,8 @@ them); a meta item never breaks inside itself.
   Fires every Sunday at 2:30 PM in `America/Chicago` (the instant is
   resolved through Intl so DST is right; once per Sunday per browser,
   remembered in localStorage `mfl-live-witch`; a hidden tab plays it
-  when shown again within the hour). On `main` `?witch=1` plays it on
+  when shown again within ten minutes, `WITCH_LATE_MS`, and so does a
+  timer a sleeping phone runs late: it played at 4:15 on 2026-10-04). On `main` `?witch=1` plays it on
   load for checking; on `poc` the demo bar has a button. **Only Escape
   skips it** (2026-09-08): a tap anywhere used to end it, and a stray
   tap on a full-screen takeover is far likelier than a wish to skip it,
