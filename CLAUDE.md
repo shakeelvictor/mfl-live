@@ -300,7 +300,12 @@ Each of these was verified against real 2025 data, not inferred:
   a two-point try raises nothing; on an interception or fumble only a
   starter named after the ball changed hands can have scored (2026-10-04:
   a pick-six "intended for Mi.Wilson INTERCEPTED by D.Banks" raised
-  Wilson's card); and the first play after a load or a
+  Wilson's card); the letters ESPN writes before the period must start
+  the player's own first name (`nameRe`, 2026-10-05: ESPN tells a team's
+  two Robinsons apart as "Bi." and "Br.", and Bijan's touchdown raised
+  Brian's card while any letters after the initial matched; Mack
+  Wilson's tackles, "Ma.Wilson", read on Michael Wilson's row the same
+  way); and the first play after a load or a
   two-minute gap is not judged on arrival (`playSeen`), since it may be
   old. **That hold is no longer a drop** (2026-09-20): until then the
   unjudged play went into `ids` and was never looked at again, so a
