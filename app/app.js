@@ -1290,14 +1290,20 @@ const playText = (t) => {
   const m = /REVERSED\.\s*(.+)$/i.exec(s);
   return m ? `Reversed \u00b7 ${m[1]}` : s;
 };
-// A player as ESPN names him: his initial (one letter or two, "Ja.")
-// and last name, with room for a "St. " or "Van " in between ("A.St.
-// Brown"). Matches anywhere in a play, the tackler in the brackets too.
+// A player as ESPN names him: the start of his first name (one letter or
+// more, "Ja.") and last name, with room for a "St. " or "Van " in between
+// ("A.St. Brown"). Matches anywhere in a play, the tackler in the brackets
+// too. The letters before the period must start his own first name: ESPN
+// tells two of a team's players apart that way ("Bi.Robinson" and
+// "Br.Robinson", 2026-10-05), and any letters after the initial let
+// Bijan's touchdown raise Brian's card.
 const escRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const nameRe = (p, flags = "i") => {
-  const last = lastName(p.n), init = String(p.n).trim()[0];
+  const last = lastName(p.n), first = String(p.n).trim().split(/\s+/)[0].replace(/[^A-Za-z]/g, "");
+  if (!last || !first) return null;
+  const starts = [...first].map((_, i) => first.slice(0, first.length - i)).join("|");
   // Not after a period: "A.St. Brown" must not read as S. Brown (2026-09-17).
-  return last && init ? new RegExp(`(^|[^A-Za-z.])${escRe(init)}[a-z]*\\.\\s?(?:[A-Z][a-z]*\\.?\\s)?${escRe(last)}(?![A-Za-z])`, flags) : null;
+  return new RegExp(`(^|[^A-Za-z.])(?:${starts})\\.\\s?(?:[A-Z][a-z]*\\.?\\s)?${escRe(last)}(?![A-Za-z])`, flags);
 };
 const playNames = (text, p) => { const re = nameRe(p); return Boolean(re && re.test(text)); };
 // Where a play last names the player (the ball carrier is named last), or -1.
