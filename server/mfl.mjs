@@ -239,6 +239,9 @@ async function situation() {
       dd: sit.shortDownDistanceText || sit.downDistanceText || null,
       lastPlay: sit.lastPlay?.text?.slice(0, 240) || null,   // a turnover return's text runs long; the TOUCHDOWN at its end must fit
       playId: sit.lastPlay?.id != null ? String(sit.lastPlay.id) : null,   // one card per play, however many ticks show it
+      // Who ESPN says was in the play, by full name: the text's "B.Robinson"
+      // can be either of a team's two Robinsons, this list cannot.
+      who: (sit.lastPlay?.athletesInvolved || []).map((a) => a.fullName || a.displayName).filter(Boolean),
     };
     for (const x of sides) games[x.code] = g;
   }
