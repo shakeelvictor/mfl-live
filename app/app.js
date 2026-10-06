@@ -1305,7 +1305,22 @@ const nameRe = (p, flags = "i") => {
   // Not after a period: "A.St. Brown" must not read as S. Brown (2026-09-17).
   return new RegExp(`(^|[^A-Za-z.])(?:${starts})\\.\\s?(?:[A-Z][a-z]*\\.?\\s)?${escRe(last)}(?![A-Za-z])`, flags);
 };
-const playNames = (text, p) => { const re = nameRe(p); return Boolean(re && re.test(text)); };
+// ESPN's own list of who was in the play (the situation's `who`, full
+// names) settles what the text cannot (2026-10-05): when it lists someone
+// with the starter's last name, one of them must be the starter. An empty
+// list, or one with nobody of that last name, leaves the text's word. First
+// names agree when one starts the other or they share three letters
+// ("Kenneth" is ESPN's "Kenny" Gainwell); Bijan and Brian do not.
+const nameWords = (n) => String(n).toLowerCase().replace(/[^a-z\s]/g, "").split(/\s+/).filter((x) => x && !/^(jr|sr|ii|iii|iv|v)$/.test(x));
+const sameFirst = (a, b) => a.startsWith(b) || b.startsWith(a) || (a.length >= 3 && b.length >= 3 && a.slice(0, 3) === b.slice(0, 3));
+const inPlay = (sit, p) => {
+  if (!sit?.who?.length) return true;
+  const mine = nameWords(p.n), first = mine[0], last = mine[mine.length - 1];
+  if (!first) return true;
+  const same = sit.who.map(nameWords).filter((w) => w.length && w[w.length - 1] === last);
+  return !same.length || same.some((w) => sameFirst(w[0], first));
+};
+const playNames = (text, p, sit) => { const re = nameRe(p); return Boolean(re && re.test(text)) && inPlay(sit, p); };
 // Where a play last names the player (the ball carrier is named last), or -1.
 const nameAt = (text, p) => {
   const re = nameRe(p, "gi");
@@ -1318,7 +1333,7 @@ const lastPlayOf = (p) => {
   if (!isLive(p)) return "";
   const sit = sitOf(p.tm);
   const t = sit?.state === "in" ? sit.lastPlay : null;
-  if (!t || !playNames(t, p)) return "";
+  if (!t || !playNames(t, p, sit)) return "";
   const re = nameRe(p);
   return playText(t).replace(new RegExp(`^${re.source.replace(/^\(\^\|\[\^A-Za-z\.\]\)/, "")}\\s+`, "i"), "");
 };
@@ -2856,7 +2871,7 @@ function judgePlay(g, gk, seen) {
   if (tdPlayTexts.has(sig)) return;
   tdPlayTexts.add(sig);
   const named = [];
-  for (const t of rosters) for (const p of t.starters) if (p.tm === g.away || p.tm === g.home) { const at = nameAt(head, p); if (at >= 0) named.push({ t, p, at }); }
+  for (const t of rosters) for (const p of t.starters) if (p.tm === g.away || p.tm === g.home) { const at = nameAt(head, p); if (at >= 0 && inPlay(g, p)) named.push({ t, p, at }); }
   // On a turnover the score is the defense's: only a starter named after
   // the last change of hands (INTERCEPTED by, RECOVERED by, a lateral) can
   // have scored it. The offense named before it is who lost the ball:

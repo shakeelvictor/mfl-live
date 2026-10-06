@@ -278,7 +278,18 @@ Each of these was verified against real 2025 data, not inferred:
   two Robinsons apart as "Bi." and "Br.", and Bijan's touchdown raised
   Brian's card while any letters after the initial matched; Mack
   Wilson's tackles, "Ma.Wilson", read on Michael Wilson's row the same
-  way); and the first play after a load or a
+  way). **ESPN's own list of who was in the play settles the rest**
+  (`who` on the situation, from the last play's `athletesInvolved`, full
+  names; `inPlay`): when it lists someone with the starter's last name,
+  one of them must be him (first names agree when one starts the other
+  or they share three letters: MFL's Kenneth is ESPN's Kenny Gainwell).
+  The list is partial (a pass lists the receiver, not the passer or the
+  tackler), so a list with nobody of that last name leaves the text's
+  word. Checked that day: all 229 rostered players match ESPN's rosters
+  under that rule, and four same-initial pairs exist (Brooks, Williams,
+  Young, Washington) but none meets the other for the rest of 2026; the
+  list also covers a league starter sharing a name with someone who
+  isn't rostered; and the first play after a load or a
   two-minute gap is not judged on arrival (`playSeen`), since it may be
   old. **That hold is no longer a drop** (2026-09-20): until then the
   unjudged play went into `ids` and was never looked at again, so a
