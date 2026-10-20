@@ -431,8 +431,9 @@ per game on the field, the ball, RZ and ESPN's clock, nothing while no
 game is on. The team head's record adds the gap to the neighbour
 (`gapNote`: "+51.87 on 2nd", "7.88 back of 1st"), regular season only.
 **Brought to the mock the same day** (the canvas's "The pick" row):
-the board gets the league kicker over WEEK ("INDOMEXPAK · 2026 · Week
-3", `LEAGUE` from the league export), the capsules as three tiles, the
+the board got a league kicker over WEEK ("INDOMEXPAK · 2026 · Week
+3"; removed 2026-10-19, Shakeel's call: the regular season has no
+kicker, only the playoffs and the Pro Bowl keep theirs), the capsules as three tiles, the
 leader's rank as an "01" tile and its mark beside the name
 (`.hero-line`). The phone team page is a scorebug (`.hero.sbug`: mark,
 name, "1st · 22-8 · 2 to play" on the gradient, the points and the gap
@@ -450,8 +451,7 @@ Then (same day, on Shakeel's review of the preview): the masthead spans
 both columns on laptop (the theme at the pane's right edge); the leader's
 card does not lift while it is the pane's tab (the lift notched the seam
 with the band) and keeps the league gradient (`--grad`) fading onto the
-band, which runs blue to violet (`--band-join`, `--band-end`); the kicker
-drops the year the league's name carries; and the page's ground is the
+band, which runs blue to violet (`--band-join`, `--band-end`); and the page's ground is the
 mock's: no sea-blue `--wash` down the top (holidays keep theirs), the
 aurora's glows softer (teal high left, violet right and low left, no
 bottom-right cloud, no diagonal band). This supersedes the aurora's

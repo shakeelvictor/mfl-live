@@ -13,7 +13,6 @@ let rosters = [];              // [{ id, team, pts, toPlay, starters, bench }]
 let headshotSrc = () => null;  // (player) -> img src, or null for the initials fallback
 let logoSrc = () => null;      // (NFL team code) -> img src, or null
 let WEEK = 12;
-let LEAGUE = "INDOMEXPAK";   // the league's name, from its export (the board's kicker)
 let SEASON = 2026;   // the NFL season (the proxy names it on every answer)
 let UPDATED = "4:12 PM";   // when a number on the page last changed: MFL's snapshot (scores, lineups) or Sleeper's lines
 let updatedAt = 0;         // the same instant, for the age that ticks in the subhead while games are on
@@ -284,10 +283,8 @@ const franchiseMark = (t) => {
 function renderChrome() {
   // Playoffs: the round's name is the title, "Playoffs · Week 15" above it.
   const kicker = document.getElementById("kicker");
-  // The regular season: the league, the season and the week over the title (the redesign's kicker).
-  kicker.hidden = phase === "preseason" && !post && !duel;
-  kicker.classList.toggle("league", !post && !duel);
-  if (!post && !duel) kicker.textContent = `${LEAGUE} \u00b7 ${SEASON} \u00b7 Week ${WEEK}`;
+  // The regular season has none: WEEK says it.
+  kicker.hidden = !post && !duel;
   if (post || duel) {
     kicker.innerHTML = (duel ? `Week ${WEEK} &middot; Pakistan vs. the World` : `Playoffs &middot; Week ${WEEK}`) +
       // Looking back at a finished round (?w=15): a way back to the live one.
@@ -3242,8 +3239,6 @@ async function loadLeague() {
   splashStep(0.55);   // the league is in; the live feed is the last answer
   const fr = toArray(lg.data.league?.franchises?.franchise);
   names = new Map(fr.map((f) => [f.id, f.name]));
-  // The export's name carries the year ("INDOMEXPAK 2026"); the kicker names the season itself.
-  if (lg.data.league?.name) LEAGUE = String(lg.data.league.name).trim().replace(/\s*\b(19|20)\d{2}\s*$/, "") || LEAGUE;
   icons = new Map(fr.filter((f) => f.icon || f.logo).map((f) => [f.id, f.icon || f.logo]));
   rosterIds = new Map(toArray(rs.data.rosters?.franchise).map((f) => [f.id, toArray(f.player).map((p) => p.id)]));
   headshotSrc = (p) => (p.sid ? `https://sleepercdn.com/content/nfl/players/thumb/${p.sid}.jpg` : null);

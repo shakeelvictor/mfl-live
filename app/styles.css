@@ -3049,7 +3049,6 @@ h1.bowl {
    with the leader's card on a dark body, its gradient band (the box
    score's numbers and the tabs) the leader's tab runs into; a selected row
    is a mint-edged tab into the dark; NFL now sits above the pane. */
-.week .kicker.league { color: var(--accent-text); font: 700 12px/1 var(--font-data); letter-spacing: .14em; text-transform: uppercase; }
 
 .capsules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .capsule {
