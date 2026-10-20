@@ -905,21 +905,26 @@ const gameLabel = (p) => {
 const statsFor = (t, k, bench = false) => (bench ? t.bench : t.starters)[k].st || {};
 
 const j = (parts) => parts.filter(Boolean).join(" \u00b7 ");
+// Two-point conversions, passed, run or caught (2026-10-19: a 2-point
+// try paid points and nothing on the row said why).
+const TWO_PT = ["pass_2pt", "rush_2pt", "rec_2pt"];
+const twoPt = (st) => TWO_PT.reduce((a, k) => a + (st[k] || 0), 0);
 function statLine(pos, st) {
   if (!st || !Object.keys(st).length) return "";
+  const two = ["QB", "RB", "WR", "TE"].includes(pos) && twoPt(st) ? `${twoPt(st)} 2PT` : "";
   if (pos === "QB") return j([
     st.pass_att ? `${st.pass_cmp || 0}/${st.pass_att} · ${st.pass_yd || 0} YDS` : "",
     st.pass_td ? `${st.pass_td} TD` : "", st.pass_int ? `${st.pass_int} INT` : "",
-    st.rush_yd ? `${st.rush_yd} RUSH` : "", st.rush_td ? `${st.rush_td} RUSH TD` : "",
+    st.rush_yd ? `${st.rush_yd} RUSH` : "", st.rush_td ? `${st.rush_td} RUSH TD` : "", two,
   ]);
   if (pos === "RB") return j([
     st.rush_att ? `${st.rush_att} CAR · ${st.rush_yd || 0} YDS` : "", st.rush_td ? `${st.rush_td} TD` : "",
-    st.rec ? `${st.rec} REC · ${st.rec_yd || 0} YDS` : "", st.rec_td ? `${st.rec_td} REC TD` : "",
+    st.rec ? `${st.rec} REC · ${st.rec_yd || 0} YDS` : "", st.rec_td ? `${st.rec_td} REC TD` : "", two,
     st.fum_lost ? `${st.fum_lost} FUM` : "",
   ]);
   if (pos === "WR" || pos === "TE") return j([
     st.rec_tgt || st.rec ? `${st.rec || 0}/${st.rec_tgt || st.rec || 0} REC · ${st.rec_yd || 0} YDS` : "",
-    st.rec_td ? `${st.rec_td} TD` : "", st.rush_yd ? `${st.rush_yd} RUSH` : "", st.rush_td ? `${st.rush_td} RUSH TD` : "",
+    st.rec_td ? `${st.rec_td} TD` : "", st.rush_yd ? `${st.rush_yd} RUSH` : "", st.rush_td ? `${st.rush_td} RUSH TD` : "", two,
     st.fum_lost ? `${st.fum_lost} FUM` : "",
   ]);
   if (pos === "K") return j([
@@ -1462,12 +1467,12 @@ const cs = {
   rate: (l, yd, n) => ({ l, always: false, v: (st) => rate(st[yd] || 0, st[n] || 0) ?? "0.0", n: (st) => ((st[n] || 0) > 0 ? (st[yd] || 0) / st[n] : 0), zero: (st) => !((st[n] || 0) > 0) }),
 };
 const CARD_GROUPS = {
-  QB: [["Passing", [cs.frac("CMP/ATT", "pass_cmp", "pass_att", true), cs.num("YDS", "pass_yd", true), cs.num("TD", "pass_td", true), cs.num("INT", "pass_int", true), cs.rate("Y/A", "pass_yd", "pass_att")]],
-       ["Rushing", [cs.num("CAR", "rush_att"), cs.num("YDS", "rush_yd"), cs.num("TD", "rush_td"), cs.num("FUM", "fum_lost")]]],
-  RB: [["Rushing", [cs.num("CAR", "rush_att", true), cs.num("YDS", "rush_yd", true), cs.num("TD", "rush_td", true), cs.rate("Y/C", "rush_yd", "rush_att")]],
-       ["Receiving", [cs.frac("REC/TGT", "rec", "rec_tgt", true), cs.num("YDS", "rec_yd", true), cs.num("TD", "rec_td"), cs.num("FUM", "fum_lost")]]],
-  WR: [["Receiving", [cs.frac("REC/TGT", "rec", "rec_tgt", true), cs.num("YDS", "rec_yd", true), cs.num("TD", "rec_td", true), cs.rate("Y/R", "rec_yd", "rec")]],
-       ["Rushing", [cs.num("CAR", "rush_att"), cs.num("YDS", "rush_yd"), cs.num("TD", "rush_td"), cs.num("FUM", "fum_lost")]]],
+  QB: [["Passing", [cs.frac("CMP/ATT", "pass_cmp", "pass_att", true), cs.num("YDS", "pass_yd", true), cs.num("TD", "pass_td", true), cs.num("INT", "pass_int", true), cs.rate("Y/A", "pass_yd", "pass_att"), cs.sum("2PT", ["pass_2pt"])]],
+       ["Rushing", [cs.num("CAR", "rush_att"), cs.num("YDS", "rush_yd"), cs.num("TD", "rush_td"), cs.sum("2PT", ["rush_2pt"]), cs.num("FUM", "fum_lost")]]],
+  RB: [["Rushing", [cs.num("CAR", "rush_att", true), cs.num("YDS", "rush_yd", true), cs.num("TD", "rush_td", true), cs.rate("Y/C", "rush_yd", "rush_att"), cs.sum("2PT", ["rush_2pt"])]],
+       ["Receiving", [cs.frac("REC/TGT", "rec", "rec_tgt", true), cs.num("YDS", "rec_yd", true), cs.num("TD", "rec_td"), cs.sum("2PT", ["rec_2pt"]), cs.num("FUM", "fum_lost")]]],
+  WR: [["Receiving", [cs.frac("REC/TGT", "rec", "rec_tgt", true), cs.num("YDS", "rec_yd", true), cs.num("TD", "rec_td", true), cs.rate("Y/R", "rec_yd", "rec"), cs.sum("2PT", ["rec_2pt"])]],
+       ["Rushing", [cs.num("CAR", "rush_att"), cs.num("YDS", "rush_yd"), cs.num("TD", "rush_td"), cs.sum("2PT", ["rush_2pt"]), cs.num("FUM", "fum_lost")]]],
   K: [["Kicking", [cs.frac("FG", "fgm", "fga", true), cs.frac("XP", "xpm", "xpa", true), cs.num("LNG", "fgm_lng")]]],
   IDP: [["Tackles", [cs.num("TKL", "idp_tkl", true), cs.num("SOLO", "idp_tkl_solo", true), cs.num("AST", "idp_tkl_ast", true), cs.num("TFL", "idp_tkl_loss"), cs.num("ST TKL", "st_tkl_solo")]],
         ["Plays", [cs.num("SACK", "idp_sack", true), cs.num("INT", "idp_int", true), cs.num("FF", "idp_ff"), cs.num("FR", "idp_fum_rec"), cs.num("PD", "idp_pass_def"), cs.num("BLK", "idp_blk_kick"), cs.num("SAF", "idp_safe"), cs.sum("TD", ["idp_td", "idp_def_td", "st_td"])]]],
