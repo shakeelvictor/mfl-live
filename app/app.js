@@ -1874,13 +1874,21 @@ function teamSchedule(tm) {
         weeks[w] = { opp: toMfl(them.team?.abbreviation), home: mine.homeAway === "home", final,
           us: Number(mine.score?.value ?? mine.score), them: Number(them.score?.value ?? them.score), win: mine.winner === true, date: ev.date };
       }
-      return { weeks, bye: Number(d.byeWeek) || 0 };
+      return { weeks, bye: byeOf(weeks, d.byeWeek) };
     });
   schedules.set(tm, { at: Date.now(), promise });
   promise.catch(() => schedules.delete(tm));
   return promise;
 }
 const LOG_WEEKS = 18;
+// ESPN's byeWeek can be wrong while its games are right (2026: CHI's said 7,
+// a week they play NE; ATL's and BUF's said 5), so the bye is the one week
+// with no game, and byeWeek stands only for a week that has none.
+const byeOf = (weeks, said) => {
+  const open = [];
+  for (let w = 1; w <= LOG_WEEKS; w++) if (!weeks[w]) open.push(w);
+  return open.length === 1 ? open[0] : open.includes(Number(said)) ? Number(said) : 0;
+};
 const logCol = (l, f) => ({ l, f });
 const logFrac = (l, a, b) => logCol(l, (st) => `${st[a] || 0}/${st[b] || st[a] || 0}`);
 const logRate = (l, yd, n) => logCol(l, (st) => rate(st[yd] || 0, st[n] || 0) ?? "0.0");
