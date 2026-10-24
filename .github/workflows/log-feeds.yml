@@ -1,7 +1,7 @@
 # Spike 3 on a runner, so nothing at home has to stay awake: log which feed
 # credits each touchdown first through a game (spike/log-feeds.mjs, see
 # spike/README.md). Start it from the Actions tab a few minutes before
-# kickoff, or let the schedule catch Thursday night. The file and the
+# kickoff (it no longer runs on a schedule, see below). The file and the
 # printed table come back as a downloadable artifact. Separate from the
 # records site's pipeline on purpose (CLAUDE.md); no secrets: the
 # registered User-Agent is not one.
@@ -24,27 +24,13 @@ on:
         type: choice
         options: [all, early, late, night]
         default: all
-  schedule:
-    # Thursday, two hours before the 8:15 PM Eastern kickoff: GitHub started
-    # the Sep 17 run at 9:57 PM for a 7:55 schedule, two hours late, and it
-    # missed half the game. The logger waits for kickoff without spending
-    # its minutes, and a job may run six hours, so starting early costs
-    # nothing. Cron is UTC: 22:17 is 6:17 PM on daylight time (Sep, Oct);
-    # 23:17 is 6:17 PM on standard time (Nov on; 2026's change is Nov 1).
-    - cron: "17 22 * 9,10 4"
-    - cron: "17 23 * 11,12,1 4"
-    # Sunday, in three runs, since a job runs six hours and the slate eleven.
-    # Each watches only its own kickoffs (--kickoff-after/--kickoff-before),
-    # starts about two hours ahead of them for GitHub's delay, and stops 25
-    # minutes after its last game: early (1 PM kickoffs) at 11:17 AM ET,
-    # late (4:05/4:25) at 2:17 PM, night (8:20) at 6:47 PM. Daylight time:
-    - cron: "17 15 * 9,10 0"
-    - cron: "17 18 * 9,10 0"
-    - cron: "47 22 * 9,10 0"
-    # Standard time, an hour later in UTC:
-    - cron: "17 16 * 11,12,1 0"
-    - cron: "17 19 * 11,12,1 0"
-    - cron: "47 23 * 11,12,1 0"
+  # No schedule, on purpose. It ran Thursday night and three Sunday windows
+  # from Sep 17, each started two hours early for GitHub's late starts, and
+  # used up the account's 2,000 private-repo minutes by Oct 23, blocking
+  # every other repo's workflows. Waiting for kickoff is NOT free: a runner
+  # bills for every minute it is held, idle or not, so the head start cost
+  # as much as the games (2-3.5 hours a run, ~10 hours a week). Run it by
+  # hand on a game day you want measured, a few minutes before kickoff.
 
 jobs:
   log:
@@ -63,12 +49,6 @@ jobs:
           EVERY="${{ github.event.inputs.every || '10' }}"
           WEEK="${{ github.event.inputs.week }}"
           WINDOW="${{ github.event.inputs.window || 'all' }}"
-          # A scheduled run's window comes from the cron that fired it.
-          case "${{ github.event.schedule }}" in
-            "17 15 * 9,10 0"|"17 16 * 11,12,1 0") WINDOW=early ;;
-            "17 18 * 9,10 0"|"17 19 * 11,12,1 0") WINDOW=late ;;
-            "47 22 * 9,10 0"|"47 23 * 11,12,1 0") WINDOW=night ;;
-          esac
           case "$WINDOW" in
             early) KICK="--kickoff-before 16:00" ;;
             late)  KICK="--kickoff-after 16:00 --kickoff-before 19:00" ;;

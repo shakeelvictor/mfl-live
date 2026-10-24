@@ -235,17 +235,22 @@ counting, stops on its own 25 minutes after the last live game ends, and
 prints the table on exit (or `--analyze <file>` later). **It runs on a
 GitHub runner so nothing at home has to stay awake**: the `log-feeds`
 workflow (`.github/workflows/log-feeds.yml`) starts from the Actions tab
-with a duration and a window, or on its own: Thursday at 6:17 PM ET, and
-Sunday in three runs, since a job may run six hours and the slate runs
-eleven: **early** (1 PM kickoffs) from 11:17 AM, **late** (4:05/4:25)
-from 2:17 PM, **night** (8:20) from 6:47 PM, each about two hours ahead of
-its kickoffs for GitHub's delay. A run watches only the games kicking off
-in its window (`--kickoff-after` / `--kickoff-before`, Eastern, on the day
-it started), so the night run does not see the late games end and stop
-before the night game; `--minutes` counts from its first live game. Each
-hands its file and table back as an artifact. The crons are UTC, one set
-per clock season (Sep-Oct daylight, Nov-Jan standard). Not covered: London
-and other morning kickoffs, Saturday games, and Monday night.
+with a duration and a window, a few minutes before kickoff. A job may run
+six hours and a Sunday slate runs eleven, so a Sunday is three runs:
+**early** (1 PM kickoffs), **late** (4:05/4:25) and **night** (8:20). A
+run watches only the games kicking off in its window (`--kickoff-after` /
+`--kickoff-before`, Eastern, on the day it started), so the night run
+does not see the late games end and stop before the night game;
+`--minutes` counts from its first live game. Each hands its file and
+table back as an artifact.
+
+**By hand only, since Oct 24.** From Sep 17 it also ran on a schedule:
+Thursday night and all three Sunday windows, each started two hours ahead
+of kickoff because GitHub starts scheduled runs late. Waiting for kickoff
+is not free, though: a runner bills for every minute it is held, idle or
+not. At 2-3.5 hours a run, about 10 hours a week, it used up the
+account's 2,000 private-repo minutes by Oct 23 and blocked every other
+repo's workflows until the monthly reset.
 
 **Fixed after the first run (Thu Sep 17, DET @ BUF).** GitHub started the
 scheduled run two hours late, hence the earlier schedule and the wait for
